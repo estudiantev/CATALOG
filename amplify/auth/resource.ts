@@ -24,7 +24,6 @@ export const auth = defineAuth({
         emailBody: (user, code) => invitationEmail.cuerpo(code(), user()),
       },
     },
-    /*
     externalProviders: {
       google: {
         clientId: secret('GOOGLE_CLIENT_ID'),
@@ -46,7 +45,6 @@ export const auth = defineAuth({
         'https://www.dominiodeprueba.click/'
       ],
     },
-    */
   },
   // Correo profesional configurado con amazon SES
   senders: {
