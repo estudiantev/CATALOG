@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Jost, Playfair_Display } from "next/font/google";
+import { Instrument_Serif, Jost, Playfair_Display } from "next/font/google";
 import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
@@ -17,6 +17,12 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
+const instrument = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-instrument",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "FARA Collections",
@@ -32,7 +38,7 @@ export default function TiendaLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${jost.variable} ${playfair.variable}`}>
+    <html lang="es" className={`${jost.variable} ${playfair.variable} ${instrument.variable}`}>
       <body className="antialiased">
         <ConfigurarAmplify />
         <Encabezado />

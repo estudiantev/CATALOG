@@ -32,6 +32,7 @@
 @theme inline {
   --font-sans: var(--font-jost), "Futura", "Century Gothic", system-ui, sans-serif;
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-titulo: var(--font-instrument), Georgia, "Times New Roman", serif;
 }
 
 @layer base {

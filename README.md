@@ -31,7 +31,9 @@ app/
 │   ├── tienda.css             ← Tailwind + paleta del rediseño (sin shadcn)
 │   ├── page.tsx               ← / (portada)
 │   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
-│   └── login/page.tsx         ← /login
+│   ├── catalogo/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
+│   ├── login/page.tsx         ← /login
+│   └── registro/page.tsx      ← /registro (clientas, sin grupo)
 └── (admin)/                   ← zona del staff
     ├── layout.tsx             ← layout raíz: <html>, admin.css, Amplify, noindex
     ├── admin.css              ← Tailwind + tema de shadcn
@@ -92,6 +94,17 @@ npx shadcn@latest add card input table dialog sidebar
 - **Fotos (panel):** en el formulario de producto, "Agregar imágenes" acepta imágenes de hasta 5 MB. Se suben a S3 al guardar, en `product-images/<productId>/`, y la marcada como principal es la que se ve en el catálogo y en la tabla. Al quitar una foto o eliminar un producto, las fotos se borran de S3 solo si eres ADMIN (es el único grupo con permiso de borrar en `amplify/storage/resource.ts`); para el resto se desvinculan del producto.
 - **Catálogo (tienda):** `/catalogo` lee los productos en el servidor como visitante (Product y las fotos permiten lectura a invitados), con URLs firmadas de S3 que duran una hora; por eso la página se genera en cada visita.
 - **Filtros:** búsqueda, categoría, color y talla se aplican en el navegador sobre los productos ya cargados. Los enlaces del menú llegan como filtros iniciales: `?color=` elige la familia de color, `?categoria=accesorios` la categoría, y `?coleccion=gala|xv|cortos|floreados` busca esa palabra en la ocasión, silueta, etiquetas y descripción. Para que un vestido salga en "De Gala", escribe "Gala" en su ocasión o etiquetas.
+
+## Detalle del producto
+
+- Cada tarjeta del catálogo abre `/catalogo/<productId>`: galería con la foto principal y miniaturas a la izquierda; a la derecha categoría, nombre, descripción, precios de venta y alquiler, el botón **Contactar** y los atributos (ocasión, silueta, material, tallas, colores y etiquetas).
+- **Contactar** abre WhatsApp con el mensaje "Hola, quisiera consultar sobre <producto> en Fara Collection.". El usuario de WhatsApp de la empresa está en `WHATSAPP_FARA` (`components/tienda/datos.ts`): reemplaza `519XXXXXXXX` por el número real.
+
+## Registro de clientas
+
+- `/registro` pide nombre, apellido, correo y contraseña. Cognito envía un código al correo; al confirmarlo la cuenta inicia sesión sola.
+- La cuenta se crea **sin grupo**: es una clienta y no tiene acceso al panel. El trigger `post-confirmation` crea su perfil `Customer`.
+- Si alguien se registró pero no confirmó su correo, al intentar iniciar sesión ve el enlace "Confirmar mi correo", que retoma el paso del código (`/registro?confirmar=<correo>`).
 
 ## Acceso al panel
 

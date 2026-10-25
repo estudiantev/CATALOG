@@ -26,3 +26,7 @@ export const COLORES: { nombre: string; hex: string; href: string; familia: Fami
   { nombre: "Lila", hex: "#c3b1d9", href: "/catalogo?color=lila", familia: "PURPLE" },
   { nombre: "Celeste", hex: "#a9c6df", href: "/catalogo?color=celeste", familia: "BLUE" },
 ];
+
+// Usuario de WhatsApp de Fara Collections para el botón "Contactar" de cada producto
+// (reemplaza las X por el número real, con el código de país 51)
+export const WHATSAPP_FARA = "519XXXXXXXX";

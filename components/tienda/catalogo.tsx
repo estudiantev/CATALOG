@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import type { ProductoCatalogo } from "@/lib/catalogo";
 import { CATEGORIAS, FAMILIAS_COLOR, TALLAS, formatoSoles } from "@/lib/productos";
@@ -111,32 +112,34 @@ export function Catalogo({
       ) : (
         <ul aria-label="Productos" className="grid grid-cols-2 border-t-2 border-tinta md:grid-cols-3 xl:grid-cols-4">
           {visibles.map((producto) => (
-            <li key={producto.productId} className="group flex flex-col border-r-2 border-b-2 border-tinta bg-white">
-              <div className="relative aspect-[3/4] overflow-hidden bg-lino">
-                {producto.imagen ? (
-                  <Image
-                    src={producto.imagen.url}
-                    alt={producto.imagen.alt}
-                    fill
-                    unoptimized
-                    sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
-                    className="object-cover transition-transform duration-[600ms] group-hover:scale-[1.04]"
-                  />
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center text-[13px] tracking-[0.1em] text-topo uppercase">
-                    Sin foto
+            <li key={producto.productId} className="border-r-2 border-b-2 border-tinta bg-white">
+              <Link href={`/catalogo/${producto.productId}`} className="group flex h-full flex-col transition-colors hover:bg-arena active:bg-dorado">
+                <div className="relative aspect-[3/4] overflow-hidden bg-lino">
+                  {producto.imagen ? (
+                    <Image
+                      src={producto.imagen.url}
+                      alt={producto.imagen.alt}
+                      fill
+                      unoptimized
+                      sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw"
+                      className="object-cover transition-transform duration-[600ms] group-hover:scale-[1.04]"
+                    />
+                  ) : (
+                    <span className="absolute inset-0 flex items-center justify-center text-[13px] tracking-[0.1em] text-topo uppercase">
+                      Sin foto
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-0.5 border-t-2 border-tinta px-4.5 pt-4 pb-5">
+                  <span className={etiqueta}>
+                    {CATEGORIAS.find((c) => c.valor === producto.categoria)?.nombre ?? "Venta y alquiler"}
                   </span>
-                )}
-              </div>
-              <div className="flex flex-col gap-0.5 border-t-2 border-tinta px-4.5 pt-4 pb-5">
-                <span className={etiqueta}>
-                  {CATEGORIAS.find((c) => c.valor === producto.categoria)?.nombre ?? "Venta y alquiler"}
-                </span>
-                <span className="text-[18px] leading-[24px]">{producto.nombre}</span>
-                <span className="text-[16px] leading-[24px] text-grafito">
-                  Venta {formatoSoles.format(producto.precioVenta)} · Alquiler {formatoSoles.format(producto.precioAlquiler)}
-                </span>
-              </div>
+                  <span className="text-[18px] leading-[24px] group-hover:underline group-hover:underline-offset-4">{producto.nombre}</span>
+                  <span className="text-[16px] leading-[24px] text-grafito">
+                    Venta {formatoSoles.format(producto.precioVenta)} · Alquiler {formatoSoles.format(producto.precioAlquiler)}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
