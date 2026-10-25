@@ -1,5 +1,6 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { agregarStaff } from './agregar-staff/resource'; // NUEVO
+import { postConfirmation } from '../auth/post-confirmation/resource';
 
 const schema = a.schema({
 
@@ -107,7 +108,9 @@ const schema = a.schema({
     .returns(a.string()) // "creado" | "promovido"
     .authorization((allow) => [allow.group('ADMIN')])
     .handler(a.handler.function(agregarStaff)),
-});
+})
+  // El trigger post-confirmation crea el Customer: necesita acceso a la API de datos
+  .authorization((allow) => [allow.resource(postConfirmation)]);
 
 export type Schema = ClientSchema<typeof schema>;
 

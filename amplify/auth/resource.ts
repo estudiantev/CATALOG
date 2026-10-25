@@ -4,6 +4,7 @@ import { invitationEmail } from "./custom-message/templates/invitation";
 import { customMessage } from "./custom-message/resource";
 // import { preSignUp } from "./pre-sign-up/resource";
 import { postConfirmation } from "../auth/post-confirmation/resource";
+import { agregarStaff } from "../data/agregar-staff/resource";
 
 /**
  * Primero configura el recurso de autenticación de Amplify
@@ -79,4 +80,9 @@ export const auth = defineAuth({
     // preSignUp,
     postConfirmation
   },
+
+  // agregar-staff crea cuentas del panel y las mete en su grupo
+  access: (allow) => [
+    allow.resource(agregarStaff).to(["createUser", "addUserToGroup"]),
+  ],
 })
