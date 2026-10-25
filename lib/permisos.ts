@@ -4,11 +4,13 @@ export const GRUPOS_STAFF = ["ADMIN", "INVENTORY", "MARKETING"] as const;
 export type GrupoStaff = (typeof GRUPOS_STAFF)[number];
 
 // Qué grupo puede hacer cada acción. Es un reflejo de las reglas de
-// amplify/data/resource.ts, que son las que AppSync aplica de verdad.
+// amplify/data/resource.ts y amplify/storage/resource.ts, que son las que
+// AppSync y S3 aplican de verdad.
 const PERMISOS = {
   crearProducto: ["ADMIN", "INVENTORY"],
   editarProducto: ["ADMIN", "INVENTORY", "MARKETING"],
   eliminarProducto: ["ADMIN"],
+  borrarImagenes: ["ADMIN"],
   agregarStaff: ["ADMIN"],
 } satisfies Record<string, GrupoStaff[]>;
 

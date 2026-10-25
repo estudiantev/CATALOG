@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { ImageIcon, Pencil, Trash2 } from "lucide-react";
+import { getUrl, remove } from "aws-amplify/storage";
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import {
   AlertDialog,
@@ -26,14 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/admin/ui/table";
-import {
-  CATEGORIAS,
-  TALLAS,
-  type Producto,
-  clienteDatos,
-  formatoSoles,
-  mensajeErrorDatos,
-} from "@/components/admin/datos";
+import { clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
+import { CATEGORIAS, type Producto, TALLAS, formatoSoles, imagenPrincipal } from "@/lib/productos";
 
 async function cargarProductos() {
   const productos: Producto[] = [];
@@ -47,6 +43,23 @@ async function cargarProductos() {
   return productos.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
 }
 
+// URL firmada de la foto principal de cada producto, para la miniatura
+async function cargarMiniaturas(productos: Producto[]) {
+  const pares = await Promise.all(
+    productos.map(async (producto) => {
+      const imagen = imagenPrincipal(producto.imagenes);
+      if (!imagen) return null;
+      try {
+        const { url } = await getUrl({ path: imagen.key });
+        return [producto.productId, url.toString()] as const;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return Object.fromEntries(pares.filter((par) => par !== null));
+}
+
 export function TablaProductos({
   puedeEditar,
   puedeEliminar,
@@ -55,11 +68,15 @@ export function TablaProductos({
   puedeEliminar: boolean;
 }) {
   const [productos, setProductos] = useState<Producto[] | null>(null);
+  const [miniaturas, setMiniaturas] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
 
   useEffect(() => {
     cargarProductos()
-      .then(setProductos)
+      .then((cargados) => {
+        setProductos(cargados);
+        return cargarMiniaturas(cargados).then(setMiniaturas);
+      })
       .catch((err: Error) => setError(err.message));
   }, []);
 
@@ -71,6 +88,10 @@ export function TablaProductos({
       return;
     }
     setProductos((actuales) => actuales?.filter((p) => p.productId !== producto.productId) ?? null);
+    // Solo ADMIN elimina productos, y ADMIN también puede borrar sus fotos de S3
+    await Promise.allSettled(
+      (producto.imagenes ?? []).flatMap((imagen) => (imagen ? [remove({ path: imagen.key })] : [])),
+    );
   }
 
   return (
@@ -84,6 +105,7 @@ export function TablaProductos({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16">Foto</TableHead>
               <TableHead>Nombre</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead className="text-right">Venta</TableHead>
@@ -96,20 +118,29 @@ export function TablaProductos({
             {productos === null && !error &&
               [0, 1, 2].map((i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <Skeleton className="h-6 w-full" />
                   </TableCell>
                 </TableRow>
               ))}
             {productos?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                   Todavía no hay productos.
                 </TableCell>
               </TableRow>
             )}
             {productos?.map((producto) => (
               <TableRow key={producto.productId}>
+                <TableCell>
+                  <div className="relative flex h-14 w-11 items-center justify-center overflow-hidden rounded-sm border bg-muted">
+                    {miniaturas[producto.productId] ? (
+                      <Image src={miniaturas[producto.productId]} alt="" fill unoptimized sizes="44px" className="object-cover" />
+                    ) : (
+                      <ImageIcon className="size-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell className="font-medium">{producto.name || "Sin nombre"}</TableCell>
                 <TableCell>
                   {CATEGORIAS.find((c) => c.valor === producto.category)?.nombre ?? "—"}

@@ -30,7 +30,7 @@ app/
 │   ├── layout.tsx             ← layout raíz: <html>, fuentes, menú, pie, Amplify
 │   ├── tienda.css             ← Tailwind + paleta del rediseño (sin shadcn)
 │   ├── page.tsx               ← / (portada)
-│   ├── catalogo/page.tsx      ← /catalogo (provisional)
+│   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
 │   └── login/page.tsx         ← /login
 └── (admin)/                   ← zona del staff
     ├── layout.tsx             ← layout raíz: <html>, admin.css, Amplify, noindex
@@ -46,12 +46,14 @@ app/
 components/
 ├── admin/                     ← solo el panel
 │   └── ui/                    ← componentes de shadcn (los crea el CLI)
-├── tienda/                    ← solo la tienda: encabezado, pie, vestido, datos
+├── tienda/                    ← solo la tienda: encabezado, pie, catálogo, vestido, datos
 └── compartido/                ← lo usan ambas zonas
 
 lib/
 ├── amplify-server.ts          ← runWithAmplifyServerContext (Amplify en el servidor)
 ├── sesion-servidor.ts         ← obtenerSesion() y requerirStaff() para el panel
+├── catalogo.ts                ← lee el catálogo en el servidor, como visitante
+├── productos.ts               ← tipos y etiquetas de Product (tienda y panel)
 ├── permisos.ts                ← qué grupo puede hacer cada acción
 ├── errores-auth.ts            ← mensajes de error del login
 └── utils.ts                   ← cn() para combinar clases
@@ -85,6 +87,12 @@ npx shadcn@latest add card input table dialog sidebar
 
 `components.json` ya está configurado: los componentes se crean en `components/admin/ui/` y sus variables se escriben en `app/(admin)/admin.css`.
 
+## Catálogo y fotos
+
+- **Fotos (panel):** en el formulario de producto, "Agregar imágenes" acepta imágenes de hasta 5 MB. Se suben a S3 al guardar, en `product-images/<productId>/`, y la marcada como principal es la que se ve en el catálogo y en la tabla. Al quitar una foto o eliminar un producto, las fotos se borran de S3 solo si eres ADMIN (es el único grupo con permiso de borrar en `amplify/storage/resource.ts`); para el resto se desvinculan del producto.
+- **Catálogo (tienda):** `/catalogo` lee los productos en el servidor como visitante (Product y las fotos permiten lectura a invitados), con URLs firmadas de S3 que duran una hora; por eso la página se genera en cada visita.
+- **Filtros:** búsqueda, categoría, color y talla se aplican en el navegador sobre los productos ya cargados. Los enlaces del menú llegan como filtros iniciales: `?color=` elige la familia de color, `?categoria=accesorios` la categoría, y `?coleccion=gala|xv|cortos|floreados` busca esa palabra en la ocasión, silueta, etiquetas y descripción. Para que un vestido salga en "De Gala", escribe "Gala" en su ocasión o etiquetas.
+
 ## Acceso al panel
 
 El panel tiene tres capas, de afuera hacia adentro:
@@ -98,6 +106,8 @@ El panel tiene tres capas, de afuera hacia adentro:
 | Ver y editar productos | Sí | Sí | Sí |
 | Crear productos | Sí | Sí | No |
 | Eliminar productos | Sí | No | No |
+| Subir fotos | Sí | Sí | Sí |
+| Borrar fotos de S3 | Sí | No | No |
 | Agregar staff (Equipo) | Sí | No | No |
 
 `lib/permisos.ts` refleja esta tabla para mostrar u ocultar botones y bloquear páginas; si cambias las reglas del backend, actualízalo también. El staff entra por `/admin/login`; quien recibe una invitación cambia ahí su contraseña temporal en el primer ingreso.

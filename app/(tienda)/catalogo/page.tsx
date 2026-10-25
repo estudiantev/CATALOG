@@ -1,27 +1,76 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Catalogo, type Filtros, SIN_FILTROS } from "@/components/tienda/catalogo";
+import { COLORES } from "@/components/tienda/datos";
+import { type ProductoCatalogo, obtenerCatalogo } from "@/lib/catalogo";
 
 export const metadata: Metadata = {
   title: "Catálogo",
 };
 
-/*
- * Página provisional del catálogo.
- * Plan: leer los productos en el servidor con Amplify Data (Product permite lectura a
- * visitantes) y filtrarlos con los parámetros que ya envía el menú:
- *   ?coleccion=gala|xv|cortos|floreados  ?color=negro|vino|...  ?modalidad=alquiler  ?categoria=accesorios
- * Cada producto tendrá su página en /catalogo/[productId].
- */
-export default function CatalogoPage() {
+// Las fotos usan URLs firmadas de S3 que vencen: el catálogo se genera en cada visita
+export const dynamic = "force-dynamic";
+
+const CATEGORIAS_URL: Record<string, string> = {
+  vestidos: "DRESS",
+  joyeria: "JEWELRY",
+  accesorios: "ACCESSORY",
+};
+
+// Las colecciones del menú se buscan en la ocasión, silueta y etiquetas del producto
+const COLECCIONES_URL: Record<string, string> = {
+  gala: "gala",
+  xv: "xv",
+  cortos: "corto",
+  floreados: "floreado",
+};
+
+type Parametros = Record<string, string | string[] | undefined>;
+
+// Los enlaces del menú (?coleccion=, ?color=, ?categoria=) son los filtros iniciales
+function filtrosDesdeUrl(parametros: Parametros): Filtros {
+  const valor = (nombre: string) => {
+    const v = parametros[nombre];
+    return Array.isArray(v) ? v[0] : v;
+  };
+  const color = valor("color");
+  return {
+    ...SIN_FILTROS,
+    busqueda: COLECCIONES_URL[valor("coleccion") ?? ""] ?? "",
+    categoria: CATEGORIAS_URL[valor("categoria") ?? ""] ?? "",
+    familia: COLORES.find((c) => c.href === `/catalogo?color=${color}`)?.familia ?? "",
+  };
+}
+
+export default async function CatalogoPage({
+  searchParams,
+}: {
+  searchParams: Promise<Parametros>;
+}) {
+  const filtrosIniciales = filtrosDesdeUrl(await searchParams);
+
+  let productos: ProductoCatalogo[] | null = null;
+  try {
+    productos = await obtenerCatalogo();
+  } catch (error) {
+    console.error("No se pudo cargar el catálogo:", error);
+  }
+
   return (
-    <section className="px-[clamp(16px,3.6vw,54px)] py-[clamp(56px,6vw,88px)]">
-      <h1 className="text-[clamp(24px,2vw,30px)] leading-[1.2] font-medium tracking-[0.08em] uppercase">
-        Nuestro catálogo
-      </h1>
-      <p className="mt-2 text-topo">Estamos preparando el catálogo. Muy pronto podrás ver todos los vestidos aquí.</p>
-      <Link href="/" className="mt-8 inline-flex min-h-13 items-center justify-center border-2 border-tinta bg-white px-7 text-[15px] font-semibold tracking-[0.06em] uppercase transition-colors hover:bg-arena active:bg-dorado">
-        Volver al inicio
-      </Link>
+    <section className="pt-[clamp(40px,4.4vw,64px)]">
+      <div className="px-[clamp(16px,3.6vw,54px)] pb-6">
+        <h1 className="text-[clamp(24px,2vw,30px)] leading-[1.2] font-medium tracking-[0.08em] uppercase">
+          Nuestro catálogo
+        </h1>
+        <p className="mt-1 text-topo">Vestidos de gala, de XV, cortos y floreados en venta y alquiler.</p>
+      </div>
+      {productos ? (
+        // key: al llegar desde otro enlace del menú, los filtros vuelven a empezar
+        <Catalogo key={JSON.stringify(filtrosIniciales)} productos={productos} filtrosIniciales={filtrosIniciales} />
+      ) : (
+        <p className="border-t-2 border-tinta px-[clamp(16px,3.6vw,54px)] py-16 text-center text-[18px]">
+          No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.
+        </p>
+      )}
     </section>
   );
 }

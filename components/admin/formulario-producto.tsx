@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { getUrl, remove } from "aws-amplify/storage";
+import { EditorImagenes, type ImagenFormulario, subirImagenes } from "@/components/admin/editor-imagenes";
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Button } from "@/components/admin/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/admin/ui/card";
@@ -19,17 +21,17 @@ import {
 } from "@/components/admin/ui/select";
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import { Textarea } from "@/components/admin/ui/textarea";
+import { clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
 import {
   CATEGORIAS,
   type Categoria,
   type ColorProducto,
   FAMILIAS_COLOR,
+  type ImagenProducto,
   type Producto,
   TALLAS,
   type Talla,
-  clienteDatos,
-  mensajeErrorDatos,
-} from "@/components/admin/datos";
+} from "@/lib/productos";
 
 type Formulario = {
   name: string;
@@ -43,6 +45,7 @@ type Formulario = {
   priceRent: string;
   availableSizes: Talla[];
   availableColors: ColorProducto[];
+  imagenes: ImagenFormulario[];
 };
 
 const VACIO: Formulario = {
@@ -57,9 +60,13 @@ const VACIO: Formulario = {
   priceRent: "",
   availableSizes: [],
   availableColors: [],
+  imagenes: [],
 };
 
-function desdeProducto(p: Producto): Formulario {
+async function desdeProducto(p: Producto): Promise<Formulario> {
+  const imagenes = (p.imagenes ?? [])
+    .filter((imagen): imagen is ImagenProducto => imagen !== null)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   return {
     name: p.name ?? "",
     category: p.category ?? "",
@@ -75,25 +82,50 @@ function desdeProducto(p: Producto): Formulario {
     availableColors: (p.availableColors ?? [])
       .filter((c): c is ColorProducto => c !== null)
       .map(({ name, hex, family }) => ({ name, hex, family })),
+    imagenes: await Promise.all(
+      imagenes.map(async (imagen) => ({
+        id: imagen.key,
+        key: imagen.key,
+        archivo: null,
+        // URL firmada para la vista previa; si falla se muestra un ícono
+        vistaPrevia: await getUrl({ path: imagen.key })
+          .then(({ url }) => url.toString())
+          .catch(() => ""),
+        alt: imagen.alt ?? "",
+        isPrimary: imagen.isPrimary ?? false,
+        color: imagen.color ?? null,
+      })),
+    ),
   };
 }
 
 // Texto vacío → null, para que AppSync borre el valor al editar
 const textoONulo = (valor: string) => valor.trim() || null;
 
-export function FormularioProducto({ productId }: { productId?: string }) {
+export function FormularioProducto({
+  productId,
+  puedeBorrarImagenes,
+}: {
+  productId?: string;
+  puedeBorrarImagenes: boolean;
+}) {
   const router = useRouter();
   const editando = productId !== undefined;
+  // Al crear, el id se genera antes para subir las fotos a su carpeta
+  const [idNuevo] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState<Formulario | null>(editando ? null : VACIO);
+  const [clavesOriginales, setClavesOriginales] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [guardando, setGuardando] = useState(false);
+  const [guardando, setGuardando] = useState("");
 
   useEffect(() => {
     if (!productId) return;
-    clienteDatos.models.Product.get({ productId }).then(({ data, errors }) => {
-      if (errors) setError(mensajeErrorDatos(errors));
-      else if (!data) setError("No encontramos este producto.");
-      else setForm(desdeProducto(data));
+    clienteDatos.models.Product.get({ productId }).then(async ({ data, errors }) => {
+      if (errors) return setError(mensajeErrorDatos(errors));
+      if (!data) return setError("No encontramos este producto.");
+      const cargado = await desdeProducto(data);
+      setClavesOriginales(cargado.imagenes.flatMap((imagen) => (imagen.key ? [imagen.key] : [])));
+      setForm(cargado);
     });
   }, [productId]);
 
@@ -127,6 +159,18 @@ export function FormularioProducto({ productId }: { productId?: string }) {
     if (!(priceSale >= 0) || !(priceRent >= 0)) return setError("Escribe precios válidos de venta y alquiler.");
     if (form.availableColors.some((color) => !color.name.trim())) return setError("Cada color necesita un nombre.");
 
+    const id = productId ?? idNuevo;
+    let imagenes: ImagenFormulario[];
+    try {
+      setGuardando("Subiendo imágenes…");
+      imagenes = await subirImagenes(id, form.imagenes);
+      // Si el guardado falla, al reintentar no se vuelven a subir
+      setForm({ ...form, imagenes });
+    } catch {
+      setGuardando("");
+      return setError("No se pudieron subir las imágenes. Inténtalo de nuevo.");
+    }
+
     const datos = {
       name: form.name.trim(),
       category: form.category || null,
@@ -141,15 +185,28 @@ export function FormularioProducto({ productId }: { productId?: string }) {
       availableColors: form.availableColors.map((color) => ({ ...color, name: color.name.trim() })),
       // Copia plana de las familias para filtrar el catálogo por color
       colorFamilies: Array.from(new Set(form.availableColors.map((color) => color.family))),
+      imagenes: imagenes.map((imagen, posicion) => ({
+        key: imagen.key as string,
+        alt: textoONulo(imagen.alt),
+        position: posicion,
+        isPrimary: imagen.isPrimary,
+        color: imagen.color,
+      })),
     };
 
-    setGuardando(true);
+    setGuardando("Guardando…");
     const { errors } = productId
       ? await clienteDatos.models.Product.update({ productId, ...datos })
-      : await clienteDatos.models.Product.create({ productId: crypto.randomUUID(), ...datos });
-    setGuardando(false);
+      : await clienteDatos.models.Product.create({ productId: id, ...datos });
+    setGuardando("");
 
     if (errors) return setError(mensajeErrorDatos(errors));
+
+    // Las fotos quitadas se borran de S3 (solo ADMIN tiene permiso; para el resto quedan guardadas)
+    if (puedeBorrarImagenes) {
+      const quitadas = clavesOriginales.filter((clave) => !imagenes.some((imagen) => imagen.key === clave));
+      await Promise.allSettled(quitadas.map((path) => remove({ path })));
+    }
     router.push("/admin/productos");
     router.refresh();
   }
@@ -294,6 +351,22 @@ export function FormularioProducto({ productId }: { productId?: string }) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Imágenes</CardTitle>
+          <CardDescription>
+            JPG, PNG o WebP de hasta 5 MB. La principal es la que se ve en el catálogo. Se suben al guardar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EditorImagenes
+            imagenes={form.imagenes}
+            onChange={(imagenes) => cambiar("imagenes", imagenes)}
+            onError={setError}
+          />
+        </CardContent>
+      </Card>
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -301,8 +374,8 @@ export function FormularioProducto({ productId }: { productId?: string }) {
       )}
 
       <div className="flex gap-3">
-        <Button type="submit" disabled={guardando}>
-          {guardando ? "Guardando…" : editando ? "Guardar cambios" : "Crear producto"}
+        <Button type="submit" disabled={guardando !== ""}>
+          {guardando || (editando ? "Guardar cambios" : "Crear producto")}
         </Button>
         <Button asChild variant="outline">
           <Link href="/admin/productos">Cancelar</Link>
