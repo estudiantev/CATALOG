@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signIn } from "aws-amplify/auth";
+import { BotonGoogle } from "@/components/tienda/boton-google";
 import { botonCuenta, campoCuenta, errorCuenta } from "@/components/tienda/marco-cuenta";
 import { mensajeErrorIngreso } from "@/lib/errores-auth";
 
@@ -53,10 +54,7 @@ export function FormularioIngreso({ aviso }: { aviso?: string }) {
 
   return (
     <>
-      {/* Solo visual: el ingreso con Google se conectará más adelante */}
-      <button type="button" className="mx-auto mt-6 flex h-[54px] w-full max-w-74 cursor-pointer items-center justify-center border-2 border-tinta bg-white text-[18px] transition-colors hover:bg-arena">
-        Continuar con Google
-      </button>
+      <BotonGoogle />
 
       <hr className="mt-6 border-tinta" />
 

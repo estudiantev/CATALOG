@@ -3,6 +3,7 @@ import { Instrument_Serif, Jost, Playfair_Display } from "next/font/google";
 import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
+import { RetornoGoogle } from "@/components/tienda/retorno-google";
 import "./tienda.css";
 
 const jost = Jost({
@@ -41,6 +42,7 @@ export default function TiendaLayout({
     <html lang="es" className={`${jost.variable} ${playfair.variable} ${instrument.variable}`}>
       <body className="antialiased">
         <ConfigurarAmplify />
+        <RetornoGoogle />
         <Encabezado />
         <main id="contenido">{children}</main>
         <Pie />

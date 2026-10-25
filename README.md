@@ -43,6 +43,7 @@ app/
             ├── layout.tsx
             ├── page.tsx       ← /admin → /admin/productos
             ├── productos/     ← listar, nuevo, [productId] (editar)
+            ├── clientes/      ← clientes registrados (solo ADMIN)
             └── equipo/        ← agregar staff (solo ADMIN)
 
 components/
@@ -104,6 +105,7 @@ npx shadcn@latest add card input table dialog sidebar
 
 - `/registro` pide nombre, apellido, correo y contraseña. Cognito envía un código al correo; al confirmarlo la cuenta inicia sesión sola.
 - La cuenta se crea **sin grupo**: es una clienta y no tiene acceso al panel. El trigger `post-confirmation` crea su perfil `Customer`.
+- **Google:** el botón "Continuar con Google" del login y del registro usa `signInWithRedirect`. Cognito devuelve a la usuaria a la URL de `callbackUrls` y `RetornoGoogle` (en el layout de la tienda) termina el inicio de sesión; si falla o se cancela, vuelve a `/login` con un aviso. La primera vez, Cognito crea la cuenta sin grupo y `post-confirmation` crea su `Customer`. `callbackUrls` y `logoutUrls` deben incluir el origen exacto de cada entorno (por ejemplo `http://localhost:3000/` en desarrollo).
 - Si alguien se registró pero no confirmó su correo, al intentar iniciar sesión ve el enlace "Confirmar mi correo", que retoma el paso del código (`/registro?confirmar=<correo>`).
 
 ## Acceso al panel
@@ -121,6 +123,7 @@ El panel tiene tres capas, de afuera hacia adentro:
 | Eliminar productos | Sí | No | No |
 | Subir fotos | Sí | Sí | Sí |
 | Borrar fotos de S3 | Sí | No | No |
+| Ver clientes | Sí | No | No |
 | Agregar staff (Equipo) | Sí | No | No |
 
 `lib/permisos.ts` refleja esta tabla para mostrar u ocultar botones y bloquear páginas; si cambias las reglas del backend, actualízalo también. El staff entra por `/admin/login`; quien recibe una invitación cambia ahí su contraseña temporal en el primer ingreso.

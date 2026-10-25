@@ -9,13 +9,18 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ confirmada?: string }>;
+  searchParams: Promise<{ confirmada?: string; google?: string }>;
 }) {
-  const { confirmada } = await searchParams;
+  const { confirmada, google } = await searchParams;
+  const aviso = confirmada
+    ? "Tu cuenta está confirmada. Ya puedes iniciar sesión."
+    : google
+      ? "No se pudo iniciar sesión con Google. Inténtalo de nuevo o usa tu correo."
+      : undefined;
 
   return (
     <MarcoCuenta titulo="Iniciar Sesión">
-      <FormularioIngreso aviso={confirmada ? "Tu cuenta está confirmada. Ya puedes iniciar sesión." : undefined} />
+      <FormularioIngreso aviso={aviso} />
     </MarcoCuenta>
   );
 }

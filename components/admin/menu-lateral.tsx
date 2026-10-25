@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "aws-amplify/auth";
-import { LogOut, Package, Users } from "lucide-react";
+import { Contact, LogOut, Package, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,8 @@ export function MenuLateral({ correo, grupos }: { correo: string; grupos: string
 
   const opciones = [
     { titulo: "Productos", href: "/admin/productos", icono: Package, visible: true },
+    // Solo ADMIN puede leer todos los perfiles Customer
+    { titulo: "Clientes", href: "/admin/clientes", icono: Contact, visible: puede(grupos, "verClientes") },
     // Solo ADMIN puede agregar staff (la mutación agregarStaff lo exige)
     { titulo: "Equipo", href: "/admin/equipo", icono: Users, visible: puede(grupos, "agregarStaff") },
   ];

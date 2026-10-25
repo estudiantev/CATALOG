@@ -12,6 +12,7 @@ const PERMISOS = {
   eliminarProducto: ["ADMIN"],
   borrarImagenes: ["ADMIN"],
   agregarStaff: ["ADMIN"],
+  verClientes: ["ADMIN"],
 } satisfies Record<string, GrupoStaff[]>;
 
 export type Accion = keyof typeof PERMISOS;

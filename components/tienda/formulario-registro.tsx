@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { autoSignIn, confirmSignUp, resendSignUpCode, signUp } from "aws-amplify/auth";
+import { BotonGoogle } from "@/components/tienda/boton-google";
 import { botonCuenta, campoCuenta, errorCuenta } from "@/components/tienda/marco-cuenta";
 import { mensajeErrorRegistro } from "@/lib/errores-auth";
 
@@ -120,31 +121,36 @@ export function FormularioRegistro({ correoPorConfirmar }: { correoPorConfirmar?
   }
 
   return (
-    <form onSubmit={registrar} noValidate className="mx-auto mt-6 flex w-full max-w-74 flex-col items-center">
-      <label htmlFor="nombre" className="sr-only">Nombre</label>
-      <input id="nombre" autoComplete="given-name" placeholder="Nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} className={campoCuenta} />
-      <label htmlFor="apellido" className="sr-only">Apellido</label>
-      <input id="apellido" autoComplete="family-name" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} className={`${campoCuenta} mt-3`} />
-      <label htmlFor="correo" className="sr-only">Correo</label>
-      <input id="correo" type="email" autoComplete="email" placeholder="Correo" required value={correo} onChange={(e) => setCorreo(e.target.value)} className={`${campoCuenta} mt-3`} />
-      <label htmlFor="contrasena" className="sr-only">Contraseña</label>
-      <input id="contrasena" type="password" autoComplete="new-password" placeholder="Contraseña" required value={contrasena} onChange={(e) => setContrasena(e.target.value)} className={`${campoCuenta} mt-3`} />
-      <label htmlFor="repetir" className="sr-only">Repite la contraseña</label>
-      <input id="repetir" type="password" autoComplete="new-password" placeholder="Repite la contraseña" required value={repetir} onChange={(e) => setRepetir(e.target.value)} className={`${campoCuenta} mt-3`} />
-      <p className="mt-2 w-full text-[13px] leading-[18px] text-topo">
-        Mínimo 8 caracteres, con mayúsculas, minúsculas, números y símbolos.
-      </p>
+    <>
+      <BotonGoogle />
+      <hr className="mt-6 border-tinta" />
+      <form onSubmit={registrar} noValidate className="mx-auto mt-6 flex w-full max-w-74 flex-col items-center">
+        <p className="mb-4 text-[18px]">O regístrate con tu correo</p>
+        <label htmlFor="nombre" className="sr-only">Nombre</label>
+        <input id="nombre" autoComplete="given-name" placeholder="Nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} className={campoCuenta} />
+        <label htmlFor="apellido" className="sr-only">Apellido</label>
+        <input id="apellido" autoComplete="family-name" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} className={`${campoCuenta} mt-3`} />
+        <label htmlFor="correo" className="sr-only">Correo</label>
+        <input id="correo" type="email" autoComplete="email" placeholder="Correo" required value={correo} onChange={(e) => setCorreo(e.target.value)} className={`${campoCuenta} mt-3`} />
+        <label htmlFor="contrasena" className="sr-only">Contraseña</label>
+        <input id="contrasena" type="password" autoComplete="new-password" placeholder="Contraseña" required value={contrasena} onChange={(e) => setContrasena(e.target.value)} className={`${campoCuenta} mt-3`} />
+        <label htmlFor="repetir" className="sr-only">Repite la contraseña</label>
+        <input id="repetir" type="password" autoComplete="new-password" placeholder="Repite la contraseña" required value={repetir} onChange={(e) => setRepetir(e.target.value)} className={`${campoCuenta} mt-3`} />
+        <p className="mt-2 w-full text-[13px] leading-[18px] text-topo">
+          Mínimo 8 caracteres, con mayúsculas, minúsculas, números y símbolos.
+        </p>
 
-      {error && <p role="alert" className={`${errorCuenta} mt-4`}>{error}</p>}
+        {error && <p role="alert" className={`${errorCuenta} mt-4`}>{error}</p>}
 
-      <button type="submit" disabled={enviando} className={`${botonCuenta} mt-5`}>
-        {enviando ? "Creando cuenta…" : "Crear cuenta"}
-      </button>
+        <button type="submit" disabled={enviando} className={`${botonCuenta} mt-5`}>
+          {enviando ? "Creando cuenta…" : "Crear cuenta"}
+        </button>
 
-      <p className="mt-3 text-[15px]">
-        ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="underline underline-offset-2">Inicia sesión</Link>
-      </p>
-    </form>
+        <p className="mt-3 text-[15px]">
+          ¿Ya tienes cuenta?{" "}
+          <Link href="/login" className="underline underline-offset-2">Inicia sesión</Link>
+        </p>
+      </form>
+    </>
   );
 }
