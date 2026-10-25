@@ -20,7 +20,8 @@ export const auth = defineAuth({
       // correo de invitación para los usuarios del panel de administración
       userInvitation: {
         emailSubject: invitationEmail.asunto,
-        emailBody: (user, code) => invitationEmail.cuerpo(user(), code()),
+        // Amplify entrega (usuario, contraseña temporal); la plantilla recibe (código, usuario)
+        emailBody: (user, code) => invitationEmail.cuerpo(code(), user()),
       },
     },
     /*
