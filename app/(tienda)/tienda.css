@@ -1,0 +1,27 @@
+/*
+ * CSS de la TIENDA: solo Tailwind, sin shadcn.
+ * source(none) desactiva el escaneo automático de todo el proyecto, así este
+ * archivo solo incluye las clases que usan la tienda y los componentes compartidos.
+ */
+@import "tailwindcss" source(none);
+
+@source "./";
+@source "../../components/tienda";
+@source "../../components/compartido";
+
+/* Colores y tipografía de marca: los mismos de los correos (amplify/auth/custom-message/base.ts) */
+@theme {
+  --color-negro: #1c1a1b;
+  --color-bronce: #cb9e4a;
+  --color-cafe: #4e453d;
+  --color-gris: #786c60;
+  --color-crema: #fbf6f1;
+
+  --font-titulo: Georgia, "Times New Roman", serif;
+}
+
+@layer base {
+  body {
+    @apply bg-crema text-cafe;
+  }
+}
