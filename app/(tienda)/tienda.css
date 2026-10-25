@@ -9,19 +9,38 @@
 @source "../../components/tienda";
 @source "../../components/compartido";
 
-/* Colores y tipografía de marca: los mismos de los correos (amplify/auth/custom-message/base.ts) */
+/* Paleta del rediseño de FARA Collections */
 @theme {
-  --color-negro: #1c1a1b;
-  --color-bronce: #cb9e4a;
-  --color-cafe: #4e453d;
-  --color-gris: #786c60;
+  --color-tinta: #111111;
+  --color-carbon: #1c1a1b;
+  --color-grafito: #373435;
+  --color-topo: #6d635a;
+  --color-piedra: #c1ae9b;
+  --color-dorado: #b8975a;
+  --color-champan: #e5c88f;
+  --color-durazno: #fceedd;
+  --color-arena: #e5dace;
+  --color-lino: #f2eae1;
   --color-crema: #fbf6f1;
+  --color-vino: #9b1b3a;
 
-  --font-titulo: Georgia, "Times New Roman", serif;
+  /* Desde aquí se muestra el menú de escritorio (el diseño cambia a móvil en 860px) */
+  --breakpoint-menu: 53.8125rem;
+}
+
+/* Las fuentes las carga next/font en app/(tienda)/layout.tsx */
+@theme inline {
+  --font-sans: var(--font-jost), "Futura", "Century Gothic", system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
 @layer base {
   body {
-    @apply bg-crema text-cafe;
+    @apply bg-crema text-tinta;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    @apply outline-2 outline-offset-3 outline-tinta;
   }
 }

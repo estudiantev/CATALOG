@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { fetchAuthSession } from "aws-amplify/auth/server";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
+import { esStaff } from "@/lib/permisos";
 
-// Grupos de Cognito que pueden entrar al panel (amplify/auth/resource.ts)
-const GRUPOS_STAFF = ["ADMIN", "INVENTORY", "MARKETING"];
-
-// Esto es experiencia de usuario, no seguridad: los permisos reales los aplican AppSync y S3
+// Primera barrera del panel. Las páginas vuelven a verificar en el servidor
+// (lib/sesion-servidor.ts) y AppSync/S3 aplican los permisos reales.
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
@@ -24,11 +23,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const esStaff = grupos?.some((grupo) => GRUPOS_STAFF.includes(grupo)) ?? false;
+  const staff = grupos !== null && esStaff(grupos);
 
   if (request.nextUrl.pathname === "/admin/login") {
     // Si ya entró como staff no tiene sentido mostrarle el login
-    return esStaff ? NextResponse.redirect(new URL("/admin", request.url)) : response;
+    return staff ? NextResponse.redirect(new URL("/admin", request.url)) : response;
   }
 
   if (grupos === null) {
@@ -36,7 +35,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Una clienta con sesión iniciada vuelve a la tienda
-  if (!esStaff) {
+  if (!staff) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
