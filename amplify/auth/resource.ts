@@ -1,4 +1,4 @@
-import { defineAuth } from "@aws-amplify/backend"
+import { defineAuth, secret } from "@aws-amplify/backend"
 import { verificationEmail } from "./custom-message/templates/verification";
 import { invitationEmail } from "./custom-message/templates/invitation";
 import { customMessage } from "./custom-message/resource";
@@ -36,12 +36,15 @@ export const auth = defineAuth({
           familyName: 'family_name',
         },
       }, 
+      // Cada origen desde el que se usa la tienda (Amplify elige el que coincide con la página)
       callbackUrls: [
-        'http://localhost:5173/',
+        'http://localhost:3000/',
+        'https://fara-collections.d35qdjx3oi4aak.amplifyapp.com/',
         'https://www.dominiodeprueba.click/'
       ],
       logoutUrls: [
-        'http://localhost:5173/',
+        'http://localhost:3000/',
+        'https://fara-collections.d35qdjx3oi4aak.amplifyapp.com/',
         'https://www.dominiodeprueba.click/'
       ],
     },
