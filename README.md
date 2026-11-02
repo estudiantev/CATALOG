@@ -42,7 +42,7 @@ app/
         └── (panel)/           ← páginas con el menú lateral; verifican la sesión
             ├── layout.tsx
             ├── page.tsx       ← /admin → /admin/productos
-            ├── productos/     ← listar, nuevo, [productId] (editar)
+            ├── productos/     ← listar, nuevo, [productId] (datos y variantes), [productId]/variantes/…
             ├── clientes/      ← clientes registrados (solo ADMIN)
             └── equipo/        ← agregar staff (solo ADMIN)
 
@@ -55,8 +55,10 @@ components/
 lib/
 ├── amplify-server.ts          ← runWithAmplifyServerContext (Amplify en el servidor)
 ├── sesion-servidor.ts         ← obtenerSesion() y requerirStaff() para el panel
-├── catalogo.ts                ← lee el catálogo en el servidor, como visitante
-├── productos.ts               ← tipos y etiquetas de Product (tienda y panel)
+├── catalogo.ts                ← lee el catálogo y el detalle en el servidor, como visitante
+├── productos.ts               ← tipos, listas fijas (tallas, largos, escotes…) y etiquetas
+├── variantes.ts               ← resumen de variantes, tarjeta del catálogo y selector del detalle
+├── resumen.ts                 ← guarda en Product el resumen de sus variantes
 ├── permisos.ts                ← qué grupo puede hacer cada acción
 ├── errores-auth.ts            ← mensajes de error del login
 └── utils.ts                   ← cn() para combinar clases
@@ -90,16 +92,47 @@ npx shadcn@latest add card input table dialog sidebar
 
 `components.json` ya está configurado: los componentes se crean en `components/admin/ui/` y sus variables se escriben en `app/(admin)/admin.css`.
 
-## Catálogo y fotos
+## Productos y variantes
 
-- **Fotos (panel):** en el formulario de producto, "Agregar imágenes" acepta imágenes de hasta 5 MB. Se suben a S3 al guardar, en `product-images/<productId>/`, y la marcada como principal es la que se ve en el catálogo y en la tabla. Al quitar una foto o eliminar un producto, las fotos se borran de S3 solo si eres ADMIN (es el único grupo con permiso de borrar en `amplify/storage/resource.ts`); para el resto se desvinculan del producto.
-- **Catálogo (tienda):** `/catalogo` lee los productos en el servidor como visitante (Product y las fotos permiten lectura a invitados), con URLs firmadas de S3 que duran una hora; por eso la página se genera en cada visita.
-- **Filtros:** búsqueda, categoría, color y talla se aplican en el navegador sobre los productos ya cargados. Los enlaces del menú llegan como filtros iniciales: `?color=` elige la familia de color, `?categoria=accesorios` la categoría, y `?coleccion=gala|xv|cortos|floreados` busca esa palabra en la ocasión, silueta, etiquetas y descripción. Para que un vestido salga en "De Gala", escribe "Gala" en su ocasión o etiquetas.
+Los datos están en dos tablas (`amplify/data/resource.ts`):
+
+- **`Product`**: los datos generales (nombre, categoría, descripción, marca, diseñador, ocasión, material, características) y un **resumen** de sus variantes que el panel recalcula solo: precios "desde", `available*` (tallas, largos, escotes, mangas, siluetas con stock), `colorFamilies` y `variantSummary` (una fila por variante con sus opciones, precios, si tiene stock y las rutas de su portada y contraportada). El resumen nunca se edita a mano.
+- **`ProductVariant`**: cada combinación vendible. Sus 6 opciones (talla, largo, escote, manga, silueta, familia de color, más el nombre y el tono del color), precio de venta, alquiler por día, stock, posición, SKU y hasta 6 fotos en orden (1 = portada, 2 = contraportada).
+
+Qué cambia con cada opción lo deciden los datos, no el código: si dos variantes solo difieren en la talla y tienen las mismas fotos, la talla cambia solo el precio; si el largo trae otras fotos y otro precio, cambia ambos; si el color solo trae otras fotos, cambia solo las fotos. Por eso conviene llenar todas las opciones que apliquen aunque se repitan entre variantes.
+
+**Consultas (nunca un Scan):**
+
+| Para qué | Cómo |
+| --- | --- |
+| Catálogo de una categoría | Query al índice `listProductByCategory`; solo lee `Product` (el resumen trae todo lo necesario) |
+| Detalle | `Product.get` + Query al índice `listVariantsByProduct`, en paralelo y paginando |
+| Panel: variantes de un producto y recálculo del resumen | Query a `listVariantsByProduct` (el cargador `producto.variants()` de Amplify hace un Scan con filtro, por eso no se usa) |
+
+### Panel
+
+1. **Nuevo producto**: solo los datos generales. Al guardarlo se abre su página para agregar variantes; sin al menos una variante con stock no aparece en la tienda.
+2. **Variantes** (en la página del producto): tabla con las columnas de las opciones que el producto usa, precios, stock (o "Agotada") y acciones para editar, **duplicar** (abre una copia con las mismas fotos para cambiar, por ejemplo, solo la talla) y eliminar (solo ADMIN).
+3. **Fotos**: hasta 6 por variante, de hasta 5 MB. Al guardar se suben a `product-images/<productId>/` junto con una **versión liviana** (600 px, WebP) que usan el catálogo y las miniaturas. "Usar las fotos de otra variante" reutiliza las de otra combinación sin subirlas de nuevo. Una foto se borra de S3 solo cuando ninguna variante la usa y quien edita es ADMIN.
+4. No se pueden guardar dos variantes con la misma combinación de opciones.
+5. Después de cada cambio de variantes, la acción de servidor `recalcularResumen` (en `productos/acciones.ts`) relee todas las variantes, guarda el resumen en `Product` y ejecuta `revalidateTag("catalogo")`. Si algo falla, el botón **Actualizar resumen** del producto lo vuelve a hacer.
+
+### Catálogo (tienda)
+
+- `/catalogo?categoria=vestidos|joyas|accesorios` (vestidos si no se indica). Los datos de DynamoDB se guardan en caché 10 minutos por categoría y el panel la invalida al guardar; las URLs de las fotos se firman en cada visita (duran una hora), así nunca llegan vencidas.
+- **Filtros** en el navegador, sin volver a consultar la base: talla, largo, escote, manga, silueta y color (se pueden marcar varios valores), más ocasión, marca, diseñador, características y búsqueda de texto (sin importar tildes ni mayúsculas). Solo aparecen los valores que tienen stock.
+- Cada tarjeta muestra la variante con stock que cumple **todos** los filtros: su portada (y la contraportada al pasar el cursor), el menor precio de venta y de alquiler por día entre las que cumplen ("Desde" si quedan precios distintos) y un enlace a `/catalogo/<productId>?v=<variantId>` con esa combinación ya elegida. Si ninguna variante con stock cumple, el producto no se muestra.
+- Los enlaces del menú llegan como filtros iniciales: `?color=` marca la familia de color y `?coleccion=gala|xv|cortos|floreados` busca esa palabra en la ocasión, descripción, características y siluetas. Para que un vestido salga en "De Gala", escribe "Gala" en su ocasión o características.
 
 ## Detalle del producto
 
-- Cada tarjeta del catálogo abre `/catalogo/<productId>`: galería con la foto principal y miniaturas a la izquierda; a la derecha categoría, nombre, descripción, precios de venta y alquiler, el botón **Contactar** y los atributos (ocasión, silueta, material, tallas, colores y etiquetas).
-- **Contactar** abre WhatsApp con el mensaje "Hola, quisiera consultar sobre <producto> en Fara Collection.". El usuario de WhatsApp de la empresa está en `WHATSAPP_FARA` (`components/tienda/datos.ts`): reemplaza `519XXXXXXXX` por el número real.
+- `/catalogo/<productId>?v=<variantId>` abre la combinación del enlace (o la primera con stock). A la izquierda, las fotos de esa variante; a la derecha categoría, nombre, descripción, precio de venta y de alquiler por día, el selector de opciones, **Contactar** y los datos generales.
+- **Selector**: al tocar un valor se pasa a la variante con stock que lo tiene y que más opciones comparte con la actual, así nunca queda en una combinación que no existe. Los valores con borde punteado cambian también otras opciones; los agotados no se pueden elegir. La URL se actualiza (`?v=`) para poder compartir esa combinación.
+- **Contactar** abre WhatsApp con el producto y la combinación elegida (por ejemplo "Hola, quisiera consultar sobre Vestido Aurora (Talla: M, Largo: Midi, Color: Vino) en Fara Collection."). El usuario de WhatsApp de la empresa está en `WHATSAPP_FARA` (`components/tienda/datos.ts`): reemplaza `519XXXXXXXX` por el número real.
+
+### Productos creados antes de las variantes
+
+Los productos guardados con el modelo anterior (precios, tallas, colores y fotos en `Product`) no tienen variantes, así que no se muestran en la tienda. Ábrelos en el panel y agrega sus variantes (o vuelve a crearlos). Los que no tenían categoría tampoco aparecen en el índice por categoría: edítalos y elige una.
 
 ## Registro de clientas
 
@@ -118,9 +151,9 @@ El panel tiene tres capas, de afuera hacia adentro:
 
 | Acción | ADMIN | INVENTORY | MARKETING |
 | --- | --- | --- | --- |
-| Ver y editar productos | Sí | Sí | Sí |
-| Crear productos | Sí | Sí | No |
-| Eliminar productos | Sí | No | No |
+| Ver y editar productos y variantes | Sí | Sí | Sí |
+| Crear productos y variantes | Sí | Sí | No |
+| Eliminar productos y variantes | Sí | No | No |
 | Subir fotos | Sí | Sí | Sí |
 | Borrar fotos de S3 | Sí | No | No |
 | Ver clientes | Sí | No | No |

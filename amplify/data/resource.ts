@@ -23,17 +23,11 @@ const schema = a.schema({
     reference: a.string(),
     isDefault: a.boolean(),
   }),
-  ProductColor: a.customType({
-    name: a.string().required(),             // "Rosa palo" → lo que ve la clienta
-    hex: a.string(),                         // "#F4C2C2" → para pintar el círculo
-    family: a.ref('ColorFamily').required(), // PINK → agrupa tonos parecidos
-  }),
   ProductImage: a.customType({
-    key: a.string().required(), // ruta en S3, ej. "product-images/123/front.jpg" (debe coincidir con Storage)
+    key: a.string().required(), // foto grande para el detalle, en S3: "product-images/<productId>/..."
+    thumbKey: a.string(),       // versión liviana para el catálogo; si no hay, se usa key
     alt: a.string(),
-    position: a.integer(),      // orden en la galería
-    color: a.string(),          // nombre del ProductColor al que corresponde la foto
-    isPrimary: a.boolean(),
+    position: a.integer(),      // 1 = portada, 2 = contraportada, 3..6 = resto
   }),
 
   // Tabla: Clientes de la aplicación
@@ -69,33 +63,76 @@ const schema = a.schema({
     .identifier(['customerId'])
     .authorization((allow) => [allow.owner(), allow.group('ADMIN')]),
 
-  // Tabla: Productos de la empresa
+  // Tabla: Productos. Datos generales + un RESUMEN de sus variantes para el catálogo.
+  // El resumen lo calcula el panel desde ProductVariant (lib/variantes.ts); nunca se edita a mano.
   Product: a
     .model({
       productId: a.id().required(),
-      name: a.string(),
-      category: a.enum(['DRESS', 'JEWELRY', 'ACCESSORY']),
+      category: a.string().required(), // "DRESS" | "JEWELRY" | "ACCESSORY" (lib/productos.ts)
+      name: a.string().required(),
       description: a.string(),
-      // marca: a.string(),
+      brand: a.string(),
+      designer: a.string(),
       occasion: a.string(),
-      // collection: a.string(),
-      tags: a.string().array(),
       material: a.string(),
-      silhouette: a.string(),
-      priceSale: a.float().required(),
+      tags: a.string().array(), // características
+
+      // Resumen
+      priceSale: a.float().required(), // "desde", sin filtros
       priceRent: a.float().required(),
       availableSizes: a.ref('Size').array(),
-      availableColors: a.ref('ProductColor').array(),
-      colorFamilies: a.ref('ColorFamily').array(), // copia plana de las familias, para filtrar
-      imagenes: a.ref('ProductImage').array(),
+      availableLengths: a.string().array(),
+      availableNecklines: a.string().array(),
+      availableSleeves: a.string().array(),
+      availableSilhouettes: a.string().array(),
+      colorFamilies: a.ref('ColorFamily').array(),
+      variantSummary: a.json(), // una fila por variante: opciones, precio, stock, portada y contraportada
+
+      variants: a.hasMany('ProductVariant', 'productId'),
     })
     .identifier(['productId'])
+    .secondaryIndexes((index) => [index('category').queryField('listProductByCategory')])
     .authorization((allow) => [
       allow.guest().to(['read']),
       allow.authenticated().to(['read']),
-      allow.groups(['INVENTORY']).to(['create', 'read', 'update']), // NUEVO
-      allow.groups(['MARKETING']).to(['read', 'update']),           // NUEVO
-      allow.group('ADMIN'), // solo ADMIN puede borrar productos
+      allow.groups(['INVENTORY']).to(['create', 'read', 'update']),
+      allow.groups(['MARKETING']).to(['read', 'update']),
+      allow.group('ADMIN'), // solo ADMIN puede borrar
+    ]),
+
+  // Tabla: cada combinación real de un producto, con su precio, su stock y sus fotos.
+  // Joyas y accesorios llevan una sola variante, sin talla.
+  ProductVariant: a
+    .model({
+      productId: a.id().required(),
+      product: a.belongsTo('Product', 'productId'),
+      position: a.integer(), // orden; la primera es la que se ve sin filtros
+      sku: a.string(),
+
+      // Los 6 valores que filtra el catálogo (se llenan aunque se repitan entre variantes)
+      size: a.ref('Size'),
+      length: a.string(),     // largo
+      neckline: a.string(),   // escote
+      sleeve: a.string(),     // manga
+      silhouette: a.string(),
+      colorFamily: a.ref('ColorFamily'),
+      colorName: a.string(),  // "Rojo vino", para el detalle
+      colorHex: a.string(),
+
+      priceSale: a.float().required(),
+      priceRent: a.float().required(), // por día
+      stock: a.integer().default(0),
+      images: a.ref('ProductImage').array(), // ~6, en orden
+    })
+    // AP-09: las variantes de un producto con un Query a este índice. El cargador
+    // producto.variants() del cliente hace un Scan de toda la tabla con filtro, por eso no se usa.
+    .secondaryIndexes((index) => [index('productId').queryField('listVariantsByProduct')])
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+      allow.groups(['INVENTORY']).to(['create', 'read', 'update']),
+      allow.groups(['MARKETING']).to(['read', 'update']),
+      allow.group('ADMIN'), // solo ADMIN puede borrar
     ]),
 
   // NUEVO: el ADMIN crea cuentas de INVENTORY o MARKETING

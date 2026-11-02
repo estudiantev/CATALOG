@@ -5,11 +5,15 @@ import { useState } from "react";
 
 const marco = "relative aspect-[9/11] overflow-hidden border border-arena bg-lino";
 
-// Foto grande y, si hay varias, miniaturas para cambiarla
-export function GaleriaProducto({ imagenes }: { imagenes: { url: string; alt: string }[] }) {
-  const [actual, setActual] = useState(0);
+export type FotoGaleria = { url: string; miniatura: string; alt: string };
 
-  if (imagenes.length === 0) {
+// Foto grande y, si hay varias, miniaturas (versión liviana) para cambiarla
+export function GaleriaProducto({ fotos }: { fotos: FotoGaleria[] }) {
+  const [elegida, setElegida] = useState(0);
+  // Al cambiar de variante puede haber menos fotos que antes
+  const actual = Math.min(elegida, fotos.length - 1);
+
+  if (fotos.length === 0) {
     return (
       <div className={`${marco} flex items-center justify-center`}>
         <span className="text-[13px] tracking-[0.1em] text-topo uppercase">Sin foto</span>
@@ -21,8 +25,8 @@ export function GaleriaProducto({ imagenes }: { imagenes: { url: string; alt: st
     <div className="flex flex-col gap-3">
       <div className={marco}>
         <Image
-          src={imagenes[actual].url}
-          alt={imagenes[actual].alt}
+          src={fotos[actual].url}
+          alt={fotos[actual].alt}
           fill
           unoptimized
           priority
@@ -30,18 +34,18 @@ export function GaleriaProducto({ imagenes }: { imagenes: { url: string; alt: st
           className="object-cover"
         />
       </div>
-      {imagenes.length > 1 && (
-        <ul className="grid grid-cols-5 gap-2">
-          {imagenes.map((imagen, i) => (
-            <li key={imagen.url}>
+      {fotos.length > 1 && (
+        <ul className="grid grid-cols-6 gap-2">
+          {fotos.map((foto, i) => (
+            <li key={foto.url}>
               <button
                 type="button"
-                aria-label={`Ver foto ${i + 1} de ${imagenes.length}`}
+                aria-label={`Ver foto ${i + 1} de ${fotos.length}`}
                 aria-current={i === actual}
-                onClick={() => setActual(i)}
+                onClick={() => setElegida(i)}
                 className={`relative block aspect-[9/11] w-full cursor-pointer overflow-hidden border-2 bg-lino ${i === actual ? "border-tinta" : "border-transparent hover:border-arena"}`}
               >
-                <Image src={imagen.url} alt="" fill unoptimized sizes="90px" className="object-cover" />
+                <Image src={foto.miniatura} alt="" fill unoptimized sizes="80px" className="object-cover" />
               </button>
             </li>
           ))}

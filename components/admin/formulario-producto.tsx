@@ -3,13 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { getUrl, remove } from "aws-amplify/storage";
-import { EditorImagenes, type ImagenFormulario, subirImagenes } from "@/components/admin/editor-imagenes";
+import { invalidarCatalogo } from "@/app/(admin)/admin/(panel)/productos/acciones";
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Button } from "@/components/admin/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/admin/ui/card";
-import { Checkbox } from "@/components/admin/ui/checkbox";
 import { Input } from "@/components/admin/ui/input";
 import { Label } from "@/components/admin/ui/label";
 import {
@@ -22,110 +19,60 @@ import {
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import { Textarea } from "@/components/admin/ui/textarea";
 import { clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import {
-  CATEGORIAS,
-  type Categoria,
-  type ColorProducto,
-  FAMILIAS_COLOR,
-  type ImagenProducto,
-  type Producto,
-  TALLAS,
-  type Talla,
-} from "@/lib/productos";
+import { CATEGORIAS, type Categoria, type Producto } from "@/lib/productos";
 
+// Datos generales del producto. Precios, tallas, colores y fotos van en sus variantes,
+// y el resumen que usa el catálogo se recalcula desde ellas.
 type Formulario = {
   name: string;
   category: Categoria | "";
   description: string;
+  brand: string;
+  designer: string;
   occasion: string;
-  tags: string;
   material: string;
-  silhouette: string;
-  priceSale: string;
-  priceRent: string;
-  availableSizes: Talla[];
-  availableColors: ColorProducto[];
-  imagenes: ImagenFormulario[];
+  tags: string;
 };
 
 const VACIO: Formulario = {
   name: "",
   category: "",
   description: "",
+  brand: "",
+  designer: "",
   occasion: "",
-  tags: "",
   material: "",
-  silhouette: "",
-  priceSale: "",
-  priceRent: "",
-  availableSizes: [],
-  availableColors: [],
-  imagenes: [],
+  tags: "",
 };
 
-async function desdeProducto(p: Producto): Promise<Formulario> {
-  const imagenes = (p.imagenes ?? [])
-    .filter((imagen): imagen is ImagenProducto => imagen !== null)
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-  return {
-    name: p.name ?? "",
-    category: p.category ?? "",
-    description: p.description ?? "",
-    occasion: p.occasion ?? "",
-    tags: (p.tags ?? []).filter(Boolean).join(", "),
-    material: p.material ?? "",
-    silhouette: p.silhouette ?? "",
-    priceSale: String(p.priceSale),
-    priceRent: String(p.priceRent),
-    availableSizes: (p.availableSizes ?? []).filter((t): t is Talla => t !== null),
-    // Solo los campos del input: AppSync rechaza campos extra como __typename
-    availableColors: (p.availableColors ?? [])
-      .filter((c): c is ColorProducto => c !== null)
-      .map(({ name, hex, family }) => ({ name, hex, family })),
-    imagenes: await Promise.all(
-      imagenes.map(async (imagen) => ({
-        id: imagen.key,
-        key: imagen.key,
-        archivo: null,
-        // URL firmada para la vista previa; si falla se muestra un ícono
-        vistaPrevia: await getUrl({ path: imagen.key })
-          .then(({ url }) => url.toString())
-          .catch(() => ""),
-        alt: imagen.alt ?? "",
-        isPrimary: imagen.isPrimary ?? false,
-        color: imagen.color ?? null,
-      })),
-    ),
-  };
-}
+const desdeProducto = (p: Producto): Formulario => ({
+  name: p.name,
+  category: (CATEGORIAS.find((c) => c.valor === p.category)?.valor ?? "") as Categoria | "",
+  description: p.description ?? "",
+  brand: p.brand ?? "",
+  designer: p.designer ?? "",
+  occasion: p.occasion ?? "",
+  material: p.material ?? "",
+  tags: (p.tags ?? []).filter(Boolean).join(", "),
+});
 
 // Texto vacío → null, para que AppSync borre el valor al editar
 const textoONulo = (valor: string) => valor.trim() || null;
 
-export function FormularioProducto({
-  productId,
-  puedeBorrarImagenes,
-}: {
-  productId?: string;
-  puedeBorrarImagenes: boolean;
-}) {
+export function FormularioProducto({ productId }: { productId?: string }) {
   const router = useRouter();
   const editando = productId !== undefined;
-  // Al crear, el id se genera antes para subir las fotos a su carpeta
-  const [idNuevo] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState<Formulario | null>(editando ? null : VACIO);
-  const [clavesOriginales, setClavesOriginales] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [guardando, setGuardando] = useState("");
+  const [guardado, setGuardado] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     if (!productId) return;
-    clienteDatos.models.Product.get({ productId }).then(async ({ data, errors }) => {
-      if (errors) return setError(mensajeErrorDatos(errors));
+    clienteDatos.models.Product.get({ productId }).then(({ data, errors }) => {
+      if (errors?.length) return setError(mensajeErrorDatos(errors));
       if (!data) return setError("No encontramos este producto.");
-      const cargado = await desdeProducto(data);
-      setClavesOriginales(cargado.imagenes.flatMap((imagen) => (imagen.key ? [imagen.key] : [])));
-      setForm(cargado);
+      setForm(desdeProducto(data));
     });
   }, [productId]);
 
@@ -139,83 +86,60 @@ export function FormularioProducto({
     );
   }
 
-  const cambiar = <K extends keyof Formulario>(campo: K, valor: Formulario[K]) =>
+  const cambiar = <K extends keyof Formulario>(campo: K, valor: Formulario[K]) => {
+    setGuardado(false);
     setForm({ ...form, [campo]: valor });
-
-  const cambiarColor = (indice: number, cambios: Partial<ColorProducto>) =>
-    cambiar(
-      "availableColors",
-      form.availableColors.map((color, i) => (i === indice ? { ...color, ...cambios } : color)),
-    );
+  };
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!form) return;
     setError("");
-
-    const priceSale = Number.parseFloat(form.priceSale);
-    const priceRent = Number.parseFloat(form.priceRent);
     if (!form.name.trim()) return setError("Escribe el nombre del producto.");
-    if (!(priceSale >= 0) || !(priceRent >= 0)) return setError("Escribe precios válidos de venta y alquiler.");
-    if (form.availableColors.some((color) => !color.name.trim())) return setError("Cada color necesita un nombre.");
-
-    const id = productId ?? idNuevo;
-    let imagenes: ImagenFormulario[];
-    try {
-      setGuardando("Subiendo imágenes…");
-      imagenes = await subirImagenes(id, form.imagenes);
-      // Si el guardado falla, al reintentar no se vuelven a subir
-      setForm({ ...form, imagenes });
-    } catch {
-      setGuardando("");
-      return setError("No se pudieron subir las imágenes. Inténtalo de nuevo.");
-    }
+    if (!form.category) return setError("Elige una categoría.");
 
     const datos = {
       name: form.name.trim(),
-      category: form.category || null,
+      category: form.category,
       description: textoONulo(form.description),
+      brand: textoONulo(form.brand),
+      designer: textoONulo(form.designer),
       occasion: textoONulo(form.occasion),
-      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       material: textoONulo(form.material),
-      silhouette: textoONulo(form.silhouette),
-      priceSale,
-      priceRent,
-      availableSizes: form.availableSizes,
-      availableColors: form.availableColors.map((color) => ({ ...color, name: color.name.trim() })),
-      // Copia plana de las familias para filtrar el catálogo por color
-      colorFamilies: Array.from(new Set(form.availableColors.map((color) => color.family))),
-      imagenes: imagenes.map((imagen, posicion) => ({
-        key: imagen.key as string,
-        alt: textoONulo(imagen.alt),
-        position: posicion,
-        isPrimary: imagen.isPrimary,
-        color: imagen.color,
-      })),
+      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
     };
 
-    setGuardando("Guardando…");
+    setGuardando(true);
+    const nuevoId = crypto.randomUUID();
     const { errors } = productId
       ? await clienteDatos.models.Product.update({ productId, ...datos })
-      : await clienteDatos.models.Product.create({ productId: id, ...datos });
-    setGuardando("");
-
-    if (errors) return setError(mensajeErrorDatos(errors));
-
-    // Las fotos quitadas se borran de S3 (solo ADMIN tiene permiso; para el resto quedan guardadas)
-    if (puedeBorrarImagenes) {
-      const quitadas = clavesOriginales.filter((clave) => !imagenes.some((imagen) => imagen.key === clave));
-      await Promise.allSettled(quitadas.map((path) => remove({ path })));
+      : // Sin variantes todavía: no aparece en el catálogo hasta que tenga al menos una con stock
+        await clienteDatos.models.Product.create({ productId: nuevoId, ...datos, priceSale: 0, priceRent: 0, variantSummary: "[]" });
+    if (errors?.length) {
+      setGuardando(false);
+      return setError(mensajeErrorDatos(errors));
     }
-    router.push("/admin/productos");
-    router.refresh();
+    // Si falla, el catálogo igual se actualiza solo en 10 minutos
+    await invalidarCatalogo().catch(() => {});
+    setGuardando(false);
+
+    if (productId) {
+      setGuardado(true);
+      router.refresh();
+    } else {
+      // Al crear, se sigue con sus variantes
+      router.push(`/admin/productos/${nuevoId}?nuevo=1`);
+    }
   }
 
   return (
     <form onSubmit={guardar} noValidate className="max-w-3xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Información</CardTitle>
+          <CardTitle>Datos generales</CardTitle>
+          <CardDescription>
+            Precios, tallas, colores, stock y fotos se cargan en cada variante.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
@@ -239,6 +163,14 @@ export function FormularioProducto({
             <Label htmlFor="occasion">Ocasión</Label>
             <Input id="occasion" placeholder="Gala, XV, cóctel…" value={form.occasion} onChange={(e) => cambiar("occasion", e.target.value)} />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="brand">Marca</Label>
+            <Input id="brand" value={form.brand} onChange={(e) => cambiar("brand", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="designer">Diseñador</Label>
+            <Input id="designer" value={form.designer} onChange={(e) => cambiar("designer", e.target.value)} />
+          </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="description">Descripción</Label>
             <Textarea id="description" value={form.description} onChange={(e) => cambiar("description", e.target.value)} />
@@ -248,122 +180,9 @@ export function FormularioProducto({
             <Input id="material" value={form.material} onChange={(e) => cambiar("material", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="silhouette">Silueta</Label>
-            <Input id="silhouette" placeholder="Sirena, princesa…" value={form.silhouette} onChange={(e) => cambiar("silhouette", e.target.value)} />
+            <Label htmlFor="tags">Características</Label>
+            <Input id="tags" placeholder="Separadas por comas: brillos, cola, pedrería" value={form.tags} onChange={(e) => cambiar("tags", e.target.value)} />
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="tags">Etiquetas</Label>
-            <Input id="tags" placeholder="Separadas por comas: largo, brillos, escote en V" value={form.tags} onChange={(e) => cambiar("tags", e.target.value)} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Precios</CardTitle>
-          <CardDescription>En soles (S/).</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="priceSale">Precio de venta</Label>
-            <Input id="priceSale" type="number" min="0" step="0.01" inputMode="decimal" value={form.priceSale} onChange={(e) => cambiar("priceSale", e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="priceRent">Precio de alquiler</Label>
-            <Input id="priceRent" type="number" min="0" step="0.01" inputMode="decimal" value={form.priceRent} onChange={(e) => cambiar("priceRent", e.target.value)} required />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tallas disponibles</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-x-6 gap-y-3">
-          {TALLAS.map((talla) => (
-            <div key={talla.valor} className="flex items-center gap-2">
-              <Checkbox
-                id={`talla-${talla.valor}`}
-                checked={form.availableSizes.includes(talla.valor)}
-                onCheckedChange={(marcado) =>
-                  cambiar(
-                    "availableSizes",
-                    marcado
-                      ? TALLAS.map((t) => t.valor).filter((t) => t === talla.valor || form.availableSizes.includes(t))
-                      : form.availableSizes.filter((t) => t !== talla.valor),
-                  )
-                }
-              />
-              <Label htmlFor={`talla-${talla.valor}`}>{talla.nombre}</Label>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Colores</CardTitle>
-          <CardDescription>La familia agrupa tonos parecidos para los filtros del catálogo.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {form.availableColors.map((color, i) => (
-            <div key={i} className="flex flex-wrap items-end gap-3">
-              <div className="min-w-40 flex-1 space-y-2">
-                <Label htmlFor={`color-nombre-${i}`}>Nombre</Label>
-                <Input id={`color-nombre-${i}`} placeholder="Rosa palo" value={color.name} onChange={(e) => cambiarColor(i, { name: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`color-hex-${i}`}>Tono</Label>
-                <Input id={`color-hex-${i}`} type="color" className="w-16 p-1" value={color.hex ?? "#000000"} onChange={(e) => cambiarColor(i, { hex: e.target.value })} />
-              </div>
-              <div className="w-40 space-y-2">
-                <Label htmlFor={`color-familia-${i}`}>Familia</Label>
-                <Select value={color.family} onValueChange={(valor) => cambiarColor(i, { family: valor as ColorProducto["family"] })}>
-                  <SelectTrigger id={`color-familia-${i}`} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FAMILIAS_COLOR.map((f) => (
-                      <SelectItem key={f.valor} value={f.valor}>{f.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Quitar color"
-                onClick={() => cambiar("availableColors", form.availableColors.filter((_, j) => j !== i))}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => cambiar("availableColors", [...form.availableColors, { name: "", hex: "#000000", family: "BLACK" }])}
-          >
-            <Plus />
-            Agregar color
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Imágenes</CardTitle>
-          <CardDescription>
-            JPG, PNG o WebP de hasta 5 MB. La principal es la que se ve en el catálogo. Se suben al guardar.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EditorImagenes
-            imagenes={form.imagenes}
-            onChange={(imagenes) => cambiar("imagenes", imagenes)}
-            onError={setError}
-          />
         </CardContent>
       </Card>
 
@@ -372,13 +191,18 @@ export function FormularioProducto({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      {guardado && (
+        <Alert>
+          <AlertDescription>Cambios guardados.</AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex gap-3">
-        <Button type="submit" disabled={guardando !== ""}>
-          {guardando || (editando ? "Guardar cambios" : "Crear producto")}
+        <Button type="submit" disabled={guardando}>
+          {guardando ? "Guardando…" : editando ? "Guardar datos generales" : "Crear y agregar variantes"}
         </Button>
         <Button asChild variant="outline">
-          <Link href="/admin/productos">Cancelar</Link>
+          <Link href="/admin/productos">Volver</Link>
         </Button>
       </div>
     </form>

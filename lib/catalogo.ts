@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { generateServerClientUsingReqRes } from "@aws-amplify/adapter-nextjs/data";
 import type { AmplifyServer } from "aws-amplify/adapter-core";
@@ -8,97 +9,201 @@ import { runWithAmplifyServerContext } from "@/lib/amplify-server";
 import {
   type Categoria,
   type FamiliaColor,
-  type Producto,
+  type Opciones,
   type Talla,
-  imagenPrincipal,
+  leerJson,
+  opcionesDeVariante,
 } from "@/lib/productos";
+import { type ResumenVariante, fotosOrdenadas } from "@/lib/variantes";
 
 // Cliente de datos para el servidor: cada llamada recibe el contextSpec de runWithAmplifyServerContext
 const clienteDatosServidor = generateServerClientUsingReqRes<Schema>({ config: outputs });
 
-// Lo que la tienda necesita de cada producto (sin datos internos)
+export type Foto = { url: string; alt: string };
+
+export type VarianteCatalogo = {
+  variantId: string;
+  opciones: Opciones;
+  precioVenta: number;
+  precioAlquiler: number;
+  enStock: boolean;
+  portada: Foto | null;
+  hover: Foto | null;
+};
+
 export type ProductoCatalogo = {
   productId: string;
   nombre: string;
-  categoria: Categoria | null;
-  // Texto donde busca el filtro: ocasión, silueta, etiquetas y descripción
+  categoria: string;
   textoBusqueda: string;
-  precioVenta: number;
+  ocasion: string | null;
+  marca: string | null;
+  disenador: string | null;
+  caracteristicas: string[];
+  precioVenta: number; // "desde" sin filtros
   precioAlquiler: number;
+  // Para armar el panel de filtros
   tallas: Talla[];
+  largos: string[];
+  escotes: string[];
+  mangas: string[];
+  siluetas: string[];
   familias: FamiliaColor[];
-  imagen: { url: string; alt: string } | null;
+  variantes: VarianteCatalogo[];
 };
 
-// Todo lo que muestra la página de detalle
+export type VarianteDetalle = {
+  variantId: string;
+  opciones: Opciones;
+  precioVenta: number;
+  precioAlquiler: number;
+  stock: number;
+  enStock: boolean;
+  sku: string | null;
+  colorNombre: string | null;
+  colorHex: string | null;
+  fotos: { url: string; miniatura: string; alt: string }[];
+};
+
 export type ProductoDetalle = {
   productId: string;
   nombre: string;
-  categoria: Categoria | null;
+  categoria: string;
   descripcion: string | null;
+  marca: string | null;
+  disenador: string | null;
   ocasion: string | null;
-  silueta: string | null;
   material: string | null;
-  etiquetas: string[];
-  precioVenta: number;
-  precioAlquiler: number;
-  tallas: Talla[];
-  colores: { nombre: string; hex: string | null }[];
-  imagenes: { url: string; alt: string }[];
+  caracteristicas: string[];
+  variantes: VarianteDetalle[];
 };
 
-// Las URLs de S3 son firmadas y vencen; las páginas se generan en cada visita
+// Las URLs firmadas duran 1 hora y se generan en cada visita, así nunca llegan vencidas
 const VIGENCIA_URL = 60 * 60;
+// Los datos del catálogo se leen de DynamoDB como mucho una vez cada 10 minutos por categoría
+const CACHE_CATALOGO = 10 * 60;
 
-// URL firmada de una foto; null si no se pudo firmar
-async function urlFirmada(contextSpec: AmplifyServer.ContextSpec, path: string) {
-  try {
-    const { url } = await getUrl(contextSpec, { path, options: { expiresIn: VIGENCIA_URL } });
-    return url.toString();
-  } catch {
-    return null;
-  }
+function sinNulos<T>(xs?: (T | null)[] | null): T[] {
+  return (xs ?? []).filter((x): x is T => x !== null);
 }
 
-// Lee el catálogo como visitante, sin la sesión de quien lo mira: Product permite
-// lectura a invitados y las fotos de product-images/* también (allow.guest).
-export async function obtenerCatalogo(): Promise<ProductoCatalogo[]> {
+// Firma rutas de S3 una sola vez por carga, aunque varias variantes compartan fotos
+function firmador(contextSpec: AmplifyServer.ContextSpec) {
+  const firmas = new Map<string, Promise<string | null>>();
+  return (path: string) => {
+    if (!firmas.has(path)) {
+      firmas.set(
+        path,
+        getUrl(contextSpec, { path, options: { expiresIn: VIGENCIA_URL } })
+          .then(({ url }) => url.toString())
+          .catch(() => null),
+      );
+    }
+    return firmas.get(path)!;
+  };
+}
+
+const CAMPOS_CATALOGO = [
+  "productId",
+  "name",
+  "category",
+  "description",
+  "brand",
+  "designer",
+  "occasion",
+  "tags",
+  "priceSale",
+  "priceRent",
+  "availableSizes",
+  "availableLengths",
+  "availableNecklines",
+  "availableSleeves",
+  "availableSilhouettes",
+  "colorFamilies",
+  "variantSummary",
+  "createdAt",
+] as const;
+
+// AP-01: Query al índice por categoría (nunca un Scan). Solo los datos van a la caché;
+// las URLs se firman en cada visita. revalidateTag("catalogo") la invalida desde el panel.
+const leerProductosDeCategoria = unstable_cache(
+  async (categoria: Categoria) =>
+    runWithAmplifyServerContext({
+      nextServerContext: null,
+      operation: async (contextSpec) => {
+        const productos = [];
+        let nextToken: string | null | undefined;
+        do {
+          const respuesta = await clienteDatosServidor.models.Product.listProductByCategory(
+            contextSpec,
+            { category: categoria },
+            { authMode: "identityPool", selectionSet: CAMPOS_CATALOGO, limit: 100, nextToken },
+          );
+          if (respuesta.errors?.length) {
+            // Un producto con datos inválidos no debe tumbar todo el catálogo
+            if (!respuesta.data?.length) throw new Error(respuesta.errors[0].message);
+            console.error("Productos con errores en el catálogo:", respuesta.errors);
+          }
+          productos.push(...(respuesta.data ?? []).filter((p) => p !== null));
+          nextToken = respuesta.nextToken;
+        } while (nextToken);
+        // Los más nuevos primero
+        return productos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      },
+    }),
+  ["catalogo"],
+  { revalidate: CACHE_CATALOGO, tags: ["catalogo"] },
+);
+
+// Lee el catálogo de una categoría como visitante: Product permite lectura a invitados
+// y las fotos de product-images/* también (allow.guest)
+export async function leerCatalogo(categoria: Categoria): Promise<ProductoCatalogo[]> {
+  const productos = await leerProductosDeCategoria(categoria);
+
   return runWithAmplifyServerContext({
     nextServerContext: null,
     operation: async (contextSpec) => {
-      const productos: Producto[] = [];
-      let nextToken: string | null | undefined;
-      do {
-        const respuesta = await clienteDatosServidor.models.Product.list(contextSpec, {
-          authMode: "identityPool",
-          limit: 100,
-          nextToken,
-        });
-        if (respuesta.errors) throw new Error(respuesta.errors[0].message);
-        productos.push(...respuesta.data);
-        nextToken = respuesta.nextToken;
-      } while (nextToken);
-
-      // Los más nuevos primero
-      productos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const firmar = firmador(contextSpec);
+      const foto = async (key: string | null, alt: string): Promise<Foto | null> => {
+        if (!key) return null;
+        const url = await firmar(key);
+        return url ? { url, alt } : null;
+      };
 
       return Promise.all(
         productos.map(async (producto) => {
-          const principal = imagenPrincipal(producto.imagenes);
-          const url = principal ? await urlFirmada(contextSpec, principal.key) : null;
-          const imagen = url ? { url, alt: principal?.alt || producto.name || "" } : null;
+          const alt = producto.name || "";
+          const resumen = leerJson<ResumenVariante[]>(producto.variantSummary, []);
           return {
             productId: producto.productId,
             nombre: producto.name || "Sin nombre",
-            categoria: producto.category ?? null,
-            textoBusqueda: [producto.occasion, producto.silhouette, producto.description, ...(producto.tags ?? [])]
+            categoria: producto.category,
+            textoBusqueda: [producto.occasion, producto.description, ...(producto.tags ?? []), ...(producto.availableSilhouettes ?? [])]
               .filter(Boolean)
               .join(" "),
+            ocasion: producto.occasion ?? null,
+            marca: producto.brand ?? null,
+            disenador: producto.designer ?? null,
+            caracteristicas: sinNulos(producto.tags),
             precioVenta: producto.priceSale,
             precioAlquiler: producto.priceRent,
-            tallas: (producto.availableSizes ?? []).filter((t): t is Talla => t !== null),
-            familias: (producto.colorFamilies ?? []).filter((f): f is FamiliaColor => f !== null),
-            imagen,
+            tallas: sinNulos(producto.availableSizes),
+            largos: sinNulos(producto.availableLengths),
+            escotes: sinNulos(producto.availableNecklines),
+            mangas: sinNulos(producto.availableSleeves),
+            siluetas: sinNulos(producto.availableSilhouettes),
+            familias: sinNulos(producto.colorFamilies),
+            variantes: await Promise.all(
+              resumen.map(async (v) => ({
+                variantId: v.variantId,
+                opciones: v.options,
+                precioVenta: v.priceSale,
+                precioAlquiler: v.priceRent,
+                enStock: v.inStock,
+                portada: await foto(v.cover, alt),
+                hover: await foto(v.hover, alt),
+              })),
+            ),
           };
         }),
       );
@@ -106,42 +211,80 @@ export async function obtenerCatalogo(): Promise<ProductoCatalogo[]> {
   });
 }
 
-// Lee un producto como visitante, con todas sus fotos: la principal primero y luego
-// en su orden. cache() evita leerlo dos veces en la misma petición (metadata y página).
+// AP-05: un producto con todas sus variantes y sus fotos grandes, leído como visitante.
+// Get del producto y Query de sus variantes al índice por productId, en paralelo y paginando
+// (la selección anidada "variants.*" solo traería las primeras 100).
+// cache() evita leerlo dos veces en la misma petición (metadata y página).
 export const obtenerProducto = cache(async (productId: string): Promise<ProductoDetalle | null> => {
   return runWithAmplifyServerContext({
     nextServerContext: null,
     operation: async (contextSpec) => {
-      const { data: producto, errors } = await clienteDatosServidor.models.Product.get(
-        contextSpec,
-        { productId },
-        { authMode: "identityPool" },
-      );
-      if (errors) throw new Error(errors[0].message);
+      const leerVariantes = async () => {
+        const variantes = [];
+        let nextToken: string | null | undefined;
+        do {
+          const respuesta = await clienteDatosServidor.models.ProductVariant.listVariantsByProduct(
+            contextSpec,
+            { productId },
+            { authMode: "identityPool", limit: 100, nextToken },
+          );
+          if (respuesta.errors?.length) throw new Error(respuesta.errors[0].message);
+          variantes.push(...respuesta.data);
+          nextToken = respuesta.nextToken;
+        } while (nextToken);
+        return variantes;
+      };
+      const [{ data: producto, errors }, todas] = await Promise.all([
+        clienteDatosServidor.models.Product.get(
+          contextSpec,
+          { productId },
+          {
+            authMode: "identityPool",
+            selectionSet: ["productId", "name", "category", "description", "brand", "designer", "occasion", "material", "tags"],
+          },
+        ),
+        leerVariantes(),
+      ]);
+      if (errors?.length && !producto) throw new Error(errors[0].message);
       if (!producto) return null;
 
-      const principal = imagenPrincipal(producto.imagenes);
-      const fotos = (producto.imagenes ?? [])
-        .flatMap((imagen) => (imagen ? [imagen] : []))
-        .sort((a, b) => Number(b === principal) - Number(a === principal) || (a.position ?? 0) - (b.position ?? 0));
-      const imagenes = await Promise.all(
-        fotos.map(async (foto) => ({ url: await urlFirmada(contextSpec, foto.key), alt: foto.alt || producto.name || "" })),
-      );
+      const firmar = firmador(contextSpec);
+      const alt = producto.name || "";
+      const variantes = todas.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
       return {
         productId: producto.productId,
         nombre: producto.name || "Sin nombre",
-        categoria: producto.category ?? null,
+        categoria: producto.category,
         descripcion: producto.description ?? null,
+        marca: producto.brand ?? null,
+        disenador: producto.designer ?? null,
         ocasion: producto.occasion ?? null,
-        silueta: producto.silhouette ?? null,
         material: producto.material ?? null,
-        etiquetas: (producto.tags ?? []).filter((t): t is string => Boolean(t)),
-        precioVenta: producto.priceSale,
-        precioAlquiler: producto.priceRent,
-        tallas: (producto.availableSizes ?? []).filter((t): t is Talla => t !== null),
-        colores: (producto.availableColors ?? []).flatMap((c) => (c ? [{ nombre: c.name, hex: c.hex ?? null }] : [])),
-        imagenes: imagenes.filter((imagen): imagen is { url: string; alt: string } => imagen.url !== null),
+        caracteristicas: sinNulos(producto.tags),
+        variantes: await Promise.all(
+          variantes.map(async (v) => {
+            const fotos = await Promise.all(
+              fotosOrdenadas(v.images).map(async (f) => ({
+                url: await firmar(f.key),
+                miniatura: await firmar(f.thumbKey ?? f.key),
+                alt: f.alt || alt,
+              })),
+            );
+            return {
+              variantId: v.id,
+              opciones: opcionesDeVariante(v),
+              precioVenta: v.priceSale,
+              precioAlquiler: v.priceRent,
+              stock: v.stock ?? 0,
+              enStock: (v.stock ?? 0) > 0,
+              sku: v.sku ?? null,
+              colorNombre: v.colorName ?? null,
+              colorHex: v.colorHex ?? null,
+              fotos: fotos.flatMap((f) => (f.url ? [{ url: f.url, miniatura: f.miniatura ?? f.url, alt: f.alt }] : [])),
+            };
+          }),
+        ),
       };
     },
   });

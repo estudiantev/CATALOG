@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef } from "react";
-import { ImageIcon, Star, Upload, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, Upload, X } from "lucide-react";
 import { uploadData } from "aws-amplify/storage";
 import { Badge } from "@/components/admin/ui/badge";
 import { Button } from "@/components/admin/ui/button";
@@ -12,40 +12,61 @@ import { carpetaImagenes } from "@/lib/productos";
 const TAMANO_MAXIMO = 5 * 1024 * 1024;
 // Formatos que todos los navegadores muestran (HEIC, por ejemplo, no se ve en Chrome)
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
+export const MAXIMO_FOTOS = 6;
+// Ancho de la versión liviana que usa el catálogo
+const ANCHO_MINIATURA = 600;
 
 export type ImagenFormulario = {
   id: string;
-  // Ruta en S3; null mientras la foto no se haya subido
+  // Rutas en S3; null mientras la foto no se haya subido
   key: string | null;
+  thumbKey: string | null;
   archivo: File | null;
   vistaPrevia: string;
   alt: string;
-  isPrimary: boolean;
-  color: string | null;
 };
 
-// Sube a S3 las fotos nuevas y devuelve la lista con sus rutas, en el orden en que se ven
+const ETIQUETAS = ["Portada", "Contraportada"];
+
+// Versión liviana de una foto: 600 px de ancho en WebP (JPEG si el navegador no sabe hacer WebP)
+async function crearMiniatura(archivo: File) {
+  const imagen = await createImageBitmap(archivo);
+  const escala = Math.min(1, ANCHO_MINIATURA / imagen.width);
+  const lienzo = document.createElement("canvas");
+  lienzo.width = Math.round(imagen.width * escala);
+  lienzo.height = Math.round(imagen.height * escala);
+  lienzo.getContext("2d")!.drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
+  imagen.close();
+  const comoBlob = (tipo: string) =>
+    new Promise<Blob | null>((resolve) => lienzo.toBlob(resolve, tipo, 0.8));
+  const webp = await comoBlob("image/webp");
+  if (webp?.type === "image/webp") return { blob: webp, extension: "webp" };
+  const jpeg = await comoBlob("image/jpeg");
+  if (!jpeg) throw new Error("No se pudo crear la miniatura.");
+  return { blob: jpeg, extension: "jpg" };
+}
+
+// Sube a S3 las fotos nuevas (grande + liviana) y devuelve la lista con sus rutas, en orden
 export async function subirImagenes(productId: string, imagenes: ImagenFormulario[]) {
-  const hayPrincipal = imagenes.some((imagen) => imagen.isPrimary);
   return Promise.all(
-    imagenes.map(async (imagen, posicion) => {
-      let key = imagen.key;
-      if (imagen.archivo) {
-        const extension = imagen.archivo.name.split(".").pop()?.toLowerCase() ?? "";
-        const ruta = `${carpetaImagenes(productId)}${crypto.randomUUID()}.${/^[a-z0-9]{1,5}$/.test(extension) ? extension : "jpg"}`;
-        const { path } = await uploadData({
-          path: ruta,
+    imagenes.map(async (imagen) => {
+      if (!imagen.archivo) return imagen;
+      const nombre = `${carpetaImagenes(productId)}${crypto.randomUUID()}`;
+      const extension = imagen.archivo.name.split(".").pop()?.toLowerCase() ?? "";
+      const miniatura = await crearMiniatura(imagen.archivo);
+      const [grande, liviana] = await Promise.all([
+        uploadData({
+          path: `${nombre}.${/^[a-z0-9]{1,5}$/.test(extension) ? extension : "jpg"}`,
           data: imagen.archivo,
           options: { contentType: imagen.archivo.type },
-        }).result;
-        key = path;
-      }
-      return {
-        ...imagen,
-        key: key as string,
-        archivo: null,
-        isPrimary: hayPrincipal ? imagen.isPrimary : posicion === 0,
-      };
+        }).result,
+        uploadData({
+          path: `${nombre}-thumb.${miniatura.extension}`,
+          data: miniatura.blob,
+          options: { contentType: miniatura.blob.type },
+        }).result,
+      ]);
+      return { ...imagen, key: grande.path, thumbKey: liviana.path, archivo: null };
     }),
   );
 }
@@ -60,10 +81,13 @@ export function EditorImagenes({
   onError: (mensaje: string) => void;
 }) {
   const selector = useRef<HTMLInputElement>(null);
+  const espacio = MAXIMO_FOTOS - imagenes.length;
 
   function agregar(archivos: FileList | null) {
     onError("");
-    const validos = Array.from(archivos ?? []).filter((archivo) => {
+    const elegidos = Array.from(archivos ?? []);
+    if (elegidos.length > espacio) onError(`Cada variante lleva hasta ${MAXIMO_FOTOS} fotos; se agregaron las primeras ${espacio}.`);
+    const validos = elegidos.slice(0, espacio).filter((archivo) => {
       if (!TIPOS.includes(archivo.type)) {
         onError(`«${archivo.name}» no es JPG, PNG ni WebP.`);
         return false;
@@ -74,38 +98,38 @@ export function EditorImagenes({
       }
       return true;
     });
-    const nuevas = validos.map((archivo) => ({
-      id: crypto.randomUUID(),
-      key: null,
-      archivo,
-      vistaPrevia: URL.createObjectURL(archivo),
-      alt: "",
-      isPrimary: false,
-      color: null,
-    }));
-    const todas = [...imagenes, ...nuevas];
-    // La primera foto del producto queda como principal
-    if (todas.length > 0 && !todas.some((imagen) => imagen.isPrimary)) todas[0] = { ...todas[0], isPrimary: true };
-    onChange(todas);
+    onChange([
+      ...imagenes,
+      ...validos.map((archivo) => ({
+        id: crypto.randomUUID(),
+        key: null,
+        thumbKey: null,
+        archivo,
+        vistaPrevia: URL.createObjectURL(archivo),
+        alt: "",
+      })),
+    ]);
     if (selector.current) selector.current.value = "";
   }
 
   function quitar(id: string) {
     const imagen = imagenes.find((i) => i.id === id);
     if (imagen?.archivo) URL.revokeObjectURL(imagen.vistaPrevia);
-    const restantes = imagenes.filter((i) => i.id !== id);
-    if (imagen?.isPrimary && restantes.length > 0) restantes[0] = { ...restantes[0], isPrimary: true };
-    onChange(restantes);
+    onChange(imagenes.filter((i) => i.id !== id));
   }
 
-  const cambiar = (id: string, cambios: Partial<ImagenFormulario>) =>
-    onChange(imagenes.map((imagen) => (imagen.id === id ? { ...imagen, ...cambios } : imagen)));
+  // El orden es el de la galería: la 1 es la portada y la 2 la contraportada
+  function mover(indice: number, paso: -1 | 1) {
+    const nuevas = [...imagenes];
+    [nuevas[indice], nuevas[indice + paso]] = [nuevas[indice + paso], nuevas[indice]];
+    onChange(nuevas);
+  }
 
   return (
     <div className="space-y-4">
       {imagenes.length > 0 && (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {imagenes.map((imagen) => (
+          {imagenes.map((imagen, i) => (
             <li key={imagen.id} className="space-y-2">
               <div className="relative aspect-[3/4] overflow-hidden rounded-md border bg-muted">
                 {imagen.vistaPrevia ? (
@@ -113,13 +137,13 @@ export function EditorImagenes({
                 ) : (
                   <ImageIcon className="absolute inset-0 m-auto size-8 text-muted-foreground" />
                 )}
-                {imagen.isPrimary && <Badge className="absolute top-2 left-2">Principal</Badge>}
+                <Badge className="absolute top-2 left-2">{ETIQUETAS[i] ?? `Foto ${i + 1}`}</Badge>
                 {!imagen.key && <Badge variant="secondary" className="absolute bottom-2 left-2">Sin subir</Badge>}
                 <Button
                   type="button"
                   variant="secondary"
                   size="icon-sm"
-                  aria-label="Quitar imagen"
+                  aria-label={`Quitar foto ${i + 1}`}
                   className="absolute top-2 right-2"
                   onClick={() => quitar(imagen.id)}
                 >
@@ -127,23 +151,19 @@ export function EditorImagenes({
                 </Button>
               </div>
               <Input
-                aria-label="Texto alternativo"
+                aria-label={`Texto alternativo de la foto ${i + 1}`}
                 placeholder="Descripción de la foto"
                 value={imagen.alt}
-                onChange={(e) => cambiar(imagen.id, { alt: e.target.value })}
+                onChange={(e) => onChange(imagenes.map((x) => (x.id === imagen.id ? { ...x, alt: e.target.value } : x)))}
               />
-              {!imagen.isPrimary && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => onChange(imagenes.map((i) => ({ ...i, isPrimary: i.id === imagen.id })))}
-                >
-                  <Star />
-                  Hacer principal
+              <div className="flex justify-between">
+                <Button type="button" variant="ghost" size="icon-sm" aria-label={`Mover foto ${i + 1} antes`} disabled={i === 0} onClick={() => mover(i, -1)}>
+                  <ChevronLeft />
                 </Button>
-              )}
+                <Button type="button" variant="ghost" size="icon-sm" aria-label={`Mover foto ${i + 1} después`} disabled={i === imagenes.length - 1} onClick={() => mover(i, 1)}>
+                  <ChevronRight />
+                </Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -156,9 +176,9 @@ export function EditorImagenes({
         hidden
         onChange={(e) => agregar(e.target.files)}
       />
-      <Button type="button" variant="outline" onClick={() => selector.current?.click()}>
+      <Button type="button" variant="outline" disabled={espacio <= 0} onClick={() => selector.current?.click()}>
         <Upload />
-        Agregar imágenes
+        {espacio > 0 ? `Agregar fotos (quedan ${espacio})` : `Ya tiene ${MAXIMO_FOTOS} fotos`}
       </Button>
     </div>
   );
