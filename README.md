@@ -32,8 +32,9 @@ app/
 │   ├── page.tsx               ← / (portada)
 │   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
 │   ├── catalogo/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
-│   ├── login/page.tsx         ← /login
-│   └── registro/page.tsx      ← /registro (clientas, sin grupo)
+│   ├── login/page.tsx         ← /login (si ya hay sesión, redirige)
+│   ├── registro/page.tsx      ← /registro (clientas, sin grupo)
+│   └── cuenta/page.tsx        ← /cuenta (Mi cuenta: datos de la clienta y cerrar sesión)
 └── (admin)/                   ← zona del staff
     ├── layout.tsx             ← layout raíz: <html>, admin.css, Amplify, noindex
     ├── admin.css              ← Tailwind + tema de shadcn
@@ -54,7 +55,9 @@ components/
 
 lib/
 ├── amplify-server.ts          ← runWithAmplifyServerContext (Amplify en el servidor)
-├── sesion-servidor.ts         ← obtenerSesion() y requerirStaff() para el panel
+├── sesion-servidor.ts         ← obtenerSesion() (tienda y panel) y requerirStaff() (panel)
+├── cuenta.ts                  ← lee el Customer de la clienta con sus cookies (Mi cuenta)
+├── redireccion.ts             ← a dónde volver después de entrar (?siguiente=, solo rutas internas)
 ├── catalogo.ts                ← lee el catálogo y el detalle en el servidor, como visitante
 ├── productos.ts               ← tipos, listas fijas (tallas, largos, escotes…) y etiquetas
 ├── variantes.ts               ← resumen de variantes, tarjeta del catálogo y selector del detalle
@@ -136,10 +139,18 @@ Los productos guardados con el modelo anterior (precios, tallas, colores y fotos
 
 ## Registro de clientas
 
-- `/registro` pide nombre, apellido, correo y contraseña. Cognito envía un código al correo; al confirmarlo la cuenta inicia sesión sola.
+- `/registro` pide nombre, apellido, correo y contraseña. Cognito envía un código al correo; al confirmarlo la cuenta inicia sesión sola y va a Mi cuenta.
 - La cuenta se crea **sin grupo**: es una clienta y no tiene acceso al panel. El trigger `post-confirmation` crea su perfil `Customer`.
-- **Google:** el botón "Continuar con Google" del login y del registro usa `signInWithRedirect`. Cognito devuelve a la usuaria a la URL de `callbackUrls` y `RetornoGoogle` (en el layout de la tienda) termina el inicio de sesión; si falla o se cancela, vuelve a `/login` con un aviso. La primera vez, Cognito crea la cuenta sin grupo y `post-confirmation` crea su `Customer`. `callbackUrls` y `logoutUrls` deben incluir el origen exacto de cada entorno (por ejemplo `http://localhost:3000/` en desarrollo).
+- **Google:** el botón "Continuar con Google" del login y del registro usa `signInWithRedirect`. Cognito devuelve a la usuaria a la URL de `callbackUrls` y `RetornoGoogle` (en el layout de la tienda) termina el inicio de sesión y la lleva a su destino (ver "Sesión de las clientas"); si falla o se cancela, vuelve a `/login` con un aviso. La primera vez, Cognito crea la cuenta sin grupo y `post-confirmation` crea su `Customer`. `callbackUrls` y `logoutUrls` deben incluir el origen exacto de cada entorno (por ejemplo `http://localhost:3000/` en desarrollo).
 - Si alguien se registró pero no confirmó su correo, al intentar iniciar sesión ve el enlace "Confirmar mi correo", que retoma el paso del código (`/registro?confirmar=<correo>`).
+
+## Sesión de las clientas
+
+- **Dónde vive:** Amplify guarda la sesión en **cookies** (`ssr: true` en `components/compartido/configurar-amplify.tsx`): `CognitoIdentityServiceProvider.<clientId>.<usuario>.idToken`, `.accessToken` y `.refreshToken`. Así la leen el navegador y el servidor.
+- **Mi cuenta (`/cuenta`):** el servidor lee la sesión con `obtenerSesion()` y el perfil `Customer` con las cookies de la clienta (`lib/cuenta.ts`; `allow.owner()` solo le deja leer el suyo). Si no hay `Customer` (por ejemplo, una cuenta del staff), usa el nombre y el correo del token. Tiene **Cerrar sesión** y, para el staff, un enlace al panel. Sin sesión, manda a `/login`.
+- **Encabezado:** revisa la sesión en el navegador (`components/tienda/use-sesion.ts`) y escucha los eventos `signedIn` y `signedOut` de Amplify. Con sesión, el ícono de la persona lleva a `/cuenta` y muestra el nombre (en pantallas chicas, un punto dorado). Se hace en el navegador para que las páginas de la tienda sigan siendo estáticas: el servidor solo lee la sesión en `/cuenta`, `/login` y `/registro`.
+- **`/login` y `/registro`** redirigen si ya hay sesión, así nunca se muestra el formulario a alguien que ya entró.
+- **A dónde vuelve:** después de entrar (correo, registro o Google) va a `?siguiente=<ruta>` o, si no hay, a `/cuenta`. El ícono del encabezado agrega la página actual (salvo la portada), así quien inicia sesión desde un vestido vuelve a ese vestido. `lib/redireccion.ts` solo acepta rutas internas, para que nadie arme un enlace que saque a la clienta del sitio. Con Google, el destino viaja en el `customState` de OAuth y `RetornoGoogle` lo usa al volver a la portada.
 
 ## Acceso al panel
 

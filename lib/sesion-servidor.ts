@@ -4,7 +4,10 @@ import { fetchAuthSession } from "aws-amplify/auth/server";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
 import { type Accion, esStaff, puede } from "@/lib/permisos";
 
-export type Sesion = { correo: string; grupos: string[] };
+// id = sub de Cognito (también es el customerId de su perfil Customer)
+export type Sesion = { id: string; correo: string; nombre: string; apellido: string; grupos: string[] };
+
+const texto = (valor: unknown) => (typeof valor === "string" ? valor : "");
 
 // Lee la sesión desde las cookies de la petición. El adaptador de Amplify valida
 // la firma de los tokens de Cognito, así que una cookie alterada no pasa.
@@ -16,9 +19,12 @@ export async function obtenerSesion(): Promise<Sesion | null> {
         const { tokens } = await fetchAuthSession(contextSpec);
         if (!tokens) return null;
         const grupos = tokens.accessToken.payload["cognito:groups"];
-        const correo = tokens.idToken?.payload.email;
+        const datos = tokens.idToken?.payload;
         return {
-          correo: typeof correo === "string" ? correo : "",
+          id: texto(tokens.accessToken.payload.sub),
+          correo: texto(datos?.email),
+          nombre: texto(datos?.given_name),
+          apellido: texto(datos?.family_name),
           grupos: Array.isArray(grupos) ? grupos.map(String) : [],
         };
       } catch {

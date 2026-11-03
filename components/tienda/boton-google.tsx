@@ -6,9 +6,9 @@ import { signInWithRedirect } from "aws-amplify/auth";
 import { errorCuenta } from "@/components/tienda/marco-cuenta";
 
 // Lleva a Google a través de Cognito. Al volver (callbackUrls de amplify/auth/resource.ts),
-// RetornoGoogle termina el inicio de sesión. Si es la primera vez, Cognito crea la cuenta
-// sin grupo y el trigger post-confirmation crea su Customer.
-export function BotonGoogle() {
+// RetornoGoogle termina el inicio de sesión y lleva a `destino`, que viaja en el customState.
+// Si es la primera vez, Cognito crea la cuenta sin grupo y el trigger post-confirmation crea su Customer.
+export function BotonGoogle({ destino }: { destino: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [redirigiendo, setRedirigiendo] = useState(false);
@@ -17,11 +17,12 @@ export function BotonGoogle() {
     setError("");
     setRedirigiendo(true);
     try {
-      await signInWithRedirect({ provider: "Google" });
+      await signInWithRedirect({ provider: "Google", customState: destino });
     } catch (err) {
       setRedirigiendo(false);
       if (err instanceof Error && err.name === "UserAlreadyAuthenticatedException") {
-        router.push("/");
+        router.replace(destino);
+        router.refresh();
         return;
       }
       // Sin oauth en amplify_outputs.json o sin la URL de este sitio en callbackUrls

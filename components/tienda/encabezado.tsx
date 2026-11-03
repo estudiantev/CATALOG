@@ -2,8 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { enlaceCuenta } from "@/lib/redireccion";
 import { ALQUILER, COLECCIONES, COLORES } from "./datos";
+import { useSesion } from "./use-sesion";
 
 const etiquetaNav =
   "relative inline-flex items-center gap-2 py-1.5 text-[15px] leading-[20px] font-medium tracking-[0.1em] uppercase after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-tinta after:opacity-0 group-hover:after:opacity-100 group-aria-expanded:after:opacity-100 group-focus-visible:outline-2 group-focus-visible:outline-offset-6 group-focus-visible:outline-tinta";
@@ -30,6 +33,9 @@ export function Encabezado() {
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [submenuMovilAbierto, setSubmenuMovilAbierto] = useState(true);
   const contenedor = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  // Mientras se revisa (undefined) el ícono lleva al login, que igual redirige si ya hay sesión
+  const sesion = useSesion();
 
   const cerrarMenus = () => {
     setCatalogoAbierto(false);
@@ -106,11 +112,26 @@ export function Encabezado() {
                 <path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z" />
               </svg>
             </a>
-            <Link href="/login" aria-label="Mi cuenta" onClick={cerrarMenus} className={icono}>
-              <svg className="size-[22px] menu:size-[35px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {/* Con sesión lleva a Mi cuenta y lo marca: el nombre en pantallas grandes, un punto en las demás.
+                Sin sesión, el login recuerda esta página para volver aquí después de entrar. */}
+            <Link
+              href={sesion ? "/cuenta" : enlaceCuenta("/login", pathname)}
+              aria-label={sesion ? (sesion.nombre ? `Mi cuenta, ${sesion.nombre}` : "Mi cuenta") : "Iniciar sesión"}
+              onClick={cerrarMenus}
+              className={`${icono} relative ${sesion?.nombre ? "xl:w-auto xl:gap-2.5 xl:px-3" : ""}`}
+            >
+              <svg className="size-[22px] flex-none menu:size-[35px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" />
               </svg>
+              {sesion && (
+                <span aria-hidden="true" className={`absolute top-2 right-2 size-2.5 rounded-full border-2 border-white bg-dorado ${sesion.nombre ? "xl:hidden" : ""}`} />
+              )}
+              {sesion?.nombre && (
+                <span aria-hidden="true" className="hidden max-w-[10ch] truncate text-[14px] leading-[20px] font-medium tracking-[0.08em] uppercase xl:block">
+                  {sesion.nombre}
+                </span>
+              )}
             </Link>
             <button
               type="button"

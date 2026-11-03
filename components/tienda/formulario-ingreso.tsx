@@ -7,8 +7,10 @@ import { signIn } from "aws-amplify/auth";
 import { BotonGoogle } from "@/components/tienda/boton-google";
 import { botonCuenta, campoCuenta, errorCuenta } from "@/components/tienda/marco-cuenta";
 import { mensajeErrorIngreso } from "@/lib/errores-auth";
+import { enlaceCuenta } from "@/lib/redireccion";
 
-export function FormularioIngreso({ aviso }: { aviso?: string }) {
+// `destino` ya viene validado por la página (/cuenta o la página de donde venía)
+export function FormularioIngreso({ aviso, destino }: { aviso?: string; destino: string }) {
   const router = useRouter();
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -26,7 +28,8 @@ export function FormularioIngreso({ aviso }: { aviso?: string }) {
     try {
       const { isSignedIn, nextStep } = await signIn({ username: usuario, password: contrasena });
       if (isSignedIn) {
-        router.push("/");
+        // replace: el botón Atrás no vuelve al formulario de login
+        router.replace(destino);
         router.refresh();
         return;
       }
@@ -38,8 +41,10 @@ export function FormularioIngreso({ aviso }: { aviso?: string }) {
         setError("Tu cuenta necesita un paso adicional que todavía no está disponible.");
       }
     } catch (err) {
+      // La página ya redirige si hay sesión; esto cubre una sesión iniciada en otra pestaña
       if (err instanceof Error && err.name === "UserAlreadyAuthenticatedException") {
-        router.push("/");
+        router.replace(destino);
+        router.refresh();
         return;
       }
       if (err instanceof Error && err.name === "UserNotConfirmedException") {
@@ -54,7 +59,7 @@ export function FormularioIngreso({ aviso }: { aviso?: string }) {
 
   return (
     <>
-      <BotonGoogle />
+      <BotonGoogle destino={destino} />
 
       <hr className="mt-6 border-tinta" />
 
@@ -107,7 +112,7 @@ export function FormularioIngreso({ aviso }: { aviso?: string }) {
           {enviando ? "Ingresando…" : "Iniciar sesión"}
         </button>
 
-        <Link href="/registro" className="mt-3 text-[15px] hover:underline">
+        <Link href={enlaceCuenta("/registro", destino)} className="mt-3 text-[15px] hover:underline">
           Crear cuenta
         </Link>
       </form>

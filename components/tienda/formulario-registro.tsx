@@ -7,10 +7,12 @@ import { autoSignIn, confirmSignUp, resendSignUpCode, signUp } from "aws-amplify
 import { BotonGoogle } from "@/components/tienda/boton-google";
 import { botonCuenta, campoCuenta, errorCuenta } from "@/components/tienda/marco-cuenta";
 import { mensajeErrorRegistro } from "@/lib/errores-auth";
+import { enlaceCuenta } from "@/lib/redireccion";
 
 // Registro de clientas: la cuenta se crea sin grupo (no da acceso al panel) y el
-// trigger post-confirmation crea su perfil Customer al confirmar el correo
-export function FormularioRegistro({ correoPorConfirmar }: { correoPorConfirmar?: string }) {
+// trigger post-confirmation crea su perfil Customer al confirmar el correo.
+// `destino` ya viene validado por la página (/cuenta o la página de donde venía).
+export function FormularioRegistro({ correoPorConfirmar, destino }: { correoPorConfirmar?: string; destino: string }) {
   const router = useRouter();
   const [paso, setPaso] = useState<"datos" | "codigo">(correoPorConfirmar ? "codigo" : "datos");
   const [nombre, setNombre] = useState("");
@@ -66,7 +68,8 @@ export function FormularioRegistro({ correoPorConfirmar }: { correoPorConfirmar?
       if (nextStep.signUpStep === "COMPLETE_AUTO_SIGN_IN") {
         const { isSignedIn } = await autoSignIn();
         if (isSignedIn) {
-          router.push("/");
+          // replace: el botón Atrás no vuelve al paso del código
+          router.replace(destino);
           router.refresh();
           return;
         }
@@ -122,7 +125,7 @@ export function FormularioRegistro({ correoPorConfirmar }: { correoPorConfirmar?
 
   return (
     <>
-      <BotonGoogle />
+      <BotonGoogle destino={destino} />
       <hr className="mt-6 border-tinta" />
       <form onSubmit={registrar} noValidate className="mx-auto mt-6 flex w-full max-w-74 flex-col items-center">
         <p className="mb-4 text-[18px]">O regístrate con tu correo</p>
@@ -148,7 +151,7 @@ export function FormularioRegistro({ correoPorConfirmar }: { correoPorConfirmar?
 
         <p className="mt-3 text-[15px]">
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="underline underline-offset-2">Inicia sesión</Link>
+          <Link href={enlaceCuenta("/login", destino)} className="underline underline-offset-2">Inicia sesión</Link>
         </p>
       </form>
     </>
