@@ -6,7 +6,13 @@ export const campoCuenta =
 export const botonCuenta =
   "flex h-[46px] w-56 cursor-pointer items-center justify-center rounded-lg bg-tinta text-[15px] font-semibold tracking-[0.06em] text-white uppercase transition-colors hover:bg-grafito disabled:cursor-wait disabled:opacity-70";
 
+export const botonSecundario =
+  "flex h-[46px] w-56 cursor-pointer items-center justify-center rounded-lg border-2 border-tinta bg-white text-[15px] font-semibold tracking-[0.06em] text-tinta uppercase transition-colors hover:bg-arena disabled:cursor-wait disabled:opacity-70";
+
 export const errorCuenta = "w-full text-center text-[14px] leading-[20px] text-vino";
+
+// Etiqueta de un dato o de un campo en Mi cuenta y Mi perfil
+export const etiquetaCuenta = "text-[13px] leading-[18px] font-semibold tracking-[0.16em] text-topo uppercase";
 
 // Recuadro de las páginas de cuenta (login y registro): el formulario a la izquierda
 // y, en pantallas grandes, un espacio para una foto de la colección a la derecha

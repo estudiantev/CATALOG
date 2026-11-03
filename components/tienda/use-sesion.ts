@@ -31,9 +31,10 @@ export function useSesion() {
     const actualizar = () => leerSesion().then((s) => vigente && setSesion(s));
 
     actualizar();
-    // Inicio o cierre de sesión en esta pestaña (correo, Google o registro)
+    // Inicio o cierre de sesión en esta pestaña (correo, Google o registro) y token
+    // renovado (por ejemplo, después de cambiar el nombre en Mi perfil)
     const dejarDeEscuchar = Hub.listen("auth", ({ payload }) => {
-      if (payload.event === "signedIn") actualizar();
+      if (payload.event === "signedIn" || payload.event === "tokenRefresh") actualizar();
       if (payload.event === "signedOut" || payload.event === "tokenRefresh_failure") setSesion(null);
     });
 
