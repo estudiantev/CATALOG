@@ -7,6 +7,7 @@ import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
 import {
+  CATEGORIAS,
   type Categoria,
   type FamiliaColor,
   type Opciones,
@@ -155,11 +156,28 @@ const leerProductosDeCategoria = unstable_cache(
   { revalidate: CACHE_CATALOGO, tags: ["catalogo"] },
 );
 
+type ProductoGuardado = Awaited<ReturnType<typeof leerProductosDeCategoria>>[number];
+
+const tieneStock = (producto: ProductoGuardado) =>
+  leerJson<ResumenVariante[]>(producto.variantSummary, []).some((v) => v.inStock);
+
 // Lee el catálogo de una categoría como visitante: Product permite lectura a invitados
 // y las fotos de product-images/* también (allow.guest)
 export async function leerCatalogo(categoria: Categoria): Promise<ProductoCatalogo[]> {
-  const productos = await leerProductosDeCategoria(categoria);
+  return aCatalogo(await leerProductosDeCategoria(categoria));
+}
 
+// "Nuestro catálogo" de la página de inicio: los productos elegidos en el panel de contenido,
+// en ese orden; si no se eligió ninguno, los vestidos más nuevos. Solo los que tienen stock.
+export async function leerDestacados(ids: string[], cantidad: number): Promise<ProductoCatalogo[]> {
+  const categorias: Categoria[] = ids.length ? CATEGORIAS.map((c) => c.valor) : ["DRESS"];
+  const productos = (await Promise.all(categorias.map((c) => leerProductosDeCategoria(c)))).flat().filter(tieneStock);
+  const elegidos = ids.length ? ids.flatMap((id) => productos.filter((p) => p.productId === id)) : productos;
+  return aCatalogo(elegidos.slice(0, cantidad));
+}
+
+// Firma las fotos y arma las tarjetas del catálogo
+async function aCatalogo(productos: ProductoGuardado[]): Promise<ProductoCatalogo[]> {
   return runWithAmplifyServerContext({
     nextServerContext: null,
     operation: async (contextSpec) => {

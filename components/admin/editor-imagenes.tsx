@@ -11,7 +11,7 @@ import { carpetaImagenes } from "@/lib/productos";
 
 const TAMANO_MAXIMO = 5 * 1024 * 1024;
 // Formatos que todos los navegadores muestran (HEIC, por ejemplo, no se ve en Chrome)
-const TIPOS = ["image/jpeg", "image/png", "image/webp"];
+export const TIPOS_IMAGEN = ["image/jpeg", "image/png", "image/webp"];
 export const MAXIMO_FOTOS = 6;
 // Ancho de la versión liviana que usa el catálogo
 const ANCHO_MINIATURA = 600;
@@ -28,10 +28,11 @@ export type ImagenFormulario = {
 
 const ETIQUETAS = ["Portada", "Contraportada"];
 
-// Versión liviana de una foto: 600 px de ancho en WebP (JPEG si el navegador no sabe hacer WebP)
-async function crearMiniatura(archivo: File) {
+// Versión liviana de una foto: como mucho `anchoMaximo` px de ancho, en WebP (JPEG si el
+// navegador no sabe hacer WebP). El catálogo usa miniaturas de 600 px; la portada, fotos de 2000.
+export async function reducirImagen(archivo: File, anchoMaximo = ANCHO_MINIATURA) {
   const imagen = await createImageBitmap(archivo);
-  const escala = Math.min(1, ANCHO_MINIATURA / imagen.width);
+  const escala = Math.min(1, anchoMaximo / imagen.width);
   const lienzo = document.createElement("canvas");
   lienzo.width = Math.round(imagen.width * escala);
   lienzo.height = Math.round(imagen.height * escala);
@@ -42,7 +43,7 @@ async function crearMiniatura(archivo: File) {
   const webp = await comoBlob("image/webp");
   if (webp?.type === "image/webp") return { blob: webp, extension: "webp" };
   const jpeg = await comoBlob("image/jpeg");
-  if (!jpeg) throw new Error("No se pudo crear la miniatura.");
+  if (!jpeg) throw new Error("No se pudo reducir la foto.");
   return { blob: jpeg, extension: "jpg" };
 }
 
@@ -53,7 +54,7 @@ export async function subirImagenes(productId: string, imagenes: ImagenFormulari
       if (!imagen.archivo) return imagen;
       const nombre = `${carpetaImagenes(productId)}${crypto.randomUUID()}`;
       const extension = imagen.archivo.name.split(".").pop()?.toLowerCase() ?? "";
-      const miniatura = await crearMiniatura(imagen.archivo);
+      const miniatura = await reducirImagen(imagen.archivo);
       const [grande, liviana] = await Promise.all([
         uploadData({
           path: `${nombre}.${/^[a-z0-9]{1,5}$/.test(extension) ? extension : "jpg"}`,
@@ -88,7 +89,7 @@ export function EditorImagenes({
     const elegidos = Array.from(archivos ?? []);
     if (elegidos.length > espacio) onError(`Cada variante lleva hasta ${MAXIMO_FOTOS} fotos; se agregaron las primeras ${espacio}.`);
     const validos = elegidos.slice(0, espacio).filter((archivo) => {
-      if (!TIPOS.includes(archivo.type)) {
+      if (!TIPOS_IMAGEN.includes(archivo.type)) {
         onError(`«${archivo.name}» no es JPG, PNG ni WebP.`);
         return false;
       }
@@ -171,7 +172,7 @@ export function EditorImagenes({
       <input
         ref={selector}
         type="file"
-        accept={TIPOS.join(",")}
+        accept={TIPOS_IMAGEN.join(",")}
         multiple
         hidden
         onChange={(e) => agregar(e.target.files)}

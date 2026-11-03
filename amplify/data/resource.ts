@@ -135,6 +135,24 @@ const schema = a.schema({
       allow.group('ADMIN'), // solo ADMIN puede borrar
     ]),
 
+  // Tabla: el contenido editable de la tienda, como un CMS (por ahora, la página de inicio).
+  // Una fila por sección; `data` guarda sus textos, fotos y enlaces. AppSync no revisa ese
+  // JSON: lib/contenido.ts lo valida al guardar y lo normaliza al leer.
+  Content: a
+    .model({
+      page: a.string().required(),    // "inicio"
+      section: a.string().required(), // "portada" | "ocasiones" | "destacados" | "pasos"
+      data: a.json().required(),
+      visible: a.boolean().default(true),
+    })
+    .identifier(['page', 'section'])
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+      allow.groups(['MARKETING']).to(['create', 'read', 'update']),
+      allow.group('ADMIN'),
+    ]),
+
   // NUEVO: el ADMIN crea cuentas de INVENTORY o MARKETING
   agregarStaff: a
     .mutation()

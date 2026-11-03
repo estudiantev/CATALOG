@@ -29,7 +29,7 @@ app/
 ├── (tienda)/                  ← zona pública (la URL no incluye "(tienda)")
 │   ├── layout.tsx             ← layout raíz: <html>, fuentes, menú, pie, Amplify
 │   ├── tienda.css             ← Tailwind + paleta del rediseño (sin shadcn)
-│   ├── page.tsx               ← / (portada)
+│   ├── page.tsx               ← / (portada; sus textos, fotos y destacados salen del CMS)
 │   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
 │   ├── catalogo/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
 │   ├── login/page.tsx         ← /login (si ya hay sesión, redirige)
@@ -45,11 +45,13 @@ app/
             ├── layout.tsx
             ├── page.tsx       ← /admin → /admin/productos
             ├── productos/     ← listar, nuevo, [productId] (datos y variantes), [productId]/variantes/…
+            ├── contenido/     ← CMS de la página de inicio (ADMIN y MARKETING)
             ├── clientes/      ← clientes registrados (solo ADMIN)
             └── equipo/        ← agregar staff (solo ADMIN)
 
 components/
 ├── admin/                     ← solo el panel
+│   ├── contenido/             ← editores del CMS: portada, ocasiones, destacados y pasos
 │   └── ui/                    ← componentes de shadcn (los crea el CLI)
 ├── tienda/                    ← solo la tienda: encabezado, pie, catálogo, vestido, datos y el área de la clienta
 └── compartido/                ← lo usan ambas zonas
@@ -60,7 +62,9 @@ lib/
 ├── cuenta.ts                  ← lee el Customer de la clienta con sus cookies (Mi cuenta)
 ├── redireccion.ts             ← a dónde volver después de entrar (?siguiente=, solo rutas internas)
 ├── perfil.ts                  ← tipos, tallas de copa, rangos de medidas y validación del perfil
-├── catalogo.ts                ← lee el catálogo y el detalle en el servidor, como visitante
+├── catalogo.ts                ← lee el catálogo, el detalle y los destacados en el servidor, como visitante
+├── contenido.ts               ← CMS: secciones, contenido por defecto, validación y normalización
+├── contenido-servidor.ts      ← lee el contenido de la página de inicio (con caché) y firma sus fotos
 ├── productos.ts               ← tipos, listas fijas (tallas, largos, escotes…) y etiquetas
 ├── variantes.ts               ← resumen de variantes, tarjeta del catálogo y selector del detalle
 ├── resumen.ts                 ← guarda en Product el resumen de sus variantes
@@ -176,6 +180,23 @@ Los productos guardados con el modelo anterior (precios, tallas, colores y fotos
   - Copa: una de `TALLAS_COPA` (AA a G).
 - **Nombre en el encabezado:** sale del token de Cognito, así que al cambiar el nombre también se actualiza `given_name` en Cognito y se renueva el token. Si eso falla, el perfil igual queda guardado. Con Google, Cognito vuelve a poner el nombre de Google en cada inicio de sesión: el encabezado mostrará ese, pero Mi cuenta muestra el del perfil.
 
+## Contenido de la página de inicio (CMS)
+
+ADMIN y MARKETING editan la página de inicio en **`/admin/contenido`** (opción "Contenido" del menú), sin tocar el código. El diseño sigue en el código; desde el panel se cambian textos, fotos, enlaces, productos y qué secciones se muestran.
+
+- **Tabla `Content`** (`amplify/data/resource.ts`): una fila por sección, con clave `page` + `section` (`"inicio"` + `"portada"`, `"ocasiones"`, `"destacados"` o `"pasos"`). `data` guarda la sección en JSON y `visible` dice si se muestra (la portada siempre se muestra). La leen invitados y clientas; MARKETING crea y edita; ADMIN además puede borrar.
+- **Secciones:**
+  - **Portada:** hasta 3, cada una con antetítulo, título, texto, botón principal, segundo botón opcional y foto opcional. Sin foto se ven las ilustraciones de vestidos; con más de una portada aparecen los guiones para pasar de una a otra.
+  - **Ocasiones:** la modalidad y la descripción de De Gala, De XV, Cortos y Floreados. Sus nombres y enlaces siguen en `COLECCIONES` porque también arman el menú y los filtros del catálogo.
+  - **Nuestro catálogo:** título, subtítulo y hasta 8 productos elegidos del catálogo, en orden. El precio y la foto salen del producto; los que no tienen stock no se muestran. Sin productos elegidos, se muestran los vestidos más nuevos.
+  - **Alquiler en 3 pasos:** título, subtítulo, los 3 pasos y el texto del botón, que abre WhatsApp (`enlaceWhatsApp()` en `components/tienda/datos.ts`).
+  - "Compra por color" sigue en el código: cada color está atado a un filtro del catálogo.
+- **Validación y normalización** (`lib/contenido.ts`): AppSync guarda el JSON sin revisarlo. El panel valida antes de guardar (campos obligatorios, largos máximos y enlaces) y la tienda normaliza al leer: lo que falte o no sirva se reemplaza por el contenido por defecto, que es el que la portada tenía en el código. Los enlaces solo pueden ser rutas de la tienda (`/catalogo`), secciones (`#pasos`) o `https://`; nada de `javascript:` ni `//otro-sitio`.
+- **Lectura** (`lib/contenido-servidor.ts`): en el servidor, como visitante, con `unstable_cache` y la etiqueta `"contenido"` (10 minutos). Al guardar, el panel llama a `invalidarContenido()` (`revalidateTag("contenido")`) y el cambio se ve enseguida. Si la tabla no responde, la portada muestra el contenido por defecto en vez de caerse.
+- **Fotos:** se reducen a 2000 px (WebP) en el navegador y se suben a `content-images/inicio/`. Las URLs firmadas vencen, por eso la portada es dinámica y las firma en cada visita, como el catálogo. Al guardar, las fotos que se cambiaron o quitaron se borran de S3.
+
+Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, la tienda muestra el contenido por defecto y el panel avisa que falta desplegar.
+
 ## Acceso al panel
 
 El panel tiene tres capas, de afuera hacia adentro:
@@ -192,6 +213,7 @@ El panel tiene tres capas, de afuera hacia adentro:
 | Subir fotos | Sí | Sí | Sí |
 | Borrar fotos de S3 | Sí | No | No |
 | Ver clientes | Sí | No | No |
+| Editar la página de inicio (Contenido) | Sí | No | Sí |
 | Agregar staff (Equipo) | Sí | No | No |
 
 `lib/permisos.ts` refleja esta tabla para mostrar u ocultar botones y bloquear páginas; si cambias las reglas del backend, actualízalo también. El staff entra por `/admin/login`; quien recibe una invitación cambia ahí su contraseña temporal en el primer ingreso.

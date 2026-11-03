@@ -30,3 +30,14 @@ export const COLORES: { nombre: string; hex: string; href: string; familia: Fami
 // Usuario de WhatsApp de Fara Collections para el botón "Contactar" de cada producto
 // (reemplaza las X por el número real, con el código de país 51)
 export const WHATSAPP_FARA = "519XXXXXXXX";
+
+// Abre WhatsApp con un mensaje ya escrito para Fara Collections
+export function enlaceWhatsApp(mensaje: string) {
+  const parametros = new URLSearchParams({
+    text: mensaje,
+    username: WHATSAPP_FARA,
+    type: "username",
+    app_absent: "0",
+  });
+  return `https://api.whatsapp.com/send/?${parametros}`;
+}

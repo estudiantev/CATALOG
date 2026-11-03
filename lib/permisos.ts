@@ -13,6 +13,7 @@ const PERMISOS = {
   borrarImagenes: ["ADMIN"],
   agregarStaff: ["ADMIN"],
   verClientes: ["ADMIN"],
+  editarContenido: ["ADMIN", "MARKETING"],
 } satisfies Record<string, GrupoStaff[]>;
 
 export type Accion = keyof typeof PERMISOS;

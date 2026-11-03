@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WHATSAPP_FARA } from "@/components/tienda/datos";
+import { enlaceWhatsApp } from "@/components/tienda/datos";
 import { GaleriaProducto } from "@/components/tienda/galeria-producto";
 import type { ProductoDetalle, VarianteDetalle } from "@/lib/catalogo";
 import { CATEGORIAS, CLAVES, type Clave, FAMILIAS_COLOR, NOMBRES_CLAVE, formatoSoles, nombreOpcion } from "@/lib/productos";
@@ -29,13 +29,7 @@ function enlaceWhatsapp(nombre: string, variante?: VarianteDetalle) {
       })
     : [];
   if (variante?.sku) opciones.push(`SKU: ${variante.sku}`);
-  const parametros = new URLSearchParams({
-    text: `Hola, quisiera consultar sobre ${nombre}${opciones.length ? ` (${opciones.join(", ")})` : ""} en Fara Collection.`,
-    username: WHATSAPP_FARA,
-    type: "username",
-    app_absent: "0",
-  });
-  return `https://api.whatsapp.com/send/?${parametros}`;
+  return enlaceWhatsApp(`Hola, quisiera consultar sobre ${nombre}${opciones.length ? ` (${opciones.join(", ")})` : ""} en Fara Collection.`);
 }
 
 export function DetalleProducto({ producto, variantIdInicial }: { producto: ProductoDetalle; variantIdInicial?: string }) {
