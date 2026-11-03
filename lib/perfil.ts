@@ -81,13 +81,19 @@ function fechaValida(texto: string, hoy: string) {
   return !Number.isNaN(fecha.getTime()) && fecha.toISOString().slice(0, 10) === texto && texto >= "1900-01-01" && texto <= hoy;
 }
 
-// Acepta coma o punto decimal. null = vacío; undefined = no es un número en el rango.
-function leerMedida(texto: string, min: number, max: number): number | null | undefined {
+// Número positivo con coma o punto decimal, redondeado a 1 decimal. null = vacío o no es un número.
+// Sin revisar rangos: la ficha de medidas lo usa para mostrar lo que se va escribiendo.
+export function leerNumero(texto: string): number | null {
   const limpio = texto.trim().replace(",", ".");
-  if (!limpio) return null;
-  if (!/^\d+(\.\d+)?$/.test(limpio)) return undefined;
-  const valor = Math.round(Number(limpio) * 10) / 10;
-  return valor >= min && valor <= max ? valor : undefined;
+  if (!/^\d+(\.\d+)?$/.test(limpio)) return null;
+  return Math.round(Number(limpio) * 10) / 10;
+}
+
+// null = vacío; undefined = no es un número en el rango
+function leerMedida(texto: string, min: number, max: number): number | null | undefined {
+  if (!texto.trim()) return null;
+  const valor = leerNumero(texto);
+  return valor !== null && valor >= min && valor <= max ? valor : undefined;
 }
 
 export function valoresIniciales(perfil: Perfil): ValoresPerfil {

@@ -6,8 +6,20 @@ import { useState } from "react";
 import { fetchAuthSession, updateUserAttributes } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
-import { botonCuenta, campoCuenta, errorCuenta, etiquetaCuenta } from "@/components/tienda/marco-cuenta";
 import {
+  alineadoConPanel,
+  botonPrincipal,
+  campo as estiloCampo,
+  rellenoPanel,
+  etiquetaCampo,
+  etiquetaDato,
+  textoAyuda,
+  textoError,
+  tituloBloque,
+} from "@/components/tienda/estilos-cuenta";
+import { FichaMedidas } from "@/components/tienda/ficha-medidas";
+import {
+  type CampoMedida,
   type CampoPerfil,
   type ErroresPerfil,
   LARGO_NOMBRE,
@@ -15,6 +27,7 @@ import {
   type Perfil,
   TALLAS_COPA,
   type ValoresPerfil,
+  leerNumero,
   validarPerfil,
   valoresIniciales,
 } from "@/lib/perfil";
@@ -25,8 +38,6 @@ import "@/components/compartido/configurar-amplify";
 // solo le deja crear, leer y editar su propio perfil. Vive aquí para que el resto de la
 // tienda no cargue el cliente de datos.
 const clienteDatos = generateClient<Schema>();
-
-const textoAyuda = "mt-1.5 text-[13px] leading-[18px] text-topo";
 
 // El encabezado muestra el nombre del token de Cognito: se actualiza para que coincida.
 // Si falla, el perfil igual queda guardado (Customer es el dato que vale).
@@ -45,27 +56,30 @@ function Campo({
   etiqueta,
   ayuda,
   error,
+  className = "",
   children,
 }: {
   id: CampoPerfil;
   etiqueta: string;
   ayuda?: string;
   error?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col">
-      <label htmlFor={id} className={etiquetaCuenta}>
+    <div className={`flex min-w-0 flex-col ${className}`}>
+      <label htmlFor={id} className={etiquetaCampo}>
         {etiqueta}
       </label>
-      <div className="mt-1.5">{children}</div>
-      {ayuda && (
-        <p id={`${id}-ayuda`} className={textoAyuda}>
+      <div className="mt-2">{children}</div>
+      {/* Con error se muestra solo el error: ya explica qué escribir */}
+      {ayuda && !error && (
+        <p id={`${id}-ayuda`} className={`${textoAyuda} mt-1.5`}>
           {ayuda}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-[13px] leading-[18px] text-vino">
+        <p id={`${id}-error`} className={`${textoError} mt-1.5`}>
           {error}
         </p>
       )}
@@ -89,6 +103,8 @@ export function FormularioPerfil({
   const [errores, setErrores] = useState<ErroresPerfil>({});
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
+  // Medida que se está llenando: la ficha resalta su línea
+  const [enfocada, setEnfocada] = useState<CampoMedida | "copa" | null>(null);
 
   // Props de cada campo: su valor, el cambio (que borra su error) y la accesibilidad del error
   const campo = (id: CampoPerfil, conAyuda = false) => ({
@@ -101,10 +117,15 @@ export function FormularioPerfil({
       if (errores[id]) setErrores((actuales) => ({ ...actuales, [id]: undefined }));
     },
     "aria-invalid": errores[id] ? true : undefined,
-    "aria-describedby": [conAyuda && `${id}-ayuda`, errores[id] && `${id}-error`].filter(Boolean).join(" ") || undefined,
-    // aria-invalid: gana al border-tinta de campoCuenta por especificidad
-    className: `${campoCuenta} aria-invalid:border-vino`,
+    "aria-describedby": (errores[id] ? `${id}-error` : conAyuda ? `${id}-ayuda` : undefined),
+    className: estiloCampo,
   });
+
+  // Lo que se va escribiendo, para la ficha (los rangos se revisan al guardar)
+  const medidasEnVivo = Object.fromEntries(MEDIDAS.map((m) => [m.campo, leerNumero(valores[m.campo])])) as Record<
+    CampoMedida,
+    number | null
+  >;
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -134,75 +155,86 @@ export function FormularioPerfil({
       router.refresh();
     } catch (err) {
       console.error("No se pudo guardar el perfil:", err);
-      setError("No se pudieron guardar tus datos. Inténtalo de nuevo.");
+      setError("No se guardaron los cambios. Revisa tu conexión e inténtalo de nuevo.");
       setEnviando(false);
     }
   }
 
   return (
-    <form onSubmit={guardar} noValidate className="mt-6 flex flex-col gap-8">
-      <fieldset className="flex flex-col gap-4">
-        <legend className="mb-4 text-[18px]">Datos personales</legend>
-        <Campo id="nombre" etiqueta="Nombre" error={errores.nombre}>
-          <input {...campo("nombre")} autoComplete="given-name" maxLength={LARGO_NOMBRE} required />
-        </Campo>
-        <Campo id="apellido" etiqueta="Apellido" error={errores.apellido}>
-          <input {...campo("apellido")} autoComplete="family-name" maxLength={LARGO_NOMBRE} />
-        </Campo>
-        <div>
-          <p className={etiquetaCuenta}>Correo</p>
-          <p className="mt-1.5 text-[16px] leading-[24px] break-all">{perfil.correo || "—"}</p>
-          <p className={textoAyuda}>Es con el que inicias sesión; no se cambia aquí.</p>
-        </div>
-        <Campo
-          id="telefono"
-          etiqueta="Celular"
-          ayuda="9 dígitos. Si es de otro país, empieza con su código (+…)."
-          error={errores.telefono}
-        >
-          <input {...campo("telefono", true)} type="tel" inputMode="tel" autoComplete="tel" placeholder="987 654 321" />
-        </Campo>
-        <Campo id="nacimiento" etiqueta="Fecha de nacimiento" error={errores.nacimiento}>
-          <input {...campo("nacimiento")} type="date" min="1900-01-01" max={hoy} autoComplete="bday" />
-        </Campo>
-      </fieldset>
-
-      <fieldset>
-        <legend className="text-[18px]">Mis medidas</legend>
-        <p className={`${textoAyuda} mb-4`}>
-          Opcionales, en centímetros. Nos ayudan a recomendarte la talla y el largo de cada vestido.
-        </p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-          {MEDIDAS.map((m) => (
-            <Campo key={m.campo} id={m.campo} etiqueta={m.etiqueta} error={errores[m.campo]}>
-              <input {...campo(m.campo)} inputMode="decimal" autoComplete="off" placeholder="cm" />
+    <form onSubmit={guardar} noValidate className="grid items-start gap-x-[clamp(32px,5vw,80px)] gap-y-12 lg:grid-cols-2">
+      {/* El relleno va en un div: en un <fieldset> quedaría debajo del <legend> */}
+      <div className={`min-w-0 ${alineadoConPanel}`}>
+        <fieldset className="min-w-0">
+          <legend className={tituloBloque}>Tus datos</legend>
+          <div className="mt-6 grid gap-x-4 gap-y-6 sm:grid-cols-2">
+            <Campo id="nombre" etiqueta="Nombre" error={errores.nombre}>
+              <input {...campo("nombre")} autoComplete="given-name" maxLength={LARGO_NOMBRE} required />
             </Campo>
-          ))}
-          <Campo id="copa" etiqueta="Copa" error={errores.copa}>
-            <select {...campo("copa")}>
-              <option value="">Sin indicar</option>
-              {TALLAS_COPA.map((talla) => (
-                <option key={talla} value={talla}>
-                  {talla}
-                </option>
-              ))}
-            </select>
-          </Campo>
-        </div>
-      </fieldset>
+            <Campo id="apellido" etiqueta="Apellido" error={errores.apellido}>
+              <input {...campo("apellido")} autoComplete="family-name" maxLength={LARGO_NOMBRE} />
+            </Campo>
+            <div className="min-w-0 border-y border-arena py-4 sm:col-span-2">
+              <p className={etiquetaDato}>Correo</p>
+              <p className="mt-0.5 text-[17px] leading-[24px] break-words">{perfil.correo || "—"}</p>
+              <p className={`${textoAyuda} mt-1`}>Es tu usuario para iniciar sesión, por eso no se cambia aquí.</p>
+            </div>
+            <Campo id="telefono" etiqueta="Celular" ayuda="9 dígitos. De otro país, con su código (+…)." error={errores.telefono}>
+              <input {...campo("telefono", true)} type="tel" inputMode="tel" autoComplete="tel" placeholder="987 654 321" />
+            </Campo>
+            <Campo id="nacimiento" etiqueta="Fecha de nacimiento" error={errores.nacimiento}>
+              <input {...campo("nacimiento")} type="date" min="1900-01-01" max={hoy} autoComplete="bday" />
+            </Campo>
+          </div>
+        </fieldset>
+      </div>
 
-      <div className="flex flex-col items-center gap-3">
+      {/* El fondo va en un div: un <fieldset> con fondo y relleno descoloca su <legend> */}
+      <div id="medidas" className={`min-w-0 scroll-mt-6 bg-lino ${rellenoPanel}`}>
+        <fieldset className="min-w-0">
+          <legend className={tituloBloque}>Tus medidas</legend>
+          <p className={`${textoAyuda} mt-1.5 max-w-[46ch]`}>Todas son opcionales y van en centímetros.</p>
+          <div className="mt-6">
+            <FichaMedidas medidas={medidasEnVivo} copa={valores.copa || null} resaltar={enfocada} decorativa />
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6">
+            {MEDIDAS.map((m) => (
+              <Campo key={m.campo} id={m.campo} etiqueta={m.etiqueta} error={errores[m.campo]}>
+                <input
+                  {...campo(m.campo)}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  placeholder="cm"
+                  onFocus={() => setEnfocada(m.campo)}
+                  onBlur={() => setEnfocada(null)}
+                />
+              </Campo>
+            ))}
+            <Campo id="copa" etiqueta="Copa" error={errores.copa}>
+              <select {...campo("copa")} onFocus={() => setEnfocada("copa")} onBlur={() => setEnfocada(null)}>
+                <option value="">Sin indicar</option>
+                {TALLAS_COPA.map((talla) => (
+                  <option key={talla} value={talla}>
+                    {talla}
+                  </option>
+                ))}
+              </select>
+            </Campo>
+          </div>
+        </fieldset>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-tinta pt-8 lg:col-span-2">
+        <button type="submit" disabled={enviando} className={botonPrincipal}>
+          {enviando ? "Guardando…" : "Guardar cambios"}
+        </button>
+        <Link href="/cuenta" className="text-[15px] leading-[20px] underline-offset-4 hover:underline">
+          Cancelar
+        </Link>
         {error && (
-          <p role="alert" className={errorCuenta}>
+          <p role="alert" className={`${textoError} basis-full`}>
             {error}
           </p>
         )}
-        <button type="submit" disabled={enviando} className={botonCuenta}>
-          {enviando ? "Guardando…" : "Guardar cambios"}
-        </button>
-        <Link href="/cuenta" className="text-[15px] hover:underline">
-          Cancelar
-        </Link>
       </div>
     </form>
   );

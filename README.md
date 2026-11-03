@@ -51,7 +51,7 @@ app/
 components/
 ├── admin/                     ← solo el panel
 │   └── ui/                    ← componentes de shadcn (los crea el CLI)
-├── tienda/                    ← solo la tienda: encabezado, pie, catálogo, vestido, datos
+├── tienda/                    ← solo la tienda: encabezado, pie, catálogo, vestido, datos y el área de la clienta
 └── compartido/                ← lo usan ambas zonas
 
 lib/
@@ -149,17 +149,26 @@ Los productos guardados con el modelo anterior (precios, tallas, colores y fotos
 ## Sesión de las clientas
 
 - **Dónde vive:** Amplify guarda la sesión en **cookies** (`ssr: true` en `components/compartido/configurar-amplify.tsx`): `CognitoIdentityServiceProvider.<clientId>.<usuario>.idToken`, `.accessToken` y `.refreshToken`. Así la leen el navegador y el servidor.
-- **Mi cuenta (`/cuenta`):** el servidor lee la sesión con `obtenerSesion()` y el perfil `Customer` con las cookies de la clienta (`lib/cuenta.ts`; `allow.owner()` solo le deja leer el suyo) y muestra un resumen: nombre, correo, celular, fecha de nacimiento y medidas. Si no hay `Customer` (por ejemplo, una cuenta del staff), usa el nombre y el correo del token. Tiene **Editar mi perfil**, **Cerrar sesión** y, para el staff, un enlace al panel. Sin sesión, manda a `/login`.
+- **Mi cuenta (`/cuenta`):** el servidor lee la sesión con `obtenerSesion()` y el perfil `Customer` con las cookies de la clienta (`lib/cuenta.ts`; `allow.owner()` solo le deja leer el suyo) y muestra un resumen: nombre, correo, celular, fecha de nacimiento y medidas. Si no hay `Customer` (por ejemplo, una cuenta del staff), usa el nombre y el correo del token. Sin sesión, manda a `/login`.
 - **Encabezado:** revisa la sesión en el navegador (`components/tienda/use-sesion.ts`) y escucha los eventos `signedIn` y `signedOut` de Amplify. Con sesión, el ícono de la persona lleva a `/cuenta` y muestra el nombre (en pantallas chicas, un punto dorado). Se hace en el navegador para que las páginas de la tienda sigan siendo estáticas: el servidor solo lee la sesión en `/cuenta`, `/login` y `/registro`.
 - **`/login` y `/registro`** redirigen si ya hay sesión, así nunca se muestra el formulario a alguien que ya entró.
 - **A dónde vuelve:** después de entrar (correo, registro o Google) va a `?siguiente=<ruta>` o, si no hay, a `/cuenta`. El ícono del encabezado agrega la página actual (salvo la portada), así quien inicia sesión desde un vestido vuelve a ese vestido. `lib/redireccion.ts` solo acepta rutas internas, para que nadie arme un enlace que saque a la clienta del sitio. Con Google, el destino viaja en el `customState` de OAuth y `RetornoGoogle` lo usa al volver a la portada.
+
+## Área de la clienta
+
+`/cuenta` y `/cuenta/perfil` no usan el marco del login (`MarcoCuenta`, que queda solo para `/login` y `/registro`): son páginas propias, más aireadas, con el lenguaje de la portada.
+
+- **`CabeceraCuenta`:** franja con el rosa de la portada, el título grande en Jost liviano ("Hola, María" o "Mi perfil") y las pestañas Resumen y Mi perfil, más Cerrar sesión y, para el staff, Panel de administración. Va a todo el ancho, así Cerrar sesión queda bajo los íconos del encabezado.
+- **`ResumenCuenta`:** tus datos como lista a la izquierda y tus medidas en un panel lino a la derecha (una sola columna en celular).
+- **`FichaMedidas`:** la silueta del vestido sirena con líneas de costurera en busto, cintura y cadera, cada una con su valor, y la altura con su línea vertical. En Mi perfil muestra lo que se va escribiendo y resalta la línea de la medida enfocada; ahí es decorativa (`aria-hidden`) porque los valores ya están en los campos. Las alturas de las líneas son coordenadas del `viewBox` de `<Vestido forma="sirena">`: si cambia el dibujo, hay que moverlas.
+- **`estilos-cuenta.ts`:** clases compartidas (contenedor, botones de la portada, campos, títulos en minúsculas). `alineadoConPanel` da a "Tus datos" el mismo relleno superior que el panel de medidas para que los títulos queden a la misma altura.
 
 ## Perfil de la clienta
 
 `/cuenta/perfil` edita su `Customer`: nombre (obligatorio), apellido, celular, fecha de nacimiento y medidas (altura, busto, cintura y cadera en cm, y talla de copa). El correo no se edita porque es el usuario de Cognito.
 
 - **Lectura:** en el servidor (`leerPerfil()` en `lib/cuenta.ts`). Si la lectura falla, la página muestra un aviso en vez del formulario, para no guardar campos vacíos encima de los datos reales.
-- **Guardado:** desde el navegador con `generateClient` (`components/tienda/formulario-perfil.tsx`), como el panel: AppSync aplica `allow.owner()`. Si la clienta todavía no tiene `Customer` (el trigger falló o es una cuenta del staff), se crea al guardar; Amplify llena `owner` solo. Al terminar vuelve a `/cuenta` con el aviso "Tus datos se guardaron".
+- **Guardado:** desde el navegador con `generateClient` (`components/tienda/formulario-perfil.tsx`), como el panel: AppSync aplica `allow.owner()`. Si la clienta todavía no tiene `Customer` (el trigger falló o es una cuenta del staff), se crea al guardar; Amplify llena `owner` solo. Al terminar vuelve a `/cuenta` con el aviso "Cambios guardados".
 - **Validación** (`lib/perfil.ts`, la misma lista de errores en el orden del formulario):
   - Celular: 9 dígitos que empiezan en 9 → se guarda como `+51…`; otros países con su código (`+…`). Se guarda sin espacios porque `AWSPhone` toma los números sin código como de EE. UU.
   - Fecha de nacimiento: fecha real entre 1900 y hoy (hora de Perú).
