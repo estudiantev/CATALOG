@@ -5,12 +5,17 @@ import { getUrl } from "aws-amplify/storage";
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import { cargarProductos, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import { type ContenidoInicio, PAGINA_INICIO, armarContenido } from "@/lib/contenido";
+import { type ContenidoInicio, OCASIONES, PAGINA_INICIO, armarContenido } from "@/lib/contenido";
 import { CATEGORIAS, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
+import { EnlacesSugeridos } from "./comun";
+import { EditorAnuncios } from "./editor-anuncios";
 import { EditorDestacados, type OpcionProducto } from "./editor-destacados";
+import { EditorInspiracion } from "./editor-inspiracion";
+import { EditorNosotros } from "./editor-nosotros";
 import { EditorOcasiones } from "./editor-ocasiones";
 import { EditorPasos } from "./editor-pasos";
+import { EditorPie } from "./editor-pie";
 import { EditorPortada } from "./editor-portada";
 
 // Las filas de la página de inicio, con la sesión de quien edita (AppSync aplica sus permisos)
@@ -26,9 +31,14 @@ async function cargarContenido(): Promise<ContenidoInicio> {
   return armarContenido(data);
 }
 
-// Vista previa de las fotos ya guardadas de la portada
-async function firmarVistasPrevias(contenido: ContenidoInicio) {
-  const rutas = contenido.portada.datos.diapositivas.flatMap((d) => (d.imagen ? [d.imagen.key] : []));
+// Vista previa de las fotos ya guardadas
+async function firmarVistasPrevias({ portada, ocasiones, nosotros, inspiracion }: ContenidoInicio) {
+  const rutas = [
+    ...portada.datos.diapositivas.map((d) => d.imagen),
+    ...OCASIONES.map(({ clave }) => ocasiones.datos[clave].imagen),
+    nosotros.datos.imagen,
+    inspiracion.datos.imagen,
+  ].flatMap((imagen) => (imagen ? [imagen.key] : []));
   const firmadas = await Promise.all(
     rutas.map((path) =>
       getUrl({ path }).then(
@@ -90,10 +100,15 @@ export function EditorContenido() {
   const { datos, vistasPrevias } = contenido;
   return (
     <div className="space-y-8">
+      <EnlacesSugeridos />
+      <EditorAnuncios inicial={datos.anuncios} />
       <EditorPortada inicial={datos.portada} vistasPrevias={vistasPrevias} />
-      <EditorOcasiones inicial={datos.ocasiones} />
       <EditorDestacados inicial={datos.destacados} productos={productos} errorProductos={errorProductos} />
+      <EditorOcasiones inicial={datos.ocasiones} vistasPrevias={vistasPrevias} />
       <EditorPasos inicial={datos.pasos} />
+      <EditorNosotros inicial={datos.nosotros} vistasPrevias={vistasPrevias} />
+      <EditorInspiracion inicial={datos.inspiracion} vistasPrevias={vistasPrevias} />
+      <EditorPie inicial={datos.pie} />
     </div>
   );
 }

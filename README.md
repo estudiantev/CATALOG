@@ -51,7 +51,7 @@ app/
 
 components/
 ├── admin/                     ← solo el panel
-│   ├── contenido/             ← editores del CMS: portada, ocasiones, destacados y pasos
+│   ├── contenido/             ← editores del CMS, uno por sección
 │   └── ui/                    ← componentes de shadcn (los crea el CLI)
 ├── tienda/                    ← solo la tienda: encabezado, pie, catálogo, vestido, datos y el área de la clienta
 └── compartido/                ← lo usan ambas zonas
@@ -64,7 +64,7 @@ lib/
 ├── perfil.ts                  ← tipos, tallas de copa, rangos de medidas y validación del perfil
 ├── catalogo.ts                ← lee el catálogo, el detalle y los destacados en el servidor, como visitante
 ├── contenido.ts               ← CMS: secciones, contenido por defecto, validación y normalización
-├── contenido-servidor.ts      ← lee el contenido de la página de inicio (con caché) y firma sus fotos
+├── contenido-servidor.ts      ← lee el contenido de la tienda (con caché) y firma sus fotos
 ├── productos.ts               ← tipos, listas fijas (tallas, largos, escotes…) y etiquetas
 ├── variantes.ts               ← resumen de variantes, tarjeta del catálogo y selector del detalle
 ├── resumen.ts                 ← guarda en Product el resumen de sus variantes
@@ -182,18 +182,22 @@ Los productos guardados con el modelo anterior (precios, tallas, colores y fotos
 
 ## Contenido de la página de inicio (CMS)
 
-ADMIN y MARKETING editan la página de inicio en **`/admin/contenido`** (opción "Contenido" del menú), sin tocar el código. El diseño sigue en el código; desde el panel se cambian textos, fotos, enlaces, productos y qué secciones se muestran.
+ADMIN y MARKETING editan la página de inicio, la barra de anuncios y el pie en **`/admin/contenido`** (opción "Contenido" del menú), sin tocar el código. El diseño sigue en el código; desde el panel se cambian textos, fotos, enlaces, productos y qué secciones se muestran.
 
-- **Tabla `Content`** (`amplify/data/resource.ts`): una fila por sección, con clave `page` + `section` (`"inicio"` + `"portada"`, `"ocasiones"`, `"destacados"` o `"pasos"`). `data` guarda la sección en JSON y `visible` dice si se muestra (la portada siempre se muestra). La leen invitados y clientas; MARKETING crea y edita; ADMIN además puede borrar.
-- **Secciones:**
+- **Tabla `Content`** (`amplify/data/resource.ts`): una fila por sección, con clave `page` + `section` (`"inicio"` + `"anuncios"`, `"portada"`, `"destacados"`, `"ocasiones"`, `"pasos"`, `"nosotros"`, `"inspiracion"` o `"pie"`). `data` guarda la sección en JSON y `visible` dice si se muestra (la portada y el pie siempre se muestran). Como el JSON lo revisa `lib/contenido.ts`, agregar una sección no cambia la tabla ni pide desplegar el backend. La leen invitados y clientas; MARKETING crea y edita; ADMIN además puede borrar.
+- **Secciones**, en el orden en que se ven:
+  - **Anuncios:** la barra azul sobre el menú, en todas las páginas. Hasta 4 anuncios con enlace opcional, que rotan cada 3 a 10 segundos; se pueden pausar y pasar con las flechas.
   - **Portada:** hasta 3, cada una con antetítulo, título, texto, botón principal, segundo botón opcional y foto opcional. Sin foto se ven las ilustraciones de vestidos; con más de una portada aparecen los guiones para pasar de una a otra.
-  - **Ocasiones:** la modalidad y la descripción de De Gala, De XV, Cortos y Floreados. Sus nombres y enlaces siguen en `COLECCIONES` porque también arman el menú y los filtros del catálogo.
-  - **Nuestro catálogo:** título, subtítulo y hasta 8 productos elegidos del catálogo, en orden. El precio y la foto salen del producto; los que no tienen stock no se muestran. Sin productos elegidos, se muestran los vestidos más nuevos.
+  - **Catálogo** (`destacados`): título, subtítulo y hasta 10 productos elegidos del catálogo, en orden y en dos filas de 5, cada uno con una etiqueta opcional sobre la foto ("Nuevo" va en azul, las demás en verde). El precio y la foto salen del producto; los que no tienen stock no se muestran. Sin productos elegidos, se muestran los vestidos más nuevos.
+  - **Colecciones** (`ocasiones`): la modalidad, la descripción y la foto de De Gala, De XV, Cortos y Floreados. Sin foto se ve la ilustración del vestido. Sus nombres y enlaces siguen en `COLECCIONES` porque también arman el menú y los filtros del catálogo.
   - **Alquiler en 3 pasos:** título, subtítulo, los 3 pasos y el texto del botón, que abre WhatsApp (`enlaceWhatsApp()` en `components/tienda/datos.ts`).
-  - "Compra por color" sigue en el código: cada color está atado a un filtro del catálogo.
-- **Validación y normalización** (`lib/contenido.ts`): AppSync guarda el JSON sin revisarlo. El panel valida antes de guardar (campos obligatorios, largos máximos y enlaces) y la tienda normaliza al leer: lo que falte o no sirva se reemplaza por el contenido por defecto, que es el que la portada tenía en el código. Los enlaces solo pueden ser rutas de la tienda (`/catalogo`), secciones (`#pasos`) o `https://`; nada de `javascript:` ni `//otro-sitio`.
-- **Lectura** (`lib/contenido-servidor.ts`): en el servidor, como visitante, con `unstable_cache` y la etiqueta `"contenido"` (10 minutos). Al guardar, el panel llama a `invalidarContenido()` (`revalidateTag("contenido")`) y el cambio se ve enseguida. Si la tabla no responde, la portada muestra el contenido por defecto en vez de caerse.
-- **Fotos:** se reducen a 2000 px (WebP) en el navegador y se suben a `content-images/inicio/`. Las URLs firmadas vencen, por eso la portada es dinámica y las firma en cada visita, como el catálogo. Al guardar, las fotos que se cambiaron o quitaron se borran de S3.
+  - **Quiénes somos** (`nosotros`): título, lema opcional, texto y foto de fondo opcional.
+  - **Inspiración:** antetítulo opcional, texto, botón y foto opcional.
+  - **Pie de página** (`pie`): la descripción de la tienda, el formulario de suscripción y los enlaces a redes; en todas las páginas. La tienda todavía no guarda una lista de correos: quien se suscribe abre WhatsApp con su correo ya escrito. Sin título, el formulario no se muestra; una red sin enlace, tampoco.
+  - Los colores de la barra del catálogo siguen en el código: cada color está atado a un filtro del catálogo.
+- **Validación y normalización** (`lib/contenido.ts`): AppSync guarda el JSON sin revisarlo. El panel valida antes de guardar (campos obligatorios, largos máximos y enlaces) y la tienda normaliza al leer: lo que falte o no sirva se reemplaza por el contenido por defecto, que es el que la portada tenía en el código. Los enlaces solo pueden ser rutas de la tienda (`/catalogo`), secciones (`/#pasos`, que funciona desde cualquier página) o `https://`; nada de `javascript:` ni `//otro-sitio`.
+- **Lectura** (`lib/contenido-servidor.ts`): en el servidor, como visitante, con `unstable_cache` y la etiqueta `"contenido"` (10 minutos). La página de inicio usa `leerContenidoInicio()` y el layout de la tienda `leerContenidoMarco()` (anuncios y pie), las dos de la misma caché. Al guardar, el panel llama a `invalidarContenido()` (`revalidateTag("contenido")`) y el cambio se ve enseguida. Si la tabla no responde, la tienda muestra el contenido por defecto en vez de caerse.
+- **Fotos** (`components/admin/contenido/foto.tsx`, compartido por las secciones con foto): se reducen a 2000 px (WebP) en el navegador y se suben a `content-images/inicio/`. Las URLs firmadas vencen, por eso la página de inicio es dinámica y las firma en cada visita, como el catálogo. Al guardar, las fotos que se cambiaron o quitaron se borran de S3.
 
 Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, la tienda muestra el contenido por defecto y el panel avisa que falta desplegar.
 

@@ -1,169 +1,206 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { COLECCIONES, COLORES, enlaceWhatsApp } from "@/components/tienda/datos";
+import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
+import { barraSeccion, botonAncho, botonCaja, chip, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
-import { TarjetaProducto } from "@/components/tienda/tarjeta-producto";
+import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
-import type { ClaveOcasion } from "@/lib/contenido";
+import { type ClaveOcasion, PRODUCTOS_POR_FILA } from "@/lib/contenido";
 import { leerContenidoInicio } from "@/lib/contenido-servidor";
 import { resolverTarjeta } from "@/lib/variantes";
 
-// Las fotos de la portada y de los destacados usan URLs firmadas de S3 que vencen: se firman
-// en cada visita. Los textos (tabla Content) y los productos sí van en caché (lib/contenido-servidor.ts).
+// Las fotos de la portada, las colecciones y los destacados usan URLs firmadas de S3 que vencen:
+// se firman en cada visita. Los textos (tabla Content) y los productos sí van en caché
+// (lib/contenido-servidor.ts).
 export const dynamic = "force-dynamic";
 
 type Ilustracion = ComponentProps<typeof Vestido>;
 
-// Los nombres y enlaces salen de COLECCIONES (también arman el menú); la modalidad y la
-// descripción de cada una se editan en /admin/contenido
-const OCASIONES: { coleccion: (typeof COLECCIONES)[number]; clave: ClaveOcasion; numero: string; vestido: Ilustracion }[] = [
-  { coleccion: COLECCIONES[0], clave: "gala", numero: "01", vestido: { forma: "sirena", color: "#1d1a1b", className: "h-[94%] w-auto" } },
-  { coleccion: COLECCIONES[1], clave: "xv", numero: "02", vestido: { forma: "xv", color: "#e6b4b2", className: "mb-[2%] h-[90%] w-auto" } },
-  { coleccion: COLECCIONES[2], clave: "cortos", numero: "03", vestido: { forma: "corto", color: "#a3243b", className: "h-[96%] w-auto" } },
-  { coleccion: COLECCIONES[3], clave: "floreados", numero: "04", vestido: { forma: "floreado", color: "#bcd3e6", className: "h-[96%] w-auto" } },
+// Los nombres y enlaces salen de COLECCIONES (también arman el menú); la modalidad, la
+// descripción y la foto de cada una se editan en /admin/contenido. Sin foto se ve la ilustración.
+const OCASIONES: { coleccion: (typeof COLECCIONES)[number]; clave: ClaveOcasion; vestido: Ilustracion }[] = [
+  { coleccion: COLECCIONES[0], clave: "gala", vestido: { forma: "sirena", color: "#1d1a1b", className: "h-[94%] w-auto" } },
+  { coleccion: COLECCIONES[1], clave: "xv", vestido: { forma: "xv", color: "#e6b4b2", className: "mb-[2%] h-[90%] w-auto" } },
+  { coleccion: COLECCIONES[2], clave: "cortos", vestido: { forma: "corto", color: "#a3243b", className: "h-[96%] w-auto" } },
+  { coleccion: COLECCIONES[3], clave: "floreados", vestido: { forma: "floreado", color: "#bcd3e6", className: "h-[96%] w-auto" } },
 ];
 
-const tarjeta = "group flex h-full flex-col bg-white text-tinta transition-colors hover:bg-arena active:bg-dorado";
-const nombreTarjeta = "group-hover:underline group-hover:underline-offset-4";
-const marcoIlustracion = "overflow-hidden [&_svg]:transition-transform [&_svg]:duration-[600ms] group-hover:[&_svg]:scale-[1.04]";
-const etiqueta = "text-[12px] leading-[18px] font-semibold tracking-[0.1em] text-topo uppercase";
-const tituloSeccion = "text-[clamp(24px,2vw,30px)] leading-[1.2] font-medium tracking-[0.08em] uppercase";
-const botonOscuro = "inline-flex min-h-13 items-center justify-center border-2 border-tinta bg-tinta font-semibold tracking-[0.06em] text-white uppercase transition-colors hover:bg-dorado hover:text-tinta active:bg-white active:text-tinta";
+function Flecha({ tamano }: { tamano: number }) {
+  return (
+    <svg width={tamano} height={tamano} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
 
 export default async function InicioPage() {
-  const { diapositivas, ocasiones, destacados, pasos } = await leerContenidoInicio();
+  const { diapositivas, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenidoInicio();
   // Sin filtros: la tarjeta muestra la primera variante con stock y el precio "desde"
   const tarjetas = (destacados?.productos ?? []).flatMap((producto) => {
     const datos = resolverTarjeta(producto, {});
     return datos ? [{ producto, ...datos }] : [];
   });
+  const filas = [tarjetas.slice(0, PRODUCTOS_POR_FILA), tarjetas.slice(PRODUCTOS_POR_FILA)].filter((fila) => fila.length > 0);
+
+  const filaDeProductos = (fila: typeof tarjetas, conBorde: boolean) => (
+    <ul
+      aria-label="Productos destacados"
+      className={`grid min-h-[250px] flex-[1_1_0] grid-cols-[repeat(5,minmax(180px,1fr))] overflow-x-auto [scrollbar-width:thin] ${conBorde ? "border-b border-tinta" : ""}`}
+    >
+      {fila.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
+        <li key={producto.productId} className="min-w-0">
+          <TarjetaDestacado
+            href={`/catalogo/${producto.productId}?v=${variantId}`}
+            nombre={producto.nombre}
+            precioVenta={precioVenta}
+            precioAlquiler={precioAlquiler}
+            desde={desde}
+            portada={portada}
+            hover={hover}
+            etiqueta={destacados?.etiquetas[producto.productId]}
+            sizes="(min-width: 1024px) 20vw, 180px"
+          />
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
-    <>
+    <div className="bg-white font-cuerpo text-[15px] text-tinta">
       <PortadaInicio diapositivas={diapositivas} />
 
-      <section id="colores" aria-labelledby="titulo-colores" className="bg-crema pt-[clamp(36px,4vw,56px)]">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 px-[clamp(16px,3.6vw,54px)] pb-6 h-[45px]">
-          <h2 id="titulo-colores" className="text-[28px] leading-[1.2] font-normal tracking-[0.08em] uppercase">
-            Compra por color
-          </h2>
-        </div>
-        <ul aria-label="Colores" className="flex flex-wrap border-t-2 border-tinta lg:h-[177px]">
-          {COLORES.map((color) => (
-            <li key={color.nombre} className="min-w-0 flex-[1_1_clamp(110px,10vw,160px)] border-r-2 border-b-2 border-tinta">
-              <Link href={color.href} className={tarjeta}>
-                <span aria-hidden="true" className="block aspect-[4/3]" style={{ background: color.hex }} />
-                <span className={`${nombreTarjeta} block border-t-2 border-tinta px-3.5 py-3 text-[16px] leading-[22px]`}>
+      {destacados && filas.length > 0 && (
+        <section id="catalogo" aria-labelledby="titulo-catalogo" className="pantalla flex flex-col border-t border-tinta bg-white">
+          <div className={barraSeccion}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <h2 id="titulo-catalogo" className={tituloCaja}>
+                {destacados.titulo}
+              </h2>
+              {destacados.subtitulo && <p className="text-[13px] text-[#444444]">{destacados.subtitulo}</p>}
+            </div>
+            <nav aria-label="Comprar por color" className="flex max-w-full items-stretch overflow-x-auto border border-tinta [scrollbar-width:none]">
+              {COLORES.map((color, i) => (
+                <Link key={color.nombre} href={color.href} className={`${chip} ${i > 0 ? "border-l border-tinta" : ""}`}>
+                  <span aria-hidden="true" className="size-2.5 flex-none border border-tinta" style={{ background: color.hex }} />
                   {color.nombre}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {ocasiones && (
-        <section id="colecciones" aria-label="Ocasiones" className="bg-crema pt-[clamp(36px,4vw,56px)]">
-          <ul className="border-t-2 border-tinta">
-            {OCASIONES.map((ocasion) => (
-              <li key={ocasion.numero} className="border-b-2 border-tinta">
-                <Link href={ocasion.coleccion.href} className="group flex items-center gap-[clamp(12px,2.4vw,36px)] px-[clamp(16px,3.6vw,54px)] py-[clamp(14px,1.6vw,22px)] transition-colors hover:bg-arena active:bg-dorado">
-                  <span className="w-[clamp(28px,4.4vw,72px)] flex-none text-[15px] leading-[20px] font-medium tracking-[0.08em]">
-                    {ocasion.numero}
-                  </span>
-                  <span className="flex min-w-0 flex-auto flex-wrap items-center gap-x-10 gap-y-1.5">
-                    <span className={`${nombreTarjeta} min-w-0 flex-[1_1_300px] text-[clamp(36px,4.6vw,72px)] leading-[1.05] font-light tracking-[-0.02em]`}>
-                      {ocasion.coleccion.nombre}
-                    </span>
-                    <span className="flex min-w-0 flex-[1_1_280px] flex-col gap-0.5">
-                      <span className={etiqueta}>{ocasiones[ocasion.clave].modalidad}</span>
-                      <span className="text-[16px] leading-[24px] text-grafito">{ocasiones[ocasion.clave].descripcion}</span>
-                    </span>
-                  </span>
-                  <span className={`${marcoIlustracion} flex aspect-square w-[clamp(64px,7.4vw,112px)] flex-none items-end justify-center border-2 border-tinta bg-lino`}>
-                    <Vestido {...ocasion.vestido} />
-                  </span>
-                  <span className="flex size-11 flex-none items-center justify-center rounded-full border-2 border-tinta">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M5 12h14" />
-                      <path d="M13 6l6 6-6 6" />
-                    </svg>
-                  </span>
                 </Link>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </nav>
+          </div>
+          {filaDeProductos(filas[0], true)}
+          <div className={`flex flex-none justify-center py-2.5 ${filas[1] ? "border-b border-tinta" : ""}`}>
+            <Link href="/catalogo" className={botonAncho}>
+              Ver todo <Flecha tamano={14} />
+            </Link>
+          </div>
+          {filas[1] && filaDeProductos(filas[1], false)}
         </section>
       )}
 
-      {destacados && tarjetas.length > 0 && (
-        <section id="catalogo" aria-labelledby="titulo-catalogo" className="bg-crema pt-[clamp(56px,6vw,88px)]">
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-[clamp(16px,3.6vw,54px)] pb-6">
-            <div className="flex flex-col gap-1">
-              <h2 id="titulo-catalogo" className={tituloSeccion}>
-                {destacados.titulo}
-              </h2>
-              {destacados.subtitulo && <p className="text-topo">{destacados.subtitulo}</p>}
-            </div>
-            <Link href="/catalogo" className="text-[15px] leading-[22px] font-semibold tracking-[0.08em] uppercase underline underline-offset-[5px] transition-colors hover:bg-arena active:bg-dorado">
-              Ver todo
-            </Link>
-          </div>
-          <ul aria-label="Productos destacados" className="grid grid-cols-2 border-t-2 border-tinta lg:grid-cols-4">
-            {tarjetas.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
-              <li key={producto.productId} className="border-r-2 border-b-2 border-tinta bg-white">
-                <TarjetaProducto
-                  href={`/catalogo/${producto.productId}?v=${variantId}`}
-                  nombre={producto.nombre}
-                  marca={producto.marca}
-                  precioVenta={precioVenta}
-                  precioAlquiler={precioAlquiler}
-                  desde={desde}
-                  portada={portada}
-                  hover={hover}
-                  sizes="(min-width: 1024px) 25vw, 50vw"
-                />
-              </li>
-            ))}
-          </ul>
+      {ocasiones && (
+        <section id="colecciones" aria-label="Colecciones" className="pantalla grid grid-cols-1 gap-px border-t border-tinta bg-tinta sm:grid-cols-2 xl:grid-cols-4">
+          {OCASIONES.map(({ coleccion, clave, vestido }) => {
+            const { modalidad, descripcion, foto } = ocasiones[clave];
+            return (
+              <Link
+                key={clave}
+                href={coleccion.href}
+                className="group relative flex min-h-[420px] flex-col items-start justify-end overflow-hidden bg-acento2 p-7 text-white transition-[filter] duration-200 hover:brightness-90"
+              >
+                {foto ? (
+                  <>
+                    <Image src={foto.url} alt={foto.alt} fill unoptimized sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+                    <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+                  </>
+                ) : (
+                  <span aria-hidden="true" className="absolute inset-x-0 top-6 bottom-[170px] flex items-end justify-center">
+                    <Vestido {...vestido} />
+                  </span>
+                )}
+                <span className="relative text-[10px] leading-[15px] font-semibold tracking-[0.16em] uppercase">{modalidad}</span>
+                <span className="relative mt-2 font-archivo text-[26px] leading-[1.02] font-black font-stretch-expanded tracking-[0.01em] uppercase">{coleccion.nombre}</span>
+                <span className="relative mt-2 text-[14px] leading-[1.4]">{descripcion}</span>
+                <span className="relative mt-3.5 inline-flex items-center gap-2 border border-white bg-white px-3 py-2 font-archivo text-[10px] font-bold tracking-[0.14em] text-tinta uppercase transition-[background-color,color,gap] duration-200 group-hover:gap-3 group-hover:bg-transparent group-hover:text-white">
+                  Ver colección <Flecha tamano={12} />
+                </span>
+              </Link>
+            );
+          })}
         </section>
       )}
 
       {pasos && (
-        <section id="pasos" className="mt-[clamp(56px,6vw,88px)] border-t-2 border-tinta bg-piedra">
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-[clamp(16px,3.6vw,54px)] pt-[clamp(40px,4.4vw,64px)] pb-7">
-            <h2 className={tituloSeccion}>{pasos.titulo}</h2>
-            {pasos.subtitulo && <p className="text-grafito">{pasos.subtitulo}</p>}
+        <section id="pasos" aria-labelledby="titulo-pasos" className="pantalla flex flex-col border-t border-tinta bg-white">
+          <div className={barraSeccion}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <h2 id="titulo-pasos" className={tituloCaja}>
+                {pasos.titulo}
+              </h2>
+              {pasos.subtitulo && <p className="text-[13px] text-[#444444]">{pasos.subtitulo}</p>}
+            </div>
+            <a
+              href={enlaceWhatsApp("Hola, quisiera reservar un vestido en Fara Collection.")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${botonCaja} gap-2.5 bg-acento2 text-white`}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.2A8 8 0 1 1 20 11.5z" />
+              </svg>
+              <span>{pasos.boton}</span>
+            </a>
           </div>
-          <ol className="flex flex-wrap border-t-2 border-tinta">
-            {pasos.pasos.map((paso, i) => {
-              const ultimo = i === pasos.pasos.length - 1;
-              return (
-                <li key={i} className={`flex min-w-0 flex-[1_1_260px] flex-col gap-2.5 border-b-2 border-tinta px-[clamp(16px,2.4vw,36px)] py-[clamp(24px,2.6vw,40px)] ${ultimo ? "items-start" : "border-r-2"}`}>
-                  <span aria-hidden="true" className="text-[clamp(48px,4.4vw,68px)] leading-none font-light">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="text-[22px] leading-[28px] font-medium">{paso.titulo}</span>
-                  <span className="text-grafito">{paso.texto}</span>
-                  {ultimo && (
-                    <a
-                      href={enlaceWhatsApp("Hola, quisiera reservar un vestido en Fara Collection.")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${botonOscuro} mt-2 gap-2.5 px-6 text-[14px] leading-[20px]`}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.2A8 8 0 1 1 20 11.5z" />
-                      </svg>
-                      <span>{pasos.boton}</span>
-                    </a>
-                  )}
-                </li>
-              );
-            })}
+          <ol className="grid flex-auto grid-cols-1 gap-px bg-tinta md:grid-cols-3">
+            {pasos.pasos.map((paso, i) => (
+              <li key={i} className="flex flex-col justify-between gap-8 bg-white p-8">
+                <span aria-hidden="true" className={`${letraContorno} text-[clamp(88px,12vw,176px)]`}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="flex flex-col gap-2">
+                  <span className="text-[24px] leading-[1.3] font-medium">{paso.titulo}</span>
+                  <span className="text-[15px] leading-[1.55] text-[#444444]">{paso.texto}</span>
+                </span>
+              </li>
+            ))}
           </ol>
         </section>
       )}
-    </>
+
+      {nosotros && (
+        <section id="nosotros" aria-label="Quiénes somos" className="pantalla relative flex items-center justify-center border-t border-tinta bg-tinte-verde px-6 pt-[72px] pb-12">
+          {nosotros.foto && <Image src={nosotros.foto.url} alt={nosotros.foto.alt} fill unoptimized sizes="100vw" className="object-cover" />}
+          <div className="relative flex w-[620px] max-w-full flex-col gap-[18px] border border-tinta bg-white p-6 sm:p-10">
+            <h2 className={`${letraContorno} text-[clamp(32px,4.4vw,54px)]`}>{nosotros.titulo}</h2>
+            {nosotros.lema && <p className="text-[17px] font-bold text-acento">{nosotros.lema}</p>}
+            <p className="text-[15px] leading-[1.65] text-[#444444]">{nosotros.texto}</p>
+          </div>
+        </section>
+      )}
+
+      {inspiracion && (
+        <section id="inspiracion" aria-label="Inspiración" className="pantalla flex flex-wrap border-t border-tinta bg-white">
+          <div className="flex flex-[2_1_360px] flex-col items-start gap-5 border-tinta px-8 py-10 max-[840px]:border-b min-[841px]:border-r">
+            {inspiracion.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-acento2-oscuro uppercase">{inspiracion.antetitulo}</span>}
+            <p className="max-w-[30ch] text-[24px] leading-[1.3] font-medium text-tinta">{inspiracion.texto}</p>
+            <EnlaceContenido boton={inspiracion.boton} className={`${botonCaja} bg-acento2 text-white`} />
+          </div>
+          <div className="flex flex-[3_1_480px] p-6">
+            <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden border border-tinta bg-tinte-azul">
+              {inspiracion.foto ? (
+                <Image src={inspiracion.foto.url} alt={inspiracion.foto.alt} fill unoptimized sizes="(min-width: 841px) 60vw, 100vw" className="object-cover" />
+              ) : (
+                <>
+                  <Vestido forma="floreado" color="#bcd3e6" className="-mr-[4%] h-[72%] w-auto" />
+                  <Vestido forma="sirena" color="#010081" className="relative z-1 h-[92%] w-auto" />
+                  <Vestido forma="corto" color="#e6b4b2" className="-ml-[4%] h-[62%] w-auto" />
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }

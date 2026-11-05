@@ -1,30 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
-import type { Boton } from "@/lib/contenido";
 import type { DiapositivaLista } from "@/lib/contenido-servidor";
+import { EnlaceContenido } from "./enlace-contenido";
+import { botonCaja } from "./estilos-inicio";
 import { Vestido } from "./vestido";
-
-const boton =
-  "inline-flex min-h-13 min-w-37.5 items-center justify-center border-2 border-tinta px-7 text-[15px] leading-[20px] font-semibold tracking-[0.06em] uppercase transition-colors";
-const botonOscuro = `${boton} bg-tinta text-white hover:bg-dorado hover:text-tinta active:bg-white active:text-tinta`;
-const botonClaro = `${boton} bg-white hover:bg-arena active:bg-dorado`;
-
-// Las páginas de la tienda navegan sin recargar; las secciones (#pasos) y los sitios externos
-// son enlaces comunes
-function Enlace({ boton, className }: { boton: Boton; className: string }) {
-  return boton.enlace.startsWith("/") ? (
-    <Link href={boton.enlace} className={className}>
-      {boton.texto}
-    </Link>
-  ) : (
-    <a href={boton.enlace} className={className}>
-      {boton.texto}
-    </a>
-  );
-}
 
 // Portada de la página de inicio. Sus textos, botones y fotos se editan en /admin/contenido;
 // con más de una portada aparecen los guiones para pasar de una a otra.
@@ -35,27 +16,39 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
 
   return (
     <section
+      id="inicio"
       aria-label="Portada"
       aria-roledescription={varias ? "carrusel" : undefined}
-      className="relative flex flex-wrap items-end overflow-hidden border-b-2 border-tinta bg-[#e8cdc3]"
+      className="pantalla relative flex items-center justify-center overflow-hidden bg-[#e5e5e5] p-6 [--alto-minimo:520px]"
     >
-      <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[11%] bg-[#d9b4a8]" />
-      <div aria-hidden="true" className="absolute top-[9%] right-[6%] h-[64%] w-[clamp(120px,15vw,230px)] rounded-t-full border-10 border-b-0 border-[#f6eae6] bg-[#f1e0da]" />
-      <div className="relative flex min-w-0 flex-[1_1_380px] flex-col gap-4.5 self-center px-[clamp(20px,3.6vw,54px)] py-[clamp(44px,5vw,80px)]">
+      {d.foto ? (
+        <Image key={d.foto.url} src={d.foto.url} alt={d.foto.alt} fill unoptimized priority sizes="100vw" className="object-cover" />
+      ) : (
+        // A los lados de la caja de textos; si no hay espacio, solo uno detrás de ella
+        <>
+          <Vestido forma="xv" color="#c3b1d9" etiqueta="Vestido de XV lila" className="absolute bottom-0 left-[4%] hidden h-[66%] w-auto lg:block" />
+          <Vestido
+            forma="sirena"
+            color="#1f4d3d"
+            etiqueta="Vestido de gala esmeralda corte sirena"
+            className="absolute bottom-0 left-1/2 z-1 h-[86%] w-auto -translate-x-1/2 lg:right-[9%] lg:left-auto lg:translate-x-0"
+          />
+          <Vestido forma="sirena" color="#6b1c2e" etiqueta="Vestido de gala vino corte sirena" className="absolute right-[-2%] bottom-0 hidden h-[68%] w-auto lg:block" />
+        </>
+      )}
+      <div className="relative z-2 mt-[14vh] flex w-[420px] max-w-full flex-col items-center border border-tinta bg-white px-7 py-6 text-center">
         {/* Al cambiar de portada, el lector de pantalla lee la nueva */}
-        <div aria-live={varias ? "polite" : undefined} className="flex flex-col gap-4.5">
-          {d.antetitulo && (
-            <span className="text-[13px] leading-[18px] font-semibold tracking-[0.16em] uppercase">{d.antetitulo}</span>
-          )}
-          <h1 className="text-[clamp(50px,5.8vw,92px)] leading-[0.98] font-light tracking-[-0.02em] break-words">{d.titulo}</h1>
-          {d.texto && <p className="max-w-100 text-[18px] leading-[28px] text-grafito">{d.texto}</p>}
-          <div className="flex flex-wrap gap-3 pt-1.5">
-            <Enlace boton={d.botonPrincipal} className={botonOscuro} />
-            {d.botonSecundario.texto && <Enlace boton={d.botonSecundario} className={botonClaro} />}
+        <div aria-live={varias ? "polite" : undefined} className="flex w-full flex-col items-center gap-3">
+          {d.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#555555] uppercase">{d.antetitulo}</span>}
+          <h1 className="text-[26px] leading-[1.2] font-medium break-words text-tinta">{d.titulo}</h1>
+          {d.texto && <p className="max-w-[36ch] text-[15px] leading-[1.55] text-[#444444]">{d.texto}</p>}
+          <div className="mt-1 flex flex-wrap justify-center gap-2">
+            <EnlaceContenido boton={d.botonPrincipal} className={`${botonCaja} bg-acento text-white`} />
+            {d.botonSecundario.texto && <EnlaceContenido boton={d.botonSecundario} className={`${botonCaja} bg-white text-tinta`} />}
           </div>
         </div>
         {varias && (
-          <div className="mt-[clamp(8px,3vw,40px)] flex items-center">
+          <div className="-mb-3 flex items-center">
             {diapositivas.map((_, i) => (
               <button
                 key={i}
@@ -65,30 +58,10 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
                 onClick={() => setActual(i)}
                 className="flex size-11 cursor-pointer items-center justify-center"
               >
-                <span className={`block h-[3px] w-7.5 transition-colors ${i === actual ? "bg-tinta" : "bg-[#8c8176]"}`} />
+                <span className={`block h-[3px] w-7.5 transition-colors ${i === actual ? "bg-acento" : "bg-[#bbbbbb]"}`} />
               </button>
             ))}
           </div>
-        )}
-      </div>
-      <div className="relative flex h-[clamp(420px,48vw,700px)] min-w-0 flex-[1.35_1_500px] items-end justify-center">
-        {d.foto ? (
-          <Image
-            key={d.foto.url}
-            src={d.foto.url}
-            alt={d.foto.alt}
-            fill
-            unoptimized
-            priority
-            sizes="(min-width: 900px) 58vw, 100vw"
-            className="object-cover"
-          />
-        ) : (
-          <>
-            <Vestido forma="xv" color="#c3b1d9" etiqueta="Vestido de XV lila" className="-mr-[11%] h-[66%] w-auto" />
-            <Vestido forma="sirena" color="#1f4d3d" etiqueta="Vestido de gala esmeralda corte sirena" className="relative z-2 h-[94%] w-auto" />
-            <Vestido forma="sirena" color="#6b1c2e" etiqueta="Vestido de gala vino corte sirena" className="-ml-[13%] h-[78%] w-auto" />
-          </>
         )}
       </div>
     </section>

@@ -6,9 +6,14 @@ import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
 import { type Foto, type ProductoCatalogo, leerDestacados } from "@/lib/catalogo";
 import {
+  type ClaveOcasion,
+  type ContenidoInicio,
   type DatosSeccion,
   type Diapositiva,
+  type Imagen,
   MAXIMO_DESTACADOS,
+  OCASIONES,
+  type Ocasion,
   PAGINA_INICIO,
   armarContenido,
 } from "@/lib/contenido";
@@ -44,69 +49,78 @@ const leerFilas = unstable_cache(
   { revalidate: CACHE_CONTENIDO, tags: ["contenido"] },
 );
 
-export type DiapositivaLista = Omit<Diapositiva, "imagen"> & { foto: Foto | null };
+// Si la tabla no responde (o todavía no existe en el backend), se muestra el contenido por
+// defecto: la tienda nunca se cae por el CMS.
+function leerContenido(): Promise<ContenidoInicio> {
+  return leerFilas().then(armarContenido, (error) => {
+    console.error("No se pudo leer el contenido de la tienda:", error);
+    return armarContenido([]);
+  });
+}
+
+// Una foto que no se puede firmar se trata como si no hubiera foto: se ve la ilustración
+async function firmarFoto(imagen: Imagen | null): Promise<Foto | null> {
+  if (!imagen) return null;
+  const url = await runWithAmplifyServerContext({
+    nextServerContext: null,
+    operation: (contextSpec) =>
+      getUrl(contextSpec, { path: imagen.key, options: { expiresIn: VIGENCIA_URL } }).then(
+        ({ url }) => url.toString(),
+        () => null,
+      ),
+  });
+  return url ? { url, alt: imagen.alt } : null;
+}
+
+// Cambia la `imagen` guardada por la `foto` ya firmada
+type ConFoto<T> = Omit<T, "imagen"> & { foto: Foto | null };
+async function conFoto<T extends { imagen: Imagen | null }>({ imagen, ...resto }: T): Promise<ConFoto<T>> {
+  return { ...resto, foto: await firmarFoto(imagen) };
+}
+
+export type DiapositivaLista = ConFoto<Diapositiva>;
+export type OcasionLista = ConFoto<Ocasion>;
 
 // Lo que necesita la página de inicio; una sección en null está oculta
 export type ContenidoPortada = {
   diapositivas: DiapositivaLista[];
-  ocasiones: DatosSeccion["ocasiones"] | null;
   destacados: (Omit<DatosSeccion["destacados"], "productos"> & { productos: ProductoCatalogo[] }) | null;
+  ocasiones: Record<ClaveOcasion, OcasionLista> | null;
   pasos: DatosSeccion["pasos"] | null;
+  nosotros: ConFoto<DatosSeccion["nosotros"]> | null;
+  inspiracion: ConFoto<DatosSeccion["inspiracion"]> | null;
 };
 
-const aLista = (d: Diapositiva, foto: Foto | null): DiapositivaLista => ({
-  antetitulo: d.antetitulo,
-  titulo: d.titulo,
-  texto: d.texto,
-  botonPrincipal: d.botonPrincipal,
-  botonSecundario: d.botonSecundario,
-  foto,
-});
-
-// Una foto que no se puede firmar se cambia por las ilustraciones de vestidos
-async function firmarFotos(diapositivas: Diapositiva[]): Promise<DiapositivaLista[]> {
-  if (!diapositivas.some((d) => d.imagen)) return diapositivas.map((d) => aLista(d, null));
-  return runWithAmplifyServerContext({
-    nextServerContext: null,
-    operation: (contextSpec) =>
-      Promise.all(
-        diapositivas.map(async (d) => {
-          if (!d.imagen) return aLista(d, null);
-          const { key, alt } = d.imagen;
-          const url = await getUrl(contextSpec, { path: key, options: { expiresIn: VIGENCIA_URL } }).then(
-            ({ url }) => url.toString(),
-            () => null,
-          );
-          return aLista(d, url ? { url, alt } : null);
-        }),
-      ),
-  });
+// El marco de todas las páginas de la tienda: no lleva fotos, así que sale directo de la caché
+export async function leerContenidoMarco() {
+  const { anuncios, pie } = await leerContenido();
+  return { anuncios: anuncios.visible ? anuncios.datos : null, pie: pie.datos };
 }
 
-// La página de inicio como visitante. Si la tabla no responde (o todavía no existe en el
-// backend), se muestra el contenido por defecto: la portada nunca se cae por el CMS.
+// La página de inicio como visitante
 export async function leerContenidoInicio(): Promise<ContenidoPortada> {
-  const contenido = await leerFilas().then(armarContenido, (error) => {
-    console.error("No se pudo leer el contenido de la página de inicio:", error);
-    return armarContenido([]);
-  });
-  const { portada, ocasiones, destacados, pasos } = contenido;
+  const { portada, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenido();
 
-  const [diapositivas, productos] = await Promise.all([
-    firmarFotos(portada.datos.diapositivas),
+  const [diapositivas, productos, listaOcasiones, nosotrosListo, inspiracionLista] = await Promise.all([
+    Promise.all(portada.datos.diapositivas.map((d) => conFoto(d))),
     destacados.visible
       ? leerDestacados(destacados.datos.productos, MAXIMO_DESTACADOS).catch((error) => {
           console.error("No se pudieron leer los productos destacados:", error);
           return [];
         })
       : Promise.resolve([]),
+    ocasiones.visible ? Promise.all(OCASIONES.map(async ({ clave }) => [clave, await conFoto(ocasiones.datos[clave])] as const)) : null,
+    nosotros.visible ? conFoto(nosotros.datos) : null,
+    inspiracion.visible ? conFoto(inspiracion.datos) : null,
   ]);
 
   return {
     diapositivas,
-    ocasiones: ocasiones.visible ? ocasiones.datos : null,
     // Sin productos con stock la sección no se muestra (nada de tarjetas vacías)
     destacados: destacados.visible && productos.length ? { ...destacados.datos, productos } : null,
+    ocasiones: listaOcasiones && (Object.fromEntries(listaOcasiones) as Record<ClaveOcasion, OcasionLista>),
     pasos: pasos.visible ? pasos.datos : null,
+    nosotros: nosotrosListo,
+    inspiracion: inspiracionLista,
   };
 }

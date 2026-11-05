@@ -6,11 +6,14 @@ import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Button } from "@/components/admin/ui/button";
 import { CardFooter } from "@/components/admin/ui/card";
 import { Checkbox } from "@/components/admin/ui/checkbox";
+import { Input } from "@/components/admin/ui/input";
 import { Label } from "@/components/admin/ui/label";
 import { clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
 import {
+  type Boton,
   type DatosSeccion,
   type Errores,
+  LARGO,
   PAGINA_INICIO,
   type Seccion,
   type SeccionContenido,
@@ -26,6 +29,35 @@ export type Estado =
   | { tipo: "error"; mensaje: string };
 
 const idCampo = (seccion: Seccion, ruta: string) => `${seccion}-${ruta}`;
+
+const ID_ENLACES = "enlaces-sugeridos";
+
+// Sugerencias para los enlaces de los botones (se puede escribir cualquier otro válido)
+const ENLACES_SUGERIDOS = [
+  { valor: "/catalogo", nombre: "Catálogo completo" },
+  { valor: "/catalogo?coleccion=gala", nombre: "Vestidos de gala" },
+  { valor: "/catalogo?coleccion=xv", nombre: "Vestidos de XV" },
+  { valor: "/catalogo?coleccion=cortos", nombre: "Vestidos cortos" },
+  { valor: "/catalogo?coleccion=floreados", nombre: "Vestidos floreados" },
+  { valor: "/#catalogo", nombre: "Sección Catálogo" },
+  { valor: "/#colecciones", nombre: "Sección Colecciones" },
+  { valor: "/#pasos", nombre: "Sección Alquiler en 3 pasos" },
+  { valor: "/#nosotros", nombre: "Sección Quiénes somos" },
+  { valor: "/#inspiracion", nombre: "Sección Inspiración" },
+];
+
+// Va una sola vez en la página: la comparten todos los campos de enlace
+export function EnlacesSugeridos() {
+  return (
+    <datalist id={ID_ENLACES}>
+      {ENLACES_SUGERIDOS.map((enlace) => (
+        <option key={enlace.valor} value={enlace.valor}>
+          {enlace.nombre}
+        </option>
+      ))}
+    </datalist>
+  );
+}
 
 // Estado y guardado de una sección. Cada sección es una fila de Content y se guarda por separado.
 export function useSeccion<S extends Seccion>(seccion: S, inicial: SeccionContenido<S>) {
@@ -124,6 +156,9 @@ export function useSeccion<S extends Seccion>(seccion: S, inicial: SeccionConten
   };
 }
 
+// Lo que los campos compartidos necesitan de useSeccion
+export type Controles = Pick<ReturnType<typeof useSeccion>, "errores" | "setErrores" | "editado" | "campo" | "entrada">;
+
 // Etiqueta, control y error (o ayuda, si no hay error)
 export function Campo({
   id,
@@ -159,11 +194,57 @@ export function Campo({
   );
 }
 
-export function CasillaVisible({ id, visible, onChange }: { id: string; visible: boolean; onChange: (visible: boolean) => void }) {
+// El texto y a dónde lleva un botón. `ruta` es la del botón en la sección, como "boton"
+export function CamposEnlace({
+  s,
+  ruta,
+  etiqueta,
+  ayuda,
+  boton,
+  onChange,
+}: {
+  s: Controles;
+  ruta: string;
+  etiqueta: string;
+  ayuda?: string;
+  boton: Boton;
+  onChange: (campo: keyof Boton, valor: string) => void;
+}) {
+  return (
+    <>
+      <Campo {...s.campo(`${ruta}.texto`)} etiqueta={etiqueta} ayuda={ayuda}>
+        <Input {...s.entrada(`${ruta}.texto`, Boolean(ayuda))} maxLength={LARGO.boton} value={boton.texto} onChange={(e) => onChange("texto", e.target.value)} />
+      </Campo>
+      <Campo {...s.campo(`${ruta}.enlace`)} etiqueta="Lleva a" ayuda="Una página (/catalogo), una sección (/#pasos) o una dirección https://">
+        <Input
+          {...s.entrada(`${ruta}.enlace`, true)}
+          list={ID_ENLACES}
+          maxLength={LARGO.enlace}
+          spellCheck={false}
+          autoCapitalize="none"
+          value={boton.enlace}
+          onChange={(e) => onChange("enlace", e.target.value)}
+        />
+      </Campo>
+    </>
+  );
+}
+
+export function CasillaVisible({
+  id,
+  visible,
+  onChange,
+  etiqueta = "Mostrar esta sección en la página de inicio",
+}: {
+  id: string;
+  visible: boolean;
+  onChange: (visible: boolean) => void;
+  etiqueta?: string;
+}) {
   return (
     <div className="flex items-center gap-2">
       <Checkbox id={id} name={id} checked={visible} onCheckedChange={(valor) => onChange(valor === true)} />
-      <Label htmlFor={id}>Mostrar esta sección en la página de inicio</Label>
+      <Label htmlFor={id}>{etiqueta}</Label>
     </div>
   );
 }

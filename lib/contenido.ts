@@ -1,8 +1,9 @@
 import { leerJson } from "@/lib/productos";
 
-// Contenido editable de la página de inicio, como un CMS. La tabla Content guarda una fila
-// por sección (page "inicio" + section) con sus datos en JSON. Lo comparten la portada, que
-// lo lee, y el panel de contenido, que lo edita. AppSync guarda el JSON sin revisarlo, así que:
+// Contenido editable de la tienda, como un CMS. La tabla Content guarda una fila por sección
+// (page "inicio" + section) con sus datos en JSON. Lo comparten la tienda, que lo lee, y el panel
+// de contenido, que lo edita. "anuncios" y "pie" son parte del marco: se ven en todas las páginas
+// de la tienda; las demás, solo en la de inicio. AppSync guarda el JSON sin revisarlo, así que:
 // - al guardar, el panel lo valida (validarSeccion) y lo limpia (normalizarSeccion);
 // - al leer, se normaliza: lo que falte o no sirva se reemplaza por el contenido por defecto.
 
@@ -12,11 +13,16 @@ export const PAGINA_INICIO = "inicio";
 // amplify/storage/resource.ts)
 export const CARPETA_IMAGENES = "content-images/inicio/";
 
+// En el orden en que se ven en la tienda
 export const SECCIONES = [
+  { id: "anuncios", nombre: "Anuncios" },
   { id: "portada", nombre: "Portada" },
-  { id: "ocasiones", nombre: "Ocasiones" },
-  { id: "destacados", nombre: "Nuestro catálogo" },
+  { id: "destacados", nombre: "Catálogo" },
+  { id: "ocasiones", nombre: "Colecciones" },
   { id: "pasos", nombre: "Alquiler en 3 pasos" },
+  { id: "nosotros", nombre: "Quiénes somos" },
+  { id: "inspiracion", nombre: "Inspiración" },
+  { id: "pie", nombre: "Pie de página" },
 ] as const;
 export type Seccion = (typeof SECCIONES)[number]["id"];
 
@@ -30,8 +36,24 @@ export const OCASIONES = [
 ] as const;
 export type ClaveOcasion = (typeof OCASIONES)[number]["clave"];
 
+// Una red sin enlace no se muestra en el pie
+export const REDES = [
+  { clave: "instagram", nombre: "Instagram" },
+  { clave: "tiktok", nombre: "TikTok" },
+  { clave: "pinterest", nombre: "Pinterest" },
+  { clave: "facebook", nombre: "Facebook" },
+  { clave: "youtube", nombre: "YouTube" },
+] as const;
+export type ClaveRed = (typeof REDES)[number]["clave"];
+
+export const MAXIMO_ANUNCIOS = 4;
 export const MAXIMO_DIAPOSITIVAS = 3;
-export const MAXIMO_DESTACADOS = 8;
+// Dos filas de 5 en la página de inicio
+export const PRODUCTOS_POR_FILA = 5;
+export const MAXIMO_DESTACADOS = PRODUCTOS_POR_FILA * 2;
+
+// Cada cuántos segundos cambia el anuncio
+export const SEGUNDOS_ANUNCIO = [3, 4, 5, 6, 8, 10] as const;
 
 // Largo máximo de cada texto, para que ninguno descuadre el diseño
 export const LARGO = {
@@ -47,6 +69,13 @@ export const LARGO = {
   descripcion: 120,
   tituloPaso: 40,
   textoPaso: 140,
+  anuncio: 90,
+  etiqueta: 16,
+  lema: 60,
+  textoNosotros: 400,
+  textoInspiracion: 140,
+  descripcionPie: 240,
+  notaBoletin: 160,
 } as const;
 
 export type Boton = { texto: string; enlace: string };
@@ -59,22 +88,47 @@ export type Diapositiva = {
   botonSecundario: Boton; // sin texto, no se muestra
   imagen: Imagen | null; // sin foto se ven las ilustraciones de vestidos
 };
-export type Ocasion = { modalidad: string; descripcion: string };
+export type Anuncio = { texto: string; boton: Boton }; // sin texto en el botón, va sin enlace
+export type Ocasion = { modalidad: string; descripcion: string; imagen: Imagen | null }; // sin foto, la ilustración
 export type Paso = { titulo: string; texto: string };
 
 export type DatosSeccion = {
+  anuncios: { mensajes: Anuncio[]; segundos: number };
   portada: { diapositivas: Diapositiva[] };
+  destacados: {
+    titulo: string;
+    subtitulo: string;
+    productos: string[]; // productIds, en orden
+    etiquetas: Record<string, string>; // productId → "Nuevo"; sin etiqueta, no se muestra
+  };
   ocasiones: Record<ClaveOcasion, Ocasion>;
-  destacados: { titulo: string; subtitulo: string; productos: string[] }; // productIds, en orden
   pasos: { titulo: string; subtitulo: string; pasos: Paso[]; boton: string };
+  nosotros: { titulo: string; lema: string; texto: string; imagen: Imagen | null };
+  inspiracion: { antetitulo: string; texto: string; boton: Boton; imagen: Imagen | null };
+  pie: {
+    descripcion: string;
+    boletinTitulo: string; // sin título no se muestra el formulario
+    boletinNota: string;
+    redes: Record<ClaveRed, string>;
+  };
 };
 
 // existe: si ya hay una fila guardada (el panel decide entre crearla o actualizarla)
 export type SeccionContenido<S extends Seccion> = { datos: DatosSeccion[S]; visible: boolean; existe: boolean };
 export type ContenidoInicio = { [S in Seccion]: SeccionContenido<S> };
 
-// Lo que muestra la portada mientras una sección no se haya guardado desde el panel
+const INSTAGRAM_FARA = "https://www.instagram.com/fara_collection_tacna";
+
+// Lo que muestra la tienda mientras una sección no se haya guardado desde el panel
 export const POR_DEFECTO: DatosSeccion = {
+  anuncios: {
+    mensajes: [
+      { texto: "Alquila tu vestido de gala o de XV en Tacna —", boton: { texto: "ver catálogo", enlace: "/catalogo" } },
+      { texto: "Encuentra el vestido perfecto para tu próximo evento —", boton: { texto: "ver colecciones", enlace: "/#colecciones" } },
+      { texto: "Reserva tu vestido en 3 pasos —", boton: { texto: "ver cómo", enlace: "/#pasos" } },
+    ],
+    segundos: 4,
+  },
   portada: {
     diapositivas: [
       {
@@ -87,13 +141,13 @@ export const POR_DEFECTO: DatosSeccion = {
       },
     ],
   },
+  destacados: { titulo: "Catálogo", subtitulo: "", productos: [], etiquetas: {} },
   ocasiones: {
-    gala: { modalidad: "Venta y alquiler", descripcion: "Para matrimonios, graduaciones y noches de gala." },
-    xv: { modalidad: "Venta y alquiler", descripcion: "Para tu fiesta de quince años." },
-    cortos: { modalidad: "Venta", descripcion: "Para cócteles, cumpleaños y celebraciones." },
-    floreados: { modalidad: "Venta", descripcion: "Estampados en flor para eventos de día." },
+    gala: { modalidad: "Venta y alquiler", descripcion: "Para matrimonios, graduaciones y noches de gala.", imagen: null },
+    xv: { modalidad: "Venta y alquiler", descripcion: "Para tu fiesta de quince años.", imagen: null },
+    cortos: { modalidad: "Venta", descripcion: "Para cócteles, cumpleaños y celebraciones.", imagen: null },
+    floreados: { modalidad: "Venta", descripcion: "Estampados en flor para eventos de día.", imagen: null },
   },
-  destacados: { titulo: "Nuestro catálogo", subtitulo: "Gala, XV, cortos y floreados", productos: [] },
   pasos: {
     titulo: "Alquiler en 3 pasos",
     subtitulo: "Vestidos de gala y de XV",
@@ -103,6 +157,31 @@ export const POR_DEFECTO: DatosSeccion = {
       { titulo: "Lúcelo y devuélvelo", texto: "Disfruta tu noche y devuelve el vestido después." },
     ],
     boton: "Reservar por WhatsApp",
+  },
+  nosotros: {
+    titulo: "¿Quiénes somos?",
+    lema: "Un vestido para cada momento.",
+    texto:
+      "Somos una tienda de Tacna que vende y alquila vestidos de gala, de XV, cortos y floreados. Creemos que lucir increíble en cada evento no debería significar comprar un vestido nuevo cada vez.",
+    imagen: null,
+  },
+  inspiracion: {
+    antetitulo: "Inspiración",
+    texto: "Ideas, tendencias y consejos para encontrar tu look perfecto en cada ocasión.",
+    boton: { texto: "Ver en Instagram", enlace: INSTAGRAM_FARA },
+    imagen: null,
+  },
+  pie: {
+    descripcion: "Vestidos de alta costura en venta y alquiler, confeccionados en Tacna.",
+    boletinTitulo: "Suscríbete a nuestras novedades",
+    boletinNota: "Al suscribirte nos escribes por WhatsApp. Puedes darte de baja cuando quieras.",
+    redes: {
+      instagram: INSTAGRAM_FARA,
+      tiktok: "https://www.tiktok.com/@faracollections.tacna",
+      pinterest: "",
+      facebook: "",
+      youtube: "",
+    },
   },
 };
 
@@ -157,7 +236,24 @@ function diapositiva(v: unknown): Diapositiva {
   };
 }
 
+const BOTON_VACIO: Boton = { texto: "", enlace: "" };
+
+function anuncio(v: unknown): Anuncio {
+  const o = objeto(v);
+  return { texto: texto(o.texto, "", LARGO.anuncio, true), boton: boton(o.boton, BOTON_VACIO, true) };
+}
+
 const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
+  anuncios: (d) => {
+    const mensajes = lista(d.mensajes)
+      .slice(0, MAXIMO_ANUNCIOS)
+      .map(anuncio)
+      .filter((m) => m.texto);
+    return {
+      mensajes: mensajes.length ? mensajes : structuredClone(POR_DEFECTO.anuncios.mensajes),
+      segundos: SEGUNDOS_ANUNCIO.find((s) => s === d.segundos) ?? POR_DEFECTO.anuncios.segundos,
+    };
+  },
   portada: (d) => {
     const diapositivas = lista(d.diapositivas).slice(0, MAXIMO_DIAPOSITIVAS).map(diapositiva);
     return { diapositivas: diapositivas.length ? diapositivas : structuredClone(POR_DEFECTO.portada.diapositivas) };
@@ -172,17 +268,29 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
           {
             modalidad: texto(o.modalidad, porDefecto.modalidad, LARGO.modalidad),
             descripcion: texto(o.descripcion, porDefecto.descripcion, LARGO.descripcion),
+            imagen: imagen(o.imagen),
           },
         ];
       }),
     ) as DatosSeccion["ocasiones"],
-  destacados: (d) => ({
-    titulo: texto(d.titulo, POR_DEFECTO.destacados.titulo, LARGO.tituloSeccion),
-    subtitulo: texto(d.subtitulo, POR_DEFECTO.destacados.subtitulo, LARGO.subtitulo, true),
-    productos: Array.from(
+  destacados: (d) => {
+    const productos = Array.from(
       new Set(lista(d.productos).filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 64)),
-    ).slice(0, MAXIMO_DESTACADOS),
-  }),
+    ).slice(0, MAXIMO_DESTACADOS);
+    const etiquetas = objeto(d.etiquetas);
+    return {
+      titulo: texto(d.titulo, POR_DEFECTO.destacados.titulo, LARGO.tituloSeccion),
+      subtitulo: texto(d.subtitulo, POR_DEFECTO.destacados.subtitulo, LARGO.subtitulo, true),
+      productos,
+      // Solo las de los productos elegidos: al quitar uno, su etiqueta se va con él
+      etiquetas: Object.fromEntries(
+        productos.flatMap((id) => {
+          const etiqueta = texto(etiquetas[id], "", LARGO.etiqueta, true);
+          return etiqueta ? [[id, etiqueta]] : [];
+        }),
+      ),
+    };
+  },
   pasos: (d) => {
     const pasos = lista(d.pasos);
     return {
@@ -199,6 +307,34 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
       boton: texto(d.boton, POR_DEFECTO.pasos.boton, LARGO.boton),
     };
   },
+  nosotros: (d) => ({
+    titulo: texto(d.titulo, POR_DEFECTO.nosotros.titulo, LARGO.tituloSeccion),
+    lema: texto(d.lema, "", LARGO.lema, true),
+    texto: texto(d.texto, POR_DEFECTO.nosotros.texto, LARGO.textoNosotros),
+    imagen: imagen(d.imagen),
+  }),
+  inspiracion: (d) => ({
+    antetitulo: texto(d.antetitulo, "", LARGO.antetitulo, true),
+    texto: texto(d.texto, POR_DEFECTO.inspiracion.texto, LARGO.textoInspiracion),
+    boton: boton(d.boton, POR_DEFECTO.inspiracion.boton, false),
+    imagen: imagen(d.imagen),
+  }),
+  pie: (d) => {
+    const redes = objeto(d.redes);
+    return {
+      descripcion: texto(d.descripcion, POR_DEFECTO.pie.descripcion, LARGO.descripcionPie),
+      boletinTitulo: texto(d.boletinTitulo, "", LARGO.tituloSeccion, true),
+      boletinNota: texto(d.boletinNota, "", LARGO.notaBoletin, true),
+      // Una red sin enlace válido se guarda vacía y no se muestra
+      redes: Object.fromEntries(
+        REDES.map(({ clave }) => {
+          const valor = redes[clave];
+          const enlace = typeof valor === "string" ? valor.trim().slice(0, LARGO.enlace) : "";
+          return [clave, enlaceValido(enlace) ? enlace : ""];
+        }),
+      ) as DatosSeccion["pie"]["redes"],
+    };
+  },
 };
 
 // `datos` puede llegar como texto JSON (así devuelve AppSync los campos a.json()) o como objeto
@@ -209,21 +345,25 @@ export function normalizarSeccion<S extends Seccion>(seccion: S, datos: unknown)
 export type FilaContenido = { section: string; data: unknown; visible?: boolean | null };
 
 // Todas las secciones a partir de las filas guardadas; las que falten, con el contenido por defecto.
-// La portada siempre se muestra.
+// La portada y el pie siempre se muestran.
 export function armarContenido(filas: FilaContenido[]): ContenidoInicio {
   const seccion = <S extends Seccion>(id: S): SeccionContenido<S> => {
     const fila = filas.find((f) => f.section === id);
     return {
       datos: fila ? normalizarSeccion(id, fila.data) : structuredClone(POR_DEFECTO[id]),
-      visible: id === "portada" || (fila?.visible ?? true),
+      visible: id === "portada" || id === "pie" || (fila?.visible ?? true),
       existe: Boolean(fila),
     };
   };
   return {
+    anuncios: seccion("anuncios"),
     portada: seccion("portada"),
-    ocasiones: seccion("ocasiones"),
     destacados: seccion("destacados"),
+    ocasiones: seccion("ocasiones"),
     pasos: seccion("pasos"),
+    nosotros: seccion("nosotros"),
+    inspiracion: seccion("inspiracion"),
+    pie: seccion("pie"),
   };
 }
 
@@ -238,7 +378,19 @@ type Revisor = {
   enlace: (ruta: string, valor: string, falta?: string) => void;
 };
 
+const ALT_FALTA = "Describe la foto para quienes no pueden verla.";
+
 const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } = {
+  anuncios: ({ mensajes }, r) => {
+    mensajes.forEach((m, i) => {
+      const ruta = `mensajes.${i}`;
+      r.texto(`${ruta}.texto`, m.texto, LARGO.anuncio, "Escribe el anuncio.");
+      if (m.boton.texto.trim() || m.boton.enlace.trim()) {
+        r.texto(`${ruta}.boton.texto`, m.boton.texto, LARGO.boton, "Escribe el texto del enlace o borra a dónde lleva.");
+        r.enlace(`${ruta}.boton.enlace`, m.boton.enlace, "Escribe a dónde lleva o borra el texto del enlace.");
+      }
+    });
+  },
   portada: ({ diapositivas }, r) => {
     diapositivas.forEach((d, i) => {
       const ruta = `diapositivas.${i}`;
@@ -252,13 +404,15 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
         r.texto(`${ruta}.botonSecundario.texto`, secundario.texto, LARGO.boton, "Escribe el texto del botón o borra su enlace.");
         r.enlace(`${ruta}.botonSecundario.enlace`, secundario.enlace, "Escribe a dónde lleva el botón o borra su texto.");
       }
-      if (d.imagen) r.texto(`${ruta}.imagen.alt`, d.imagen.alt, LARGO.alt, "Describe la foto para quienes no pueden verla.");
+      if (d.imagen) r.texto(`${ruta}.imagen.alt`, d.imagen.alt, LARGO.alt, ALT_FALTA);
     });
   },
   ocasiones: (d, r) => {
     for (const { clave } of OCASIONES) {
       r.texto(`${clave}.modalidad`, d[clave].modalidad, LARGO.modalidad, "Escribe la modalidad, por ejemplo «Venta y alquiler».");
       r.texto(`${clave}.descripcion`, d[clave].descripcion, LARGO.descripcion, "Escribe la descripción.");
+      const { imagen } = d[clave];
+      if (imagen) r.texto(`${clave}.imagen.alt`, imagen.alt, LARGO.alt, ALT_FALTA);
     }
   },
   destacados: (d, r) => {
@@ -273,6 +427,25 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
       r.texto(`pasos.${i}.texto`, paso.texto, LARGO.textoPaso, "Escribe el texto del paso.");
     });
     r.texto("boton", d.boton, LARGO.boton, "Escribe el texto del botón.");
+  },
+  nosotros: (d, r) => {
+    r.texto("titulo", d.titulo, LARGO.tituloSeccion, "Escribe el título de la sección.");
+    r.texto("lema", d.lema, LARGO.lema);
+    r.texto("texto", d.texto, LARGO.textoNosotros, "Escribe el texto.");
+    if (d.imagen) r.texto("imagen.alt", d.imagen.alt, LARGO.alt, ALT_FALTA);
+  },
+  inspiracion: (d, r) => {
+    r.texto("antetitulo", d.antetitulo, LARGO.antetitulo);
+    r.texto("texto", d.texto, LARGO.textoInspiracion, "Escribe el texto.");
+    r.texto("boton.texto", d.boton.texto, LARGO.boton, "Escribe el texto del botón.");
+    r.enlace("boton.enlace", d.boton.enlace, "Escribe a dónde lleva el botón.");
+    if (d.imagen) r.texto("imagen.alt", d.imagen.alt, LARGO.alt, ALT_FALTA);
+  },
+  pie: (d, r) => {
+    r.texto("descripcion", d.descripcion, LARGO.descripcionPie, "Escribe la descripción.");
+    r.texto("boletinTitulo", d.boletinTitulo, LARGO.tituloSeccion);
+    r.texto("boletinNota", d.boletinNota, LARGO.notaBoletin);
+    for (const { clave } of REDES) r.enlace(`redes.${clave}`, d.redes[clave]);
   },
 };
 
@@ -289,7 +462,7 @@ export function validarSeccion<S extends Seccion>(seccion: S, datos: DatosSeccio
       if (!limpio) {
         if (falta) errores[ruta] = falta;
       } else if (limpio.length > LARGO.enlace || !enlaceValido(limpio)) {
-        errores[ruta] = "Usa una página de la tienda (/catalogo), una sección (#pasos) o una dirección que empiece con https://.";
+        errores[ruta] = "Usa una página de la tienda (/catalogo), una sección (/#pasos) o una dirección que empiece con https://.";
       }
     },
   };

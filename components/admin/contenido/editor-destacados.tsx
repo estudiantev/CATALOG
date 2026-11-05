@@ -10,7 +10,7 @@ import { Input } from "@/components/admin/ui/input";
 import { Label } from "@/components/admin/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/ui/select";
 import { Skeleton } from "@/components/admin/ui/skeleton";
-import { LARGO, MAXIMO_DESTACADOS, type SeccionContenido } from "@/lib/contenido";
+import { LARGO, MAXIMO_DESTACADOS, PRODUCTOS_POR_FILA, type SeccionContenido } from "@/lib/contenido";
 import { Campo, CasillaVisible, PieSeccion, useSeccion } from "./comun";
 
 export type OpcionProducto = { productId: string; nombre: string; categoria: string; conStock: boolean };
@@ -34,6 +34,10 @@ export function EditorDestacados({
     setDatos((actuales) => ({ ...actuales, [campo]: valor }));
     s.editado(campo);
   };
+  const cambiarEtiqueta = (id: string, etiqueta: string) => {
+    setDatos((actuales) => ({ ...actuales, etiquetas: { ...actuales.etiquetas, [id]: etiqueta } }));
+    s.editado();
+  };
   const cambiarProductos = (lista: string[]) => {
     setDatos((actuales) => ({ ...actuales, productos: lista }));
     s.editado();
@@ -55,10 +59,10 @@ export function EditorDestacados({
       <Card>
         <CardHeader>
           <CardTitle>
-            <h2>Nuestro catálogo</h2>
+            <h2>Catálogo</h2>
           </CardTitle>
           <CardDescription>
-            Los productos que se destacan en la página de inicio. El precio y la foto salen del producto, así que siempre están al día.
+            Los productos que se destacan en la página de inicio, en dos filas de {PRODUCTOS_POR_FILA}. El precio y la foto salen del producto, así que siempre están al día.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -96,7 +100,7 @@ export function EditorDestacados({
                 </Select>
               )}
               <p id="destacados-agregar-ayuda" className="text-sm text-muted-foreground">
-                Hasta {MAXIMO_DESTACADOS}, en el orden de la lista. Si no eliges ninguno, se muestran los vestidos más recientes. Los productos sin stock no aparecen.
+                Hasta {MAXIMO_DESTACADOS}, en el orden de la lista. Si no eliges ninguno, se muestran los vestidos más recientes. Los productos sin stock no aparecen. La etiqueta es opcional y se ve sobre la foto, por ejemplo «Nuevo».
               </p>
             </div>
 
@@ -111,6 +115,15 @@ export function EditorDestacados({
                       <span className="min-w-0 flex-1 truncate">{nombre}</span>
                       {producto && <Badge variant="outline">{producto.categoria}</Badge>}
                       {producto && !producto.conStock && <Badge variant="secondary">Sin stock: no se muestra</Badge>}
+                      <Input
+                        name={`etiqueta-${id}`}
+                        aria-label={`Etiqueta de ${nombre}`}
+                        placeholder="Etiqueta"
+                        maxLength={LARGO.etiqueta}
+                        className="h-8 w-28 flex-none"
+                        value={datos.etiquetas[id] ?? ""}
+                        onChange={(e) => cambiarEtiqueta(id, e.target.value)}
+                      />
                       <div className="flex">
                         <Button type="button" variant="ghost" size="icon-sm" aria-label={`Subir ${nombre}`} disabled={i === 0} onClick={() => mover(i, -1)}>
                           <ChevronUp />

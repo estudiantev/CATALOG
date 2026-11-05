@@ -24,6 +24,13 @@
   --color-crema: #fbf6f1;
   --color-vino: #9b1b3a;
 
+  /* Página de inicio, encabezado y pie */
+  --color-acento: #010081;
+  --color-acento2: #04817f;
+  --color-acento2-oscuro: #036e6c;
+  --color-tinte-verde: #e6f2f2;
+  --color-tinte-azul: #e1e0f0;
+
   /* Desde aquí se muestra el menú de escritorio (el diseño cambia a móvil en 860px) */
   --breakpoint-menu: 53.8125rem;
 }
@@ -33,6 +40,8 @@
   --font-sans: var(--font-jost), "Futura", "Century Gothic", system-ui, sans-serif;
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-titulo: var(--font-instrument), Georgia, "Times New Roman", serif;
+  --font-cuerpo: var(--font-dm-sans), system-ui, sans-serif;
+  --font-archivo: var(--font-archivo-ancho), sans-serif;
 }
 
 @layer base {
@@ -43,5 +52,51 @@
   a:focus-visible,
   button:focus-visible {
     @apply outline-2 outline-offset-3 outline-tinta;
+  }
+}
+
+/* Alto del marco: el encabezado más la barra de anuncios, si está visible */
+:root {
+  --alto-marco: 56px;
+}
+:root:has(#anuncios) {
+  --alto-marco: 86px;
+}
+
+/* Una sección de la página de inicio: llena la pantalla debajo del marco */
+@utility pantalla {
+  min-height: max(var(--alto-minimo, 0px), calc(100dvh - var(--alto-marco)));
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/*
+ * Solo en la página de inicio (la que tiene #inicio): el marco queda fijo arriba y el scroll
+ * salta de sección en sección. En pantallas chicas las secciones son más altas que la
+ * pantalla, por eso ahí el salto es suave (proximity) y no obligatorio.
+ */
+html:has(#inicio) {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--alto-marco);
+  scroll-snap-type: y proximity;
+  scrollbar-width: none;
+}
+html:has(#inicio) #marco {
+  position: sticky;
+  top: 0;
+}
+html:has(#inicio) #contacto {
+  min-height: calc(100dvh - var(--alto-marco));
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+@media (min-width: 1000px) {
+  html:has(#inicio) {
+    scroll-snap-type: y mandatory;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(#inicio) {
+    scroll-behavior: auto;
   }
 }

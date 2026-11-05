@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Jost, Playfair_Display } from "next/font/google";
+import { Archivo, DM_Sans, Instrument_Serif, Jost, Playfair_Display } from "next/font/google";
 import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
 import { RetornoGoogle } from "@/components/tienda/retorno-google";
+import { leerContenidoMarco } from "@/lib/contenido-servidor";
 import "./tienda.css";
 
 const jost = Jost({
@@ -24,6 +25,18 @@ const instrument = Instrument_Serif({
   variable: "--font-instrument",
 });
 
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
+
+// Con el eje de ancho: los títulos usan la versión expandida
+const archivo = Archivo({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-archivo-ancho",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "FARA Collections",
@@ -32,20 +45,27 @@ export const metadata: Metadata = {
   description: "Alquiler y venta de vestidos en Tacna",
 };
 
-// Layout raíz de la tienda: tiene su propio <html> y su propio CSS (sin shadcn)
-export default function TiendaLayout({
+// Layout raíz de la tienda: tiene su propio <html> y su propio CSS (sin shadcn).
+// Los anuncios y el pie se editan en /admin/contenido.
+export default async function TiendaLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { anuncios, pie } = await leerContenidoMarco();
+
   return (
-    <html lang="es" className={`${jost.variable} ${playfair.variable} ${instrument.variable}`}>
+    <html
+      lang="es"
+      data-scroll-behavior="smooth"
+      className={`${jost.variable} ${playfair.variable} ${instrument.variable} ${dmSans.variable} ${archivo.variable}`}
+    >
       <body className="antialiased">
         <ConfigurarAmplify />
         <RetornoGoogle />
-        <Encabezado />
+        <Encabezado anuncios={anuncios} />
         <main id="contenido">{children}</main>
-        <Pie />
+        <Pie contenido={pie} />
       </body>
     </html>
   );

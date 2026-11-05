@@ -19,7 +19,7 @@ export default async function ContenidoPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Página de inicio</h1>
           <p className="text-muted-foreground">
-            Cambia los textos, las fotos y los productos de la página de inicio. Cada sección se guarda por separado y se ve en la tienda al guardarla.
+            Cambia los textos, las fotos y los productos de la página de inicio, en el orden en que se ven. Los anuncios y el pie de página aparecen en toda la tienda. Cada sección se guarda por separado y se ve al guardarla.
           </p>
         </div>
         <Button asChild variant="outline">
