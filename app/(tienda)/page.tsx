@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { COLECCIONES, COLORES, enlaceWhatsApp } from "@/components/tienda/datos";
 import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
 import { barraSeccion, botonAncho, botonCaja, chip, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
+import { Flecha, IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
@@ -26,14 +27,6 @@ const OCASIONES: { coleccion: (typeof COLECCIONES)[number]; clave: ClaveOcasion;
   { coleccion: COLECCIONES[2], clave: "cortos", vestido: { forma: "corto", color: "#a3243b", className: "h-[96%] w-auto" } },
   { coleccion: COLECCIONES[3], clave: "floreados", vestido: { forma: "floreado", color: "#bcd3e6", className: "h-[96%] w-auto" } },
 ];
-
-function Flecha({ tamano }: { tamano: number }) {
-  return (
-    <svg width={tamano} height={tamano} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
 
 export default async function InicioPage() {
   const { diapositivas, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenidoInicio();
@@ -111,7 +104,7 @@ export default async function InicioPage() {
               >
                 {foto ? (
                   <>
-                    <Image src={foto.url} alt={foto.alt} fill unoptimized sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+                    <Image src={foto.url} alt="" fill unoptimized sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
                     <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
                   </>
                 ) : (
@@ -146,9 +139,7 @@ export default async function InicioPage() {
               rel="noopener noreferrer"
               className={`${botonCaja} gap-2.5 bg-acento2 text-white`}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.2A8 8 0 1 1 20 11.5z" />
-              </svg>
+              <IconoWhatsApp />
               <span>{pasos.boton}</span>
             </a>
           </div>
@@ -170,7 +161,7 @@ export default async function InicioPage() {
 
       {nosotros && (
         <section id="nosotros" aria-label="Quiénes somos" className="pantalla relative flex items-center justify-center border-t border-tinta bg-tinte-verde px-6 pt-[72px] pb-12">
-          {nosotros.foto && <Image src={nosotros.foto.url} alt={nosotros.foto.alt} fill unoptimized sizes="100vw" className="object-cover" />}
+          {nosotros.foto && <Image src={nosotros.foto.url} alt="" fill unoptimized sizes="100vw" className="object-cover" />}
           <div className="relative flex w-[620px] max-w-full flex-col gap-[18px] border border-tinta bg-white p-6 sm:p-10">
             <h2 className={`${letraContorno} text-[clamp(32px,4.4vw,54px)]`}>{nosotros.titulo}</h2>
             {nosotros.lema && <p className="text-[17px] font-bold text-acento">{nosotros.lema}</p>}
@@ -189,7 +180,7 @@ export default async function InicioPage() {
           <div className="flex flex-[3_1_480px] p-6">
             <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden border border-tinta bg-tinte-azul">
               {inspiracion.foto ? (
-                <Image src={inspiracion.foto.url} alt={inspiracion.foto.alt} fill unoptimized sizes="(min-width: 841px) 60vw, 100vw" className="object-cover" />
+                <Image src={inspiracion.foto.url} alt="" fill unoptimized sizes="(min-width: 841px) 60vw, 100vw" className="object-cover" />
               ) : (
                 <>
                   <Vestido forma="floreado" color="#bcd3e6" className="-mr-[4%] h-[72%] w-auto" />

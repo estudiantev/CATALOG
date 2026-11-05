@@ -28,7 +28,7 @@ export default async function ProductoPage({ params, searchParams }: Props) {
   } catch (error) {
     console.error("No se pudo cargar el producto:", error);
     return (
-      <p className="px-4 py-24 text-center text-[18px]">
+      <p className="bg-white px-4 py-24 text-center font-cuerpo text-[15px] text-tinta">
         No pudimos cargar este producto. Inténtalo de nuevo en unos minutos.
       </p>
     );

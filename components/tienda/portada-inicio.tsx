@@ -22,7 +22,7 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
       className="pantalla relative flex items-center justify-center overflow-hidden bg-[#e5e5e5] p-6 [--alto-minimo:520px]"
     >
       {d.foto ? (
-        <Image key={d.foto.url} src={d.foto.url} alt={d.foto.alt} fill unoptimized priority sizes="100vw" className="object-cover" />
+        <Image key={d.foto.url} src={d.foto.url} alt="" fill unoptimized priority sizes="100vw" className="object-cover" />
       ) : (
         // A los lados de la caja de textos; si no hay espacio, solo uno detrás de ella
         <>

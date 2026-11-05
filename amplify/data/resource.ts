@@ -28,7 +28,6 @@ const schema = a.schema({
   ProductImage: a.customType({
     key: a.string().required(), // foto grande para el detalle, en S3: "product-images/<productId>/..."
     thumbKey: a.string(),       // versión liviana para el catálogo; si no hay, se usa key
-    alt: a.string(),
     position: a.integer(),      // 1 = portada, 2 = contraportada, 3..6 = resto
   }),
 

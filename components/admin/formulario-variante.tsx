@@ -58,7 +58,6 @@ async function imagenesDe(v: Variante): Promise<ImagenFormulario[]> {
       thumbKey: f.thumbKey ?? null,
       archivo: null,
       vistaPrevia: await getUrl({ path: f.thumbKey ?? f.key }).then(({ url }) => url.toString(), () => ""),
-      alt: f.alt ?? "",
     })),
   );
 }
@@ -225,7 +224,6 @@ export function FormularioVariante({
       images: imagenes.map((imagen, i) => ({
         key: imagen.key as string,
         thumbKey: imagen.thumbKey,
-        alt: imagen.alt.trim() || null,
         position: i + 1,
       })),
     };

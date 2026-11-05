@@ -4,7 +4,7 @@ import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
-import { type Foto, type ProductoCatalogo, leerDestacados } from "@/lib/catalogo";
+import { type ProductoCatalogo, leerDestacados } from "@/lib/catalogo";
 import {
   type ClaveOcasion,
   type ContenidoInicio,
@@ -58,8 +58,11 @@ function leerContenido(): Promise<ContenidoInicio> {
   });
 }
 
+// Fotos de ambiente: el texto que las acompaña dice lo importante, así que van con alt=""
+type FotoAmbiente = { url: string };
+
 // Una foto que no se puede firmar se trata como si no hubiera foto: se ve la ilustración
-export async function firmarFoto(imagen: Imagen | null): Promise<Foto | null> {
+export async function firmarFoto(imagen: Imagen | null): Promise<FotoAmbiente | null> {
   if (!imagen) return null;
   const url = await runWithAmplifyServerContext({
     nextServerContext: null,
@@ -69,11 +72,11 @@ export async function firmarFoto(imagen: Imagen | null): Promise<Foto | null> {
         () => null,
       ),
   });
-  return url ? { url, alt: imagen.alt } : null;
+  return url ? { url } : null;
 }
 
 // Cambia la `imagen` guardada por la `foto` ya firmada
-type ConFoto<T> = Omit<T, "imagen"> & { foto: Foto | null };
+type ConFoto<T> = Omit<T, "imagen"> & { foto: FotoAmbiente | null };
 async function conFoto<T extends { imagen: Imagen | null }>({ imagen, ...resto }: T): Promise<ConFoto<T>> {
   return { ...resto, foto: await firmarFoto(imagen) };
 }

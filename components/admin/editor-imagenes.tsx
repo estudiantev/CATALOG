@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, ImageIcon, Upload, X } from "lucide-react";
 import { uploadData } from "aws-amplify/storage";
 import { Badge } from "@/components/admin/ui/badge";
 import { Button } from "@/components/admin/ui/button";
-import { Input } from "@/components/admin/ui/input";
 import { carpetaImagenes } from "@/lib/productos";
 
 const TAMANO_MAXIMO = 5 * 1024 * 1024;
@@ -23,7 +22,6 @@ export type ImagenFormulario = {
   thumbKey: string | null;
   archivo: File | null;
   vistaPrevia: string;
-  alt: string;
 };
 
 const ETIQUETAS = ["Portada", "Contraportada"];
@@ -107,7 +105,6 @@ export function EditorImagenes({
         thumbKey: null,
         archivo,
         vistaPrevia: URL.createObjectURL(archivo),
-        alt: "",
       })),
     ]);
     if (selector.current) selector.current.value = "";
@@ -134,7 +131,7 @@ export function EditorImagenes({
             <li key={imagen.id} className="space-y-2">
               <div className="relative aspect-[3/4] overflow-hidden rounded-md border bg-muted">
                 {imagen.vistaPrevia ? (
-                  <Image src={imagen.vistaPrevia} alt={imagen.alt} fill unoptimized sizes="200px" className="object-cover" />
+                  <Image src={imagen.vistaPrevia} alt="" fill unoptimized sizes="200px" className="object-cover" />
                 ) : (
                   <ImageIcon className="absolute inset-0 m-auto size-8 text-muted-foreground" />
                 )}
@@ -151,12 +148,6 @@ export function EditorImagenes({
                   <X />
                 </Button>
               </div>
-              <Input
-                aria-label={`Texto alternativo de la foto ${i + 1}`}
-                placeholder="Descripción de la foto"
-                value={imagen.alt}
-                onChange={(e) => onChange(imagenes.map((x) => (x.id === imagen.id ? { ...x, alt: e.target.value } : x)))}
-              />
               <div className="flex justify-between">
                 <Button type="button" variant="ghost" size="icon-sm" aria-label={`Mover foto ${i + 1} antes`} disabled={i === 0} onClick={() => mover(i, -1)}>
                   <ChevronLeft />

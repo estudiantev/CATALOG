@@ -86,7 +86,7 @@ export async function leerPaginaColeccion(slug: string) {
   const [productos, foto] = await Promise.all([
     leerProductosColeccion(idsDeColeccion(coleccion), coleccion.sortOrder ?? "MANUAL"),
     // Decorativa: el título de la colección va justo debajo
-    firmarFoto(coleccion.imageKey ? { key: coleccion.imageKey, alt: "" } : null),
+    firmarFoto(coleccion.imageKey ? { key: coleccion.imageKey } : null),
   ]);
   return { titulo: coleccion.title, descripcion: coleccion.description ?? null, foto, productos };
 }

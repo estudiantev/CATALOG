@@ -39,7 +39,7 @@ export default async function ColeccionPage({ params }: Props) {
     <section>
       {foto && (
         <div className="relative h-[clamp(200px,30vw,420px)] border-b-2 border-tinta bg-lino">
-          <Image src={foto.url} alt={foto.alt} fill unoptimized priority sizes="100vw" className="object-cover" />
+          <Image src={foto.url} alt="" fill unoptimized priority sizes="100vw" className="object-cover" />
         </div>
       )}
       <div className="px-[clamp(16px,3.6vw,54px)] pt-[clamp(40px,4.4vw,64px)] pb-6">

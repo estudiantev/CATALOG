@@ -62,7 +62,6 @@ export const LARGO = {
   texto: 180,
   boton: 24,
   enlace: 300,
-  alt: 150,
   tituloSeccion: 40,
   subtitulo: 80,
   modalidad: 30,
@@ -79,7 +78,7 @@ export const LARGO = {
 } as const;
 
 export type Boton = { texto: string; enlace: string };
-export type Imagen = { key: string; alt: string };
+export type Imagen = { key: string };
 export type Diapositiva = {
   antetitulo: string;
   titulo: string;
@@ -220,7 +219,7 @@ function boton(v: unknown, porDefecto: Boton, opcional: boolean): Boton {
 function imagen(v: unknown): Imagen | null {
   const o = objeto(v);
   if (typeof o.key !== "string" || !rutaImagenValida(o.key)) return null;
-  return { key: o.key, alt: texto(o.alt, "", LARGO.alt, true) };
+  return { key: o.key };
 }
 
 function diapositiva(v: unknown): Diapositiva {
@@ -378,7 +377,6 @@ type Revisor = {
   enlace: (ruta: string, valor: string, falta?: string) => void;
 };
 
-const ALT_FALTA = "Describe la foto para quienes no pueden verla.";
 
 const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } = {
   anuncios: ({ mensajes }, r) => {
@@ -404,15 +402,12 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
         r.texto(`${ruta}.botonSecundario.texto`, secundario.texto, LARGO.boton, "Escribe el texto del botón o borra su enlace.");
         r.enlace(`${ruta}.botonSecundario.enlace`, secundario.enlace, "Escribe a dónde lleva el botón o borra su texto.");
       }
-      if (d.imagen) r.texto(`${ruta}.imagen.alt`, d.imagen.alt, LARGO.alt, ALT_FALTA);
     });
   },
   ocasiones: (d, r) => {
     for (const { clave } of OCASIONES) {
       r.texto(`${clave}.modalidad`, d[clave].modalidad, LARGO.modalidad, "Escribe la modalidad, por ejemplo «Venta y alquiler».");
       r.texto(`${clave}.descripcion`, d[clave].descripcion, LARGO.descripcion, "Escribe la descripción.");
-      const { imagen } = d[clave];
-      if (imagen) r.texto(`${clave}.imagen.alt`, imagen.alt, LARGO.alt, ALT_FALTA);
     }
   },
   destacados: (d, r) => {
@@ -432,14 +427,12 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
     r.texto("titulo", d.titulo, LARGO.tituloSeccion, "Escribe el título de la sección.");
     r.texto("lema", d.lema, LARGO.lema);
     r.texto("texto", d.texto, LARGO.textoNosotros, "Escribe el texto.");
-    if (d.imagen) r.texto("imagen.alt", d.imagen.alt, LARGO.alt, ALT_FALTA);
   },
   inspiracion: (d, r) => {
     r.texto("antetitulo", d.antetitulo, LARGO.antetitulo);
     r.texto("texto", d.texto, LARGO.textoInspiracion, "Escribe el texto.");
     r.texto("boton.texto", d.boton.texto, LARGO.boton, "Escribe el texto del botón.");
     r.enlace("boton.enlace", d.boton.enlace, "Escribe a dónde lleva el botón.");
-    if (d.imagen) r.texto("imagen.alt", d.imagen.alt, LARGO.alt, ALT_FALTA);
   },
   pie: (d, r) => {
     r.texto("descripcion", d.descripcion, LARGO.descripcionPie, "Escribe la descripción.");

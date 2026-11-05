@@ -76,7 +76,7 @@ async function cargarColeccion(id: string) {
         () => "",
       )
     : "";
-  const foto: FotoFormulario | null = data.imageKey ? { key: data.imageKey, archivo: null, vistaPrevia, alt: "" } : null;
+  const foto: FotoFormulario | null = data.imageKey ? { key: data.imageKey, archivo: null, vistaPrevia } : null;
   return { form: desdeColeccion(data), foto };
 }
 
@@ -125,7 +125,7 @@ function Campos({ id, inicial }: { id?: string; inicial: { form: Formulario; fot
   const [productos, setProductos] = useState<OpcionProducto[] | null>(null);
   const [errorProductos, setErrorProductos] = useState("");
   const [busqueda, setBusqueda] = useState("");
-  const limpiarFotos = useFotosGuardadas(inicial.foto?.key ? [{ key: inicial.foto.key, alt: "" }] : []);
+  const limpiarFotos = useFotosGuardadas(inicial.foto?.key ? [{ key: inicial.foto.key }] : []);
 
   useEffect(() => {
     cargarOpcionesProducto()
@@ -255,7 +255,7 @@ function Campos({ id, inicial }: { id?: string; inicial: { form: Formulario; fot
             </Campo>
           </div>
           <div className="border-t pt-5">
-            <CampoFoto s={s} ruta="imageKey" nombre="foto-coleccion" sinFoto="Se ve arriba, en la página de la colección." foto={foto} onChange={setFoto} conDescripcion={false} />
+            <CampoFoto s={s} ruta="imageKey" nombre="foto-coleccion" sinFoto="Se ve arriba, en la página de la colección." foto={foto} onChange={setFoto} />
           </div>
         </CardContent>
       </Card>

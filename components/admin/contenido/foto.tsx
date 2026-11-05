@@ -7,9 +7,8 @@ import { remove, uploadData } from "aws-amplify/storage";
 import { TIPOS_IMAGEN, reducirImagen } from "@/components/admin/editor-imagenes";
 import { Badge } from "@/components/admin/ui/badge";
 import { Button } from "@/components/admin/ui/button";
-import { Input } from "@/components/admin/ui/input";
-import { CARPETA_IMAGENES, type Imagen, LARGO } from "@/lib/contenido";
-import { Campo, type Controles } from "./comun";
+import { CARPETA_IMAGENES, type Imagen } from "@/lib/contenido";
+import type { Controles } from "./comun";
 
 // La foto se reduce antes de subirla: la tienda no necesita más de 2000 px de ancho
 const TAMANO_MAXIMO = 10 * 1024 * 1024;
@@ -19,14 +18,13 @@ export type FotoFormulario = {
   key: string | null; // ruta en S3; null mientras no se haya subido
   archivo: File | null;
   vistaPrevia: string;
-  alt: string;
 };
 
 export const aFormulario = (imagen: Imagen | null, vistasPrevias: Record<string, string>): FotoFormulario | null =>
-  imagen && { key: imagen.key, archivo: null, vistaPrevia: vistasPrevias[imagen.key] ?? "", alt: imagen.alt };
+  imagen && { key: imagen.key, archivo: null, vistaPrevia: vistasPrevias[imagen.key] ?? "" };
 
-// Para validar basta con la descripción: la ruta se conoce al subirla
-export const aImagen = (foto: FotoFormulario | null): Imagen | null => foto && { key: foto.key ?? "", alt: foto.alt };
+// La ruta se conoce al subirla: hasta entonces va vacía
+export const aImagen = (foto: FotoFormulario | null): Imagen | null => foto && { key: foto.key ?? "" };
 
 // Sube la foto si es nueva y la devuelve con su ruta
 export async function subirFoto(foto: FotoFormulario | null, carpeta = CARPETA_IMAGENES): Promise<FotoFormulario | null> {
@@ -59,7 +57,7 @@ export function useFotosGuardadas(iniciales: (Imagen | null)[]) {
   };
 }
 
-// Vista previa, botones para subir y quitar la foto, y su descripción. `ruta` es la del campo
+// Vista previa y botones para subir y quitar la foto. `ruta` es la del campo
 // imagen en la sección, por ejemplo "gala.imagen".
 export function CampoFoto({
   s,
@@ -68,7 +66,7 @@ export function CampoFoto({
   sinFoto,
   foto,
   onChange,
-  conDescripcion = true,
+  recomendacion,
 }: {
   s: Controles;
   ruta: string;
@@ -76,7 +74,7 @@ export function CampoFoto({
   sinFoto: string; // qué se ve mientras no haya foto
   foto: FotoFormulario | null;
   onChange: (foto: FotoFormulario | null) => void;
-  conDescripcion?: boolean; // sin ella, la foto es decorativa
+  recomendacion?: string; // aviso que no bloquea, como la medida ideal
 }) {
   const selector = useRef<HTMLInputElement>(null);
   const error = s.errores[ruta];
@@ -90,14 +88,14 @@ export function CampoFoto({
       return s.setErrores((e) => ({ ...e, [ruta]: `«${archivo.name}» pesa más de 10 MB.` }));
     }
     if (foto?.archivo) URL.revokeObjectURL(foto.vistaPrevia);
-    onChange({ key: null, archivo, vistaPrevia: URL.createObjectURL(archivo), alt: foto?.alt ?? "" });
+    onChange({ key: null, archivo, vistaPrevia: URL.createObjectURL(archivo) });
     s.editado(ruta);
   }
 
   function quitar() {
     if (foto?.archivo) URL.revokeObjectURL(foto.vistaPrevia);
     onChange(null);
-    s.editado(`${ruta}.alt`);
+    s.editado(ruta);
   }
 
   return (
@@ -150,21 +148,9 @@ export function CampoFoto({
           ) : (
             <p className="text-sm text-muted-foreground">{sinFoto} JPG, PNG o WebP de hasta 10 MB.</p>
           )}
+          {recomendacion && <p className="text-sm text-muted-foreground">{recomendacion}</p>}
         </div>
       </div>
-      {foto && conDescripcion && (
-        <Campo {...s.campo(`${ruta}.alt`)} etiqueta="Descripción de la foto" ayuda="Para quienes no pueden verla, por ejemplo «Modelo con un vestido de gala esmeralda».">
-          <Input
-            {...s.entrada(`${ruta}.alt`, true)}
-            maxLength={LARGO.alt}
-            value={foto.alt}
-            onChange={(e) => {
-              onChange({ ...foto, alt: e.target.value });
-              s.editado(`${ruta}.alt`);
-            }}
-          />
-        </Campo>
-      )}
     </div>
   );
 }

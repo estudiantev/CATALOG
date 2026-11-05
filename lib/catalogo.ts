@@ -64,7 +64,7 @@ export type VarianteDetalle = {
   sku: string | null;
   colorNombre: string | null;
   colorHex: string | null;
-  fotos: { url: string; miniatura: string; alt: string }[];
+  fotos: { url: string; miniatura: string }[];
 };
 
 export type ProductoDetalle = {
@@ -274,7 +274,6 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
       if (!producto) return null;
 
       const firmar = firmador(contextSpec);
-      const alt = producto.name || "";
       const variantes = todas.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
       return {
@@ -293,7 +292,6 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
               fotosOrdenadas(v.images).map(async (f) => ({
                 url: await firmar(f.key),
                 miniatura: await firmar(f.thumbKey ?? f.key),
-                alt: f.alt || alt,
               })),
             );
             return {
@@ -306,7 +304,7 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
               sku: v.sku ?? null,
               colorNombre: v.colorName ?? null,
               colorHex: v.colorHex ?? null,
-              fotos: fotos.flatMap((f) => (f.url ? [{ url: f.url, miniatura: f.miniatura ?? f.url, alt: f.alt }] : [])),
+              fotos: fotos.flatMap((f) => (f.url ? [{ url: f.url, miniatura: f.miniatura ?? f.url }] : [])),
             };
           }),
         ),

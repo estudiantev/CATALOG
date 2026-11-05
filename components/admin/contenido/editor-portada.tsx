@@ -156,6 +156,7 @@ export function EditorPortada({
                     ruta={`${ruta}.imagen`}
                     nombre={`foto-${i + 1}`}
                     sinFoto="Sin foto se ven las ilustraciones de vestidos."
+                    recomendacion="Medida recomendada: 2000 × 900 px, en horizontal. Deja lo importante arriba y al centro: en celular se recortan los lados y la caja de texto tapa lo que queda debajo."
                     foto={d.imagen}
                     onChange={(imagen) => cambiar(i, { imagen })}
                   />
