@@ -28,7 +28,7 @@ export type Estado =
   | { tipo: "guardado"; aviso: string }
   | { tipo: "error"; mensaje: string };
 
-const idCampo = (seccion: Seccion, ruta: string) => `${seccion}-${ruta}`;
+export const idCampo = (formulario: string, ruta: string) => `${formulario}-${ruta}`;
 
 const ID_ENLACES = "enlaces-sugeridos";
 
@@ -59,24 +59,47 @@ export function EnlacesSugeridos() {
   );
 }
 
+// Estado de un formulario y lo que sus campos necesitan para mostrar los errores
+export function useFormulario(formulario: string) {
+  const [errores, setErrores] = useState<Errores>({});
+  const [estado, setEstado] = useState<Estado>({ tipo: "editando" });
+
+  return {
+    errores,
+    setErrores,
+    estado,
+    setEstado,
+    // Al cambiar algo se quita el aviso de "guardado" y el error de ese campo
+    editado: (ruta?: string) => {
+      setEstado((actual) => (actual.tipo === "guardando" ? actual : { tipo: "editando" }));
+      if (ruta && errores[ruta]) {
+        setErrores((actuales) => {
+          const copia = { ...actuales };
+          delete copia[ruta];
+          return copia;
+        });
+      }
+    },
+    // Para <Campo>: el id del control y su error
+    campo: (ruta: string) => ({ id: idCampo(formulario, ruta), error: errores[ruta] }),
+    // Para el control: su id y la accesibilidad del error (o de la ayuda)
+    entrada: (ruta: string, conAyuda = false) => {
+      const id = idCampo(formulario, ruta);
+      return {
+        id,
+        "aria-invalid": errores[ruta] ? true : undefined,
+        "aria-describedby": errores[ruta] ? `${id}-error` : conAyuda ? `${id}-ayuda` : undefined,
+      };
+    },
+  };
+}
+
 // Estado y guardado de una sección. Cada sección es una fila de Content y se guarda por separado.
 export function useSeccion<S extends Seccion>(seccion: S, inicial: SeccionContenido<S>) {
   const [visible, setVisible] = useState(inicial.visible);
   const [existe, setExiste] = useState(inicial.existe);
-  const [errores, setErrores] = useState<Errores>({});
-  const [estado, setEstado] = useState<Estado>({ tipo: "editando" });
-
-  // Al cambiar algo se quita el aviso de "guardado" y el error de ese campo
-  function editado(ruta?: string) {
-    setEstado((actual) => (actual.tipo === "guardando" ? actual : { tipo: "editando" }));
-    if (ruta && errores[ruta]) {
-      setErrores((actuales) => {
-        const copia = { ...actuales };
-        delete copia[ruta];
-        return copia;
-      });
-    }
-  }
+  const { setEstado, ...formulario } = useFormulario(seccion);
+  const { setErrores, editado, estado } = formulario;
 
   // `preparar` corre después de validar y antes de guardar: la portada sube ahí sus fotos
   async function guardar(datos: DatosSeccion[S], preparar?: () => Promise<DatosSeccion[S]>) {
@@ -131,33 +154,19 @@ export function useSeccion<S extends Seccion>(seccion: S, inicial: SeccionConten
   }
 
   return {
+    ...formulario,
     visible,
     cambiarVisible: (valor: boolean) => {
       setVisible(valor);
       editado();
     },
-    errores,
-    setErrores,
-    estado,
     ocupado: estado.tipo === "guardando",
-    editado,
     guardar,
-    // Para <Campo>: el id del control y su error
-    campo: (ruta: string) => ({ id: idCampo(seccion, ruta), error: errores[ruta] }),
-    // Para el control: su id y la accesibilidad del error (o de la ayuda)
-    entrada: (ruta: string, conAyuda = false) => {
-      const id = idCampo(seccion, ruta);
-      return {
-        id,
-        "aria-invalid": errores[ruta] ? true : undefined,
-        "aria-describedby": errores[ruta] ? `${id}-error` : conAyuda ? `${id}-ayuda` : undefined,
-      };
-    },
   };
 }
 
-// Lo que los campos compartidos necesitan de useSeccion
-export type Controles = Pick<ReturnType<typeof useSeccion>, "errores" | "setErrores" | "editado" | "campo" | "entrada">;
+// Lo que los campos compartidos necesitan del formulario
+export type Controles = Pick<ReturnType<typeof useFormulario>, "errores" | "setErrores" | "editado" | "campo" | "entrada">;
 
 // Etiqueta, control y error (o ayuda, si no hay error)
 export function Campo({

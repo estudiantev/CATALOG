@@ -9,6 +9,8 @@ const schema = a.schema({
     'GREEN', 'PURPLE', 'GOLD', 'SILVER', 'MULTI',
   ]),
   Size: a.enum(['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'ONE_SIZE']),
+  // Orden de los productos dentro de una colección; MANUAL es el orden de productIds
+  CollectionSortOrder: a.enum(['MANUAL', 'NEWEST', 'PRICE_ASC', 'PRICE_DESC']),
 
   // Tipos personalizados
   Address: a.customType({
@@ -152,6 +154,31 @@ const schema = a.schema({
       allow.authenticated().to(['read']),
       allow.groups(['MARKETING']).to(['create', 'read', 'update']),
       allow.group('ADMIN'),
+    ]),
+
+  // Tabla: grupos de productos que arma Marketing, como "Novias 2027". Cada colección tiene su
+  // página en /coleccion/<slug>. Las reglas y la validación están en lib/colecciones.ts.
+  Collection: a
+    .model({
+      title: a.string().required(),
+      slug: a.string().required(), // sale del título y nunca cambia, para no romper los enlaces compartidos
+      description: a.string(),
+      productIds: a.id().array(),
+      sortOrder: a.ref('CollectionSortOrder'),
+      isPublished: a.boolean().default(false),
+      startsAt: a.datetime(), // vacías = visible mientras esté publicada
+      endsAt: a.datetime(),
+      position: a.integer(),  // orden en el menú
+      imageKey: a.string(),   // foto de portada en S3: "collections/..."
+      seoTitle: a.string(),   // vacíos = se usan title y description
+      seoDescription: a.string(),
+    })
+    .secondaryIndexes((index) => [index('slug').name('bySlug').queryField('listCollectionBySlug')])
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+      // Con 'delete' incluido: sin él, AppSync rechaza vaciar campos opcionales (escribir null)
+      allow.groups(['MARKETING', 'ADMIN']),
     ]),
 
   // NUEVO: el ADMIN crea cuentas de INVENTORY o MARKETING

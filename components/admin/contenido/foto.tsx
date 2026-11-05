@@ -29,12 +29,12 @@ export const aFormulario = (imagen: Imagen | null, vistasPrevias: Record<string,
 export const aImagen = (foto: FotoFormulario | null): Imagen | null => foto && { key: foto.key ?? "", alt: foto.alt };
 
 // Sube la foto si es nueva y la devuelve con su ruta
-export async function subirFoto(foto: FotoFormulario | null): Promise<FotoFormulario | null> {
+export async function subirFoto(foto: FotoFormulario | null, carpeta = CARPETA_IMAGENES): Promise<FotoFormulario | null> {
   if (!foto?.archivo) return foto;
   try {
     const { blob, extension } = await reducirImagen(foto.archivo, ANCHO_FOTO);
     const { path } = await uploadData({
-      path: `${CARPETA_IMAGENES}${crypto.randomUUID()}.${extension}`,
+      path: `${carpeta}${crypto.randomUUID()}.${extension}`,
       data: blob,
       options: { contentType: blob.type },
     }).result;
@@ -68,6 +68,7 @@ export function CampoFoto({
   sinFoto,
   foto,
   onChange,
+  conDescripcion = true,
 }: {
   s: Controles;
   ruta: string;
@@ -75,6 +76,7 @@ export function CampoFoto({
   sinFoto: string; // qué se ve mientras no haya foto
   foto: FotoFormulario | null;
   onChange: (foto: FotoFormulario | null) => void;
+  conDescripcion?: boolean; // sin ella, la foto es decorativa
 }) {
   const selector = useRef<HTMLInputElement>(null);
   const error = s.errores[ruta];
@@ -150,7 +152,7 @@ export function CampoFoto({
           )}
         </div>
       </div>
-      {foto && (
+      {foto && conDescripcion && (
         <Campo {...s.campo(`${ruta}.alt`)} etiqueta="Descripción de la foto" ayuda="Para quienes no pueden verla, por ejemplo «Modelo con un vestido de gala esmeralda».">
           <Input
             {...s.entrada(`${ruta}.alt`, true)}

@@ -4,13 +4,11 @@ import { useEffect, useState } from "react";
 import { getUrl } from "aws-amplify/storage";
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Skeleton } from "@/components/admin/ui/skeleton";
-import { cargarProductos, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
+import { type OpcionProducto, cargarOpcionesProducto, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
 import { type ContenidoInicio, OCASIONES, PAGINA_INICIO, armarContenido } from "@/lib/contenido";
-import { CATEGORIAS, leerJson } from "@/lib/productos";
-import type { ResumenVariante } from "@/lib/variantes";
 import { EnlacesSugeridos } from "./comun";
 import { EditorAnuncios } from "./editor-anuncios";
-import { EditorDestacados, type OpcionProducto } from "./editor-destacados";
+import { EditorDestacados } from "./editor-destacados";
 import { EditorInspiracion } from "./editor-inspiracion";
 import { EditorNosotros } from "./editor-nosotros";
 import { EditorOcasiones } from "./editor-ocasiones";
@@ -64,17 +62,8 @@ export function EditorContenido() {
         setError(err instanceof Error ? err.message : "No se pudo cargar el contenido. Recarga la página.");
       });
     // Para elegir los destacados; si falla, las demás secciones se pueden editar igual
-    cargarProductos()
-      .then((lista) =>
-        setProductos(
-          lista.map((p) => ({
-            productId: p.productId,
-            nombre: p.name,
-            categoria: CATEGORIAS.find((c) => c.valor === p.category)?.nombre ?? p.category,
-            conStock: leerJson<ResumenVariante[]>(p.variantSummary, []).some((v) => v.inStock),
-          })),
-        ),
-      )
+    cargarOpcionesProducto()
+      .then(setProductos)
       .catch((err: unknown) => {
         console.error("No se pudieron cargar los productos:", err);
         setErrorProductos("No se pudieron cargar los productos. Recarga la página para elegir los destacados.");

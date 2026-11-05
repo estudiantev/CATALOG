@@ -59,7 +59,7 @@ function leerContenido(): Promise<ContenidoInicio> {
 }
 
 // Una foto que no se puede firmar se trata como si no hubiera foto: se ve la ilustración
-async function firmarFoto(imagen: Imagen | null): Promise<Foto | null> {
+export async function firmarFoto(imagen: Imagen | null): Promise<Foto | null> {
   if (!imagen) return null;
   const url = await runWithAmplifyServerContext({
     nextServerContext: null,

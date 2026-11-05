@@ -1,6 +1,8 @@
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
-import { CATEGORIAS, type Producto, type Variante } from "@/lib/productos";
+import { type Coleccion, ordenarColecciones } from "@/lib/colecciones";
+import { CATEGORIAS, type Producto, type Variante, leerJson } from "@/lib/productos";
+import type { ResumenVariante } from "@/lib/variantes";
 // Configura Amplify antes de crear el cliente
 import "@/components/compartido/configurar-amplify";
 
@@ -36,6 +38,43 @@ export async function cargarProductos() {
     } while (nextToken);
   }
   return productos.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export type OpcionProducto = { productId: string; nombre: string; categoria: string; conStock: boolean };
+
+// Para elegir productos en el CMS y en las colecciones
+export async function cargarOpcionesProducto(): Promise<OpcionProducto[]> {
+  const productos = await cargarProductos();
+  return productos.map((p) => ({
+    productId: p.productId,
+    nombre: p.name,
+    categoria: CATEGORIAS.find((c) => c.valor === p.category)?.nombre ?? p.category,
+    conStock: leerJson<ResumenVariante[]>(p.variantSummary, []).some((v) => v.inStock),
+  }));
+}
+
+// El modelo existe en el cliente solo después de desplegar el backend con la tabla Collection
+export function tablaColecciones() {
+  const tabla = clienteDatos.models.Collection;
+  if (!tabla) {
+    throw new Error(
+      "La tabla Collection todavía no existe en el backend. Despliega los cambios de amplify/ (npx ampx sandbox o el pipeline de Amplify) y recarga la página.",
+    );
+  }
+  return tabla;
+}
+
+// Todas, publicadas o no. Un Scan a propósito: son pocas filas (lib/colecciones-servidor.ts)
+export async function cargarColecciones() {
+  const colecciones: Coleccion[] = [];
+  let nextToken: string | null | undefined;
+  do {
+    const respuesta = await tablaColecciones().list({ limit: 100, nextToken });
+    if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
+    colecciones.push(...respuesta.data);
+    nextToken = respuesta.nextToken;
+  } while (nextToken);
+  return ordenarColecciones(colecciones);
 }
 
 // AP-09: un producto y todas sus variantes, en orden. Las variantes salen de un Query al

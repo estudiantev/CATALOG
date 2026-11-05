@@ -4,6 +4,7 @@ import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
 import { RetornoGoogle } from "@/components/tienda/retorno-google";
+import { leerColeccionesMenu } from "@/lib/colecciones-servidor";
 import { leerContenidoMarco } from "@/lib/contenido-servidor";
 import "./tienda.css";
 
@@ -46,13 +47,13 @@ export const metadata: Metadata = {
 };
 
 // Layout raíz de la tienda: tiene su propio <html> y su propio CSS (sin shadcn).
-// Los anuncios y el pie se editan en /admin/contenido.
+// Los anuncios y el pie se editan en /admin/contenido; las colecciones, en /admin/colecciones.
 export default async function TiendaLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { anuncios, pie } = await leerContenidoMarco();
+  const [{ anuncios, pie }, colecciones] = await Promise.all([leerContenidoMarco(), leerColeccionesMenu()]);
 
   return (
     <html
@@ -63,7 +64,7 @@ export default async function TiendaLayout({
       <body className="antialiased">
         <ConfigurarAmplify />
         <RetornoGoogle />
-        <Encabezado anuncios={anuncios} />
+        <Encabezado anuncios={anuncios} colecciones={colecciones} />
         <main id="contenido">{children}</main>
         <Pie contenido={pie} />
       </body>

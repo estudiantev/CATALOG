@@ -32,6 +32,7 @@ app/
 │   ├── page.tsx               ← / (portada; sus textos, fotos y destacados salen del CMS)
 │   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
 │   ├── catalogo/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
+│   ├── coleccion/[slug]/      ← /coleccion/novias-2027 (una colección, con los filtros del catálogo)
 │   ├── login/page.tsx         ← /login (si ya hay sesión, redirige)
 │   ├── registro/page.tsx      ← /registro (clientas, sin grupo)
 │   ├── cuenta/page.tsx        ← /cuenta (Mi cuenta: resumen del perfil y cerrar sesión)
@@ -45,6 +46,7 @@ app/
             ├── layout.tsx
             ├── page.tsx       ← /admin → /admin/productos
             ├── productos/     ← listar, nuevo, [productId] (datos y variantes), [productId]/variantes/…
+            ├── colecciones/   ← listar, nueva y [id] (ADMIN y MARKETING)
             ├── contenido/     ← CMS de la página de inicio (ADMIN y MARKETING)
             ├── clientes/      ← clientes registrados (solo ADMIN)
             └── equipo/        ← agregar staff (solo ADMIN)
@@ -63,6 +65,8 @@ lib/
 ├── redireccion.ts             ← a dónde volver después de entrar (?siguiente=, solo rutas internas)
 ├── perfil.ts                  ← tipos, tallas de copa, rangos de medidas y validación del perfil
 ├── catalogo.ts                ← lee el catálogo, el detalle y los destacados en el servidor, como visitante
+├── colecciones.ts             ← colecciones: enlace, publicación, orden y validación
+├── colecciones-servidor.ts    ← lee las colecciones del menú (con caché) y la página de cada una
 ├── contenido.ts               ← CMS: secciones, contenido por defecto, validación y normalización
 ├── contenido-servidor.ts      ← lee el contenido de la tienda (con caché) y firma sus fotos
 ├── productos.ts               ← tipos, listas fijas (tallas, largos, escotes…) y etiquetas
@@ -180,6 +184,21 @@ Los productos guardados con el modelo anterior (precios, tallas, colores y fotos
   - Copa: una de `TALLAS_COPA` (AA a G).
 - **Nombre en el encabezado:** sale del token de Cognito, así que al cambiar el nombre también se actualiza `given_name` en Cognito y se renueva el token. Si eso falla, el perfil igual queda guardado. Con Google, Cognito vuelve a poner el nombre de Google en cada inicio de sesión: el encabezado mostrará ese, pero Mi cuenta muestra el del perfil.
 
+## Colecciones
+
+Una colección es un grupo de productos que arma Marketing para una temporada, una promoción o una ocasión, como "Novias 2027". Se manejan en **`/admin/colecciones`** (opción "Colecciones" del menú) y cada una tiene su página en `/coleccion/<slug>`, con los filtros del catálogo. No reemplazan a De Gala, De XV, Cortos y Floreados, que siguen siendo filtros del catálogo (`COLECCIONES` en `components/tienda/datos.ts`): las dos listas salen juntas en el menú.
+
+- **Tabla `Collection`** (`amplify/data/resource.ts`): `title`, `slug`, `description`, `productIds`, `sortOrder`, `isPublished`, `startsAt`, `endsAt`, `position`, `imageKey`, `seoTitle` y `seoDescription`. El índice `bySlug` abre la página desde su URL. La leen invitados y clientas; MARKETING y ADMIN pueden todo, también eliminar: un grupo sin `delete` no puede escribir `null`, y el formulario lo necesita para vaciar los campos opcionales. Una colección sin publicar se oculta en la tienda, pero la API la deja leer a cualquiera: no guardes ahí nada confidencial.
+- **Productos:** se eligen a mano y pueden mezclar categorías. Con `sortOrder` `MANUAL` se muestran en el orden de `productIds`; también puede ser `NEWEST`, `PRICE_ASC` o `PRICE_DESC` (por el precio de venta "desde"). Los que no tienen stock o ya se eliminaron no se muestran.
+- **Enlace (`slug`):** sale del título al crearla y se puede corregir antes de guardar. Después ya no cambia, aunque cambie el título, para no romper los enlaces compartidos. DynamoDB no impide repetirlo: el panel lo revisa antes de crear.
+- **Publicación:** nace sin publicar. Publicada, se ve en `/coleccion/<slug>` y en el menú; necesita al menos un producto. `startsAt` y `endsAt` son opcionales y sirven para temporadas: se revisan en cada visita, así que aparece y desaparece a su hora. Fuera de esas fechas o sin publicar, su página da 404.
+- **Menú:** las primeras `MAXIMO_COLECCIONES_MENU` (6) por `position`, y después por título. Las demás siguen abiertas en su enlace.
+- **Foto:** opcional y decorativa (va sobre el título). Se reduce a 2000 px (WebP) y se sube a `collections/`. Al cambiarla, quitarla o eliminar la colección, se borra de S3.
+- **Google y WhatsApp:** `seoTitle` y `seoDescription`; vacíos, se usan `title` y `description`.
+- **Lectura** (`lib/colecciones-servidor.ts`): el menú lee toda la tabla con `unstable_cache` y la etiqueta `"colecciones"` (10 minutos), y el panel la invalida al guardar. Es la excepción a "nunca un Scan": son pocas filas y salen de la caché. La página hace un Query a `bySlug` en cada visita. Si la tabla no responde, el menú sigue sin ellas.
+
+Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, el panel avisa que falta desplegar.
+
 ## Contenido de la página de inicio (CMS)
 
 ADMIN y MARKETING editan la página de inicio, la barra de anuncios y el pie en **`/admin/contenido`** (opción "Contenido" del menú), sin tocar el código. El diseño sigue en el código; desde el panel se cambian textos, fotos, enlaces, productos y qué secciones se muestran.
@@ -218,6 +237,7 @@ El panel tiene tres capas, de afuera hacia adentro:
 | Borrar fotos de S3 | Sí | No | No |
 | Ver clientes | Sí | No | No |
 | Editar la página de inicio (Contenido) | Sí | No | Sí |
+| Crear, editar y eliminar colecciones | Sí | No | Sí |
 | Agregar staff (Equipo) | Sí | No | No |
 
 `lib/permisos.ts` refleja esta tabla para mostrar u ocultar botones y bloquear páginas; si cambias las reglas del backend, actualízalo también. El staff entra por `/admin/login`; quien recibe una invitación cambia ahí su contraseña temporal en el primer ingreso.

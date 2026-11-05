@@ -15,5 +15,11 @@ export const storage = defineStorage({
       allow.authenticated.to(['read']),
       allow.groups(['MARKETING', 'ADMIN']).to(['read', 'write', 'delete']),
     ],
+    // Fotos de portada de las colecciones
+    'collections/*': [
+      allow.guest.to(['get']),
+      allow.authenticated.to(['read']),
+      allow.groups(['MARKETING', 'ADMIN']).to(['read', 'write', 'delete']),
+    ],
   }),
 });

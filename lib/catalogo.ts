@@ -6,6 +6,7 @@ import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
+import { type OrdenColeccion, ordenarProductos } from "@/lib/colecciones";
 import {
   CATEGORIAS,
   type Categoria,
@@ -174,6 +175,12 @@ export async function leerDestacados(ids: string[], cantidad: number): Promise<P
   const productos = (await Promise.all(categorias.map((c) => leerProductosDeCategoria(c)))).flat().filter(tieneStock);
   const elegidos = ids.length ? ids.flatMap((id) => productos.filter((p) => p.productId === id)) : productos;
   return aCatalogo(elegidos.slice(0, cantidad));
+}
+
+// Los productos con stock de una colección, que puede mezclar categorías, en su orden
+export async function leerProductosColeccion(ids: string[], orden: OrdenColeccion): Promise<ProductoCatalogo[]> {
+  const productos = (await Promise.all(CATEGORIAS.map((c) => leerProductosDeCategoria(c.valor)))).flat().filter(tieneStock);
+  return aCatalogo(ordenarProductos(productos, ids, orden));
 }
 
 // Firma las fotos y arma las tarjetas del catálogo

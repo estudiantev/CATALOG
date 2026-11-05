@@ -28,7 +28,13 @@ function Chevron({ arriba }: { arriba: boolean }) {
   );
 }
 
-export function Encabezado({ anuncios }: { anuncios: DatosSeccion["anuncios"] | null }) {
+export function Encabezado({
+  anuncios,
+  colecciones,
+}: {
+  anuncios: DatosSeccion["anuncios"] | null;
+  colecciones: { nombre: string; href: string }[]; // las publicadas en /admin/colecciones
+}) {
   const [catalogoAbierto, setCatalogoAbierto] = useState(false);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [submenuMovilAbierto, setSubmenuMovilAbierto] = useState(true);
@@ -158,7 +164,7 @@ export function Encabezado({ anuncios }: { anuncios: DatosSeccion["anuncios"] | 
             <section aria-labelledby="col-colecciones" className="flex flex-none flex-col gap-5">
               <h2 id="col-colecciones" className={tituloMega}>Colecciones</h2>
               <ul className="flex flex-col gap-0.5">
-                {COLECCIONES.map((coleccion) => (
+                {[...COLECCIONES, ...colecciones].map((coleccion) => (
                   <li key={coleccion.href}>
                     <Link href={coleccion.href} onClick={cerrarMenus} className={enlaceMega}>{coleccion.nombre}</Link>
                   </li>
@@ -217,7 +223,7 @@ export function Encabezado({ anuncios }: { anuncios: DatosSeccion["anuncios"] | 
               </button>
               {submenuMovilAbierto && (
                 <ul id="sub-catalogo" className="pb-2">
-                  {[...COLECCIONES, { nombre: "Ver todo", href: "/catalogo" }].map((coleccion) => (
+                  {[...COLECCIONES, ...colecciones, { nombre: "Ver todo", href: "/catalogo" }].map((coleccion) => (
                     <li key={coleccion.href}>
                       <Link href={coleccion.href} onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] tracking-[0.08em] uppercase`}>
                         <span className={`${etiquetaMovil} py-1`}>{coleccion.nombre}</span>

@@ -10,10 +10,9 @@ import { Input } from "@/components/admin/ui/input";
 import { Label } from "@/components/admin/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/ui/select";
 import { Skeleton } from "@/components/admin/ui/skeleton";
+import type { OpcionProducto } from "@/components/admin/datos";
 import { LARGO, MAXIMO_DESTACADOS, PRODUCTOS_POR_FILA, type SeccionContenido } from "@/lib/contenido";
 import { Campo, CasillaVisible, PieSeccion, useSeccion } from "./comun";
-
-export type OpcionProducto = { productId: string; nombre: string; categoria: string; conStock: boolean };
 
 export function EditorDestacados({
   inicial,
