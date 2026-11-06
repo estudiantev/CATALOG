@@ -18,14 +18,14 @@ import { firmarFoto } from "@/lib/contenido-servidor";
 // Cliente de datos para el servidor: cada llamada recibe el contextSpec de runWithAmplifyServerContext
 const clienteDatosServidor = generateServerClientUsingReqRes<Schema>({ config: outputs });
 
-// El menú se lee de DynamoDB como mucho una vez cada 10 minutos. Al guardar, el panel invalida
+// La lista se lee de DynamoDB como mucho una vez cada 10 minutos. Al guardar, el panel invalida
 // la caché con revalidateTag("colecciones").
 const CACHE_COLECCIONES = 10 * 60;
 
-const CAMPOS_MENU = ["title", "slug", "isPublished", "startsAt", "endsAt", "position"] as const;
+const CAMPOS_LISTA = ["title", "slug", "description", "imageKey", "isPublished", "startsAt", "endsAt", "position"] as const;
 
 // A diferencia de Product, aquí sí va un Scan: son pocas filas y se leen de la caché
-const leerFilasMenu = unstable_cache(
+const leerFilas = unstable_cache(
   async () =>
     runWithAmplifyServerContext({
       nextServerContext: null,
@@ -35,7 +35,7 @@ const leerFilasMenu = unstable_cache(
         do {
           const respuesta = await clienteDatosServidor.models.Collection.list(contextSpec, {
             authMode: "identityPool",
-            selectionSet: CAMPOS_MENU,
+            selectionSet: CAMPOS_LISTA,
             limit: 100,
             nextToken,
           });
@@ -46,20 +46,36 @@ const leerFilasMenu = unstable_cache(
         return filas;
       },
     }),
-  ["colecciones"],
+  ["colecciones-lista"],
   { revalidate: CACHE_COLECCIONES, tags: ["colecciones"] },
 );
 
-// Si la tabla no responde (o todavía no existe en el backend), el menú sigue sin ellas.
+// Si la tabla no responde (o todavía no existe en el backend), la tienda sigue sin ellas.
 // La fecha se revisa fuera de la caché, para que cada colección aparezca y desaparezca a su hora.
-export async function leerColeccionesMenu() {
-  const filas = await leerFilasMenu().catch((error) => {
-    console.error("No se pudieron leer las colecciones del menú:", error);
+async function leerVisibles() {
+  const filas = await leerFilas().catch((error) => {
+    console.error("No se pudieron leer las colecciones:", error);
     return [];
   });
-  return ordenarColecciones(filas.filter((c) => coleccionVisible(c)))
-    .slice(0, MAXIMO_COLECCIONES_MENU)
-    .map((c) => ({ nombre: c.title, href: rutaColeccion(c.slug) }));
+  return ordenarColecciones(filas.filter((c) => coleccionVisible(c)));
+}
+
+export async function leerColeccionesMenu() {
+  const visibles = await leerVisibles();
+  return visibles.slice(0, MAXIMO_COLECCIONES_MENU).map((c) => ({ nombre: c.title, href: rutaColeccion(c.slug) }));
+}
+
+// Para /colecciones: todas las publicadas, sin el tope del menú
+export async function leerColeccionesPublicadas() {
+  const visibles = await leerVisibles();
+  return Promise.all(
+    visibles.map(async (c) => ({
+      nombre: c.title,
+      href: rutaColeccion(c.slug),
+      descripcion: c.description ?? "",
+      foto: await firmarFoto(c.imageKey ? { key: c.imageKey } : null),
+    })),
+  );
 }
 
 // Query al índice bySlug, como visitante. Una colección que no se puede ver es como si no

@@ -6,7 +6,7 @@ import { useState } from "react";
 const fondo = "min-w-0 bg-[#f3f3f3]";
 // En escritorio llena la pantalla debajo del encabezado y de la barra de la categoría (58px) y
 // se queda fija mientras se baja por la información del producto
-const marco = "relative aspect-[9/11] menu:sticky menu:top-0 menu:aspect-auto menu:h-[max(560px,calc(100dvh-var(--alto-marco)-58px))]";
+const marco = "relative aspect-[9/11] detalle:sticky detalle:top-0 detalle:aspect-auto detalle:h-[max(560px,calc(100dvh-var(--alto-marco)-58px))]";
 
 export type FotoGaleria = { url: string; miniatura: string };
 
@@ -28,17 +28,17 @@ export function GaleriaProducto({ nombre, fotos }: { nombre: string; fotos: Foto
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-px menu:flex-row-reverse">
+    <div className="flex min-w-0 flex-col gap-px detalle:flex-row-reverse">
       <div className={`${fondo} flex-auto`}>
         <div className={marco}>
           <Image src={fotos[actual].url} alt={nombre} fill unoptimized priority sizes="(min-width: 861px) 50vw, 100vw" className="object-contain" />
         </div>
       </div>
       {fotos.length > 1 && (
-        <div className="flex-none bg-white menu:w-[clamp(64px,5.5vw,88px)]">
-          <ul className="grid grid-cols-6 menu:sticky menu:top-0 menu:flex menu:flex-col">
+        <div className="flex-none bg-white detalle:w-[clamp(64px,5.5vw,88px)]">
+          <ul className="grid grid-cols-6 detalle:sticky detalle:top-0 detalle:flex detalle:flex-col">
             {fotos.map((foto, i) => (
-              <li key={foto.url} className="border-r border-tinta menu:border-r-0 menu:border-b">
+              <li key={foto.url} className="border-r border-tinta detalle:border-r-0 detalle:border-b">
                 <button
                   type="button"
                   aria-label={`Ver foto ${i + 1} de ${fotos.length}`}

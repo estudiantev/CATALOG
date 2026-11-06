@@ -36,6 +36,9 @@ export const OCASIONES = [
 ] as const;
 export type ClaveOcasion = (typeof OCASIONES)[number]["clave"];
 
+// Las dos que se ven en la página de inicio; las cuatro salen en /colecciones
+export const OCASIONES_INICIO = ["gala", "xv"] as const satisfies readonly ClaveOcasion[];
+
 // Una red sin enlace no se muestra en el pie
 export const REDES = [
   { clave: "instagram", nombre: "Instagram" },

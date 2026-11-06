@@ -1,14 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ComponentProps } from "react";
-import { COLECCIONES, COLORES, enlaceWhatsApp } from "@/components/tienda/datos";
+import { COLORES, enlaceWhatsApp } from "@/components/tienda/datos";
 import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
 import { barraSeccion, botonAncho, botonCaja, chip, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { Flecha, IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
+import { TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
 import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
-import { type ClaveOcasion, PRODUCTOS_POR_FILA } from "@/lib/contenido";
+import { OCASIONES_INICIO, PRODUCTOS_POR_FILA } from "@/lib/contenido";
 import { leerContenidoInicio } from "@/lib/contenido-servidor";
 import { resolverTarjeta } from "@/lib/variantes";
 
@@ -16,17 +16,6 @@ import { resolverTarjeta } from "@/lib/variantes";
 // se firman en cada visita. Los textos (tabla Content) y los productos sí van en caché
 // (lib/contenido-servidor.ts).
 export const dynamic = "force-dynamic";
-
-type Ilustracion = ComponentProps<typeof Vestido>;
-
-// Los nombres y enlaces salen de COLECCIONES (también arman el menú); la modalidad, la
-// descripción y la foto de cada una se editan en /admin/contenido. Sin foto se ve la ilustración.
-const OCASIONES: { coleccion: (typeof COLECCIONES)[number]; clave: ClaveOcasion; vestido: Ilustracion }[] = [
-  { coleccion: COLECCIONES[0], clave: "gala", vestido: { forma: "sirena", color: "#1d1a1b", className: "h-[94%] w-auto" } },
-  { coleccion: COLECCIONES[1], clave: "xv", vestido: { forma: "xv", color: "#e6b4b2", className: "mb-[2%] h-[90%] w-auto" } },
-  { coleccion: COLECCIONES[2], clave: "cortos", vestido: { forma: "corto", color: "#a3243b", className: "h-[96%] w-auto" } },
-  { coleccion: COLECCIONES[3], clave: "floreados", vestido: { forma: "floreado", color: "#bcd3e6", className: "h-[96%] w-auto" } },
-];
 
 export default async function InicioPage() {
   const { diapositivas, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenidoInicio();
@@ -93,34 +82,17 @@ export default async function InicioPage() {
       )}
 
       {ocasiones && (
-        <section id="colecciones" aria-label="Colecciones" className="pantalla grid grid-cols-1 gap-px border-t border-tinta bg-tinta sm:grid-cols-2 xl:grid-cols-4">
-          {OCASIONES.map(({ coleccion, clave, vestido }) => {
-            const { modalidad, descripcion, foto } = ocasiones[clave];
-            return (
-              <Link
-                key={clave}
-                href={coleccion.href}
-                className="group relative flex min-h-[420px] flex-col items-start justify-end overflow-hidden bg-acento2 p-7 text-white transition-[filter] duration-200 hover:brightness-90"
-              >
-                {foto ? (
-                  <>
-                    <Image src={foto.url} alt="" fill unoptimized sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
-                    <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
-                  </>
-                ) : (
-                  <span aria-hidden="true" className="absolute inset-x-0 top-6 bottom-[170px] flex items-end justify-center">
-                    <Vestido {...vestido} />
-                  </span>
-                )}
-                <span className="relative text-[10px] leading-[15px] font-semibold tracking-[0.16em] uppercase">{modalidad}</span>
-                <span className="relative mt-2 font-archivo text-[26px] leading-[1.02] font-black font-stretch-expanded tracking-[0.01em] uppercase">{coleccion.nombre}</span>
-                <span className="relative mt-2 text-[14px] leading-[1.4]">{descripcion}</span>
-                <span className="relative mt-3.5 inline-flex items-center gap-2 border border-white bg-white px-3 py-2 font-archivo text-[10px] font-bold tracking-[0.14em] text-tinta uppercase transition-[background-color,color,gap] duration-200 group-hover:gap-3 group-hover:bg-transparent group-hover:text-white">
-                  Ver colección <Flecha tamano={12} />
-                </span>
-              </Link>
-            );
-          })}
+        <section id="colecciones" aria-label="Colecciones" className="pantalla flex flex-col border-t border-tinta bg-white">
+          <div className="grid flex-auto grid-cols-1 gap-px border-b border-tinta bg-tinta sm:grid-cols-2">
+            {OCASIONES_INICIO.map((clave) => (
+              <TarjetaOcasion key={clave} clave={clave} ocasion={ocasiones[clave]} sizes="(min-width: 640px) 50vw, 100vw" />
+            ))}
+          </div>
+          <div className="flex flex-none justify-center py-2.5">
+            <Link href="/colecciones" className={botonAncho}>
+              Ver todas<span className="sr-only"> las colecciones</span> <Flecha tamano={14} />
+            </Link>
+          </div>
         </section>
       )}
 

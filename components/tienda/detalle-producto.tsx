@@ -85,7 +85,7 @@ export function DetalleProducto({ producto, variantIdInicial }: { producto: Prod
       </div>
 
       {/* gap-px sobre fondo negro: las líneas de la cuadrícula, como en la página de inicio */}
-      <div className="grid gap-px bg-tinta menu:grid-cols-2">
+      <div className="grid gap-px bg-tinta detalle:grid-cols-2">
         {/* Las fotos son las de la variante elegida: cambian con el color, el largo, etc. */}
         <GaleriaProducto key={actual?.fotos[0]?.url ?? "sin-foto"} nombre={producto.nombre} fotos={actual?.fotos ?? []} />
 

@@ -89,6 +89,11 @@ export function Encabezado({
               </button>
             </li>
             <li>
+              <Link href="/colecciones" onClick={cerrarMenus} className={cajaNav}>
+                Colecciones
+              </Link>
+            </li>
+            <li>
               <a href="#contacto" onClick={cerrarMenus} className={cajaNav}>
                 Contacto
               </a>
@@ -232,6 +237,11 @@ export function Encabezado({
                   ))}
                 </ul>
               )}
+            </li>
+            <li>
+              <Link href="/colecciones" onClick={cerrarMenus} className={`${filaMovil} h-14 px-5`}>
+                <span className={`${etiquetaMovil} py-1.5 text-[15px] leading-[20px] font-medium tracking-[0.1em] uppercase`}>Colecciones</span>
+              </Link>
             </li>
             <li>
               <a href="#contacto" onClick={cerrarMenus} className={`${filaMovil} h-14 px-5`}>

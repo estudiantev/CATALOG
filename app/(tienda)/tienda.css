@@ -31,8 +31,10 @@
   --color-tinte-verde: #e6f2f2;
   --color-tinte-azul: #e1e0f0;
 
-  /* Desde aquí se muestra el menú de escritorio (el diseño cambia a móvil en 860px) */
-  --breakpoint-menu: 53.8125rem;
+  /* Desde aquí se muestra el menú de escritorio: es lo que mide con un nombre de 14 letras en "Mi cuenta" */
+  --breakpoint-menu: 62.375rem;
+  /* Desde aquí el detalle del producto va en dos columnas */
+  --breakpoint-detalle: 53.8125rem;
 }
 
 /* Las fuentes las carga next/font en app/(tienda)/layout.tsx */

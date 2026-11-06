@@ -32,6 +32,7 @@ app/
 │   ├── page.tsx               ← / (portada; sus textos, fotos y destacados salen del CMS)
 │   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
 │   ├── catalogo/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
+│   ├── colecciones/page.tsx   ← /colecciones (todas: las cuatro fijas y las publicadas)
 │   ├── coleccion/[slug]/      ← /coleccion/novias-2027 (una colección, con los filtros del catálogo)
 │   ├── login/page.tsx         ← /login (si ya hay sesión, redirige)
 │   ├── registro/page.tsx      ← /registro (clientas, sin grupo)
@@ -93,7 +94,7 @@ Cada zona tiene su **propio layout raíz** (su propio `<html>`). Así cada una c
 | Componentes | `components/tienda/` | `components/admin/` y `components/admin/ui/` |
 
 - Cada CSS usa `@import "tailwindcss" source(none)` y declara con `@source` qué carpetas revisa. Si creas una carpeta nueva con componentes, agrégala con `@source` en el CSS que corresponda.
-- La paleta de la tienda está en el bloque `@theme` de `tienda.css`. El menú cambia a la versión móvil por debajo de 861px (variante `menu:`).
+- La paleta de la tienda está en el bloque `@theme` de `tienda.css`. El menú cambia a la versión móvil por debajo de 998px (variante `menu:`) y el detalle del producto pasa a una columna por debajo de 861px (variante `detalle:`).
 - `components/compartido/` lo revisan ambos CSS, así que ahí solo van componentes con clases estándar de Tailwind (`flex`, `p-4`, `text-sm`…), nunca colores de marca ni de shadcn.
 - ESLint lo hace cumplir: `npm run lint` marca error si la tienda importa algo de `components/admin` o de Radix, o si el panel importa de `components/tienda`.
 
@@ -186,16 +187,16 @@ Los productos guardados con el modelo anterior (precios, tallas, colores y fotos
 
 ## Colecciones
 
-Una colección es un grupo de productos que arma Marketing para una temporada, una promoción o una ocasión, como "Novias 2027". Se manejan en **`/admin/colecciones`** (opción "Colecciones" del menú) y cada una tiene su página en `/coleccion/<slug>`, con los filtros del catálogo. No reemplazan a De Gala, De XV, Cortos y Floreados, que siguen siendo filtros del catálogo (`COLECCIONES` en `components/tienda/datos.ts`): las dos listas salen juntas en el menú.
+Una colección es un grupo de productos que arma Marketing para una temporada, una promoción o una ocasión, como "Novias 2027". Se manejan en **`/admin/colecciones`** (opción "Colecciones" del menú) y cada una tiene su página en `/coleccion/<slug>`, con los filtros del catálogo. No reemplazan a De Gala, De XV, Cortos y Floreados, que siguen siendo filtros del catálogo (`COLECCIONES` en `components/tienda/datos.ts`): las dos listas salen juntas en el menú y en **`/colecciones`**, la página con todas.
 
 - **Tabla `Collection`** (`amplify/data/resource.ts`): `title`, `slug`, `description`, `productIds`, `sortOrder`, `isPublished`, `startsAt`, `endsAt`, `position`, `imageKey`, `seoTitle` y `seoDescription`. El índice `bySlug` abre la página desde su URL. La leen invitados y clientas; MARKETING y ADMIN pueden todo, también eliminar: un grupo sin `delete` no puede escribir `null`, y el formulario lo necesita para vaciar los campos opcionales. Una colección sin publicar se oculta en la tienda, pero la API la deja leer a cualquiera: no guardes ahí nada confidencial.
 - **Productos:** se eligen a mano y pueden mezclar categorías. Con `sortOrder` `MANUAL` se muestran en el orden de `productIds`; también puede ser `NEWEST`, `PRICE_ASC` o `PRICE_DESC` (por el precio de venta "desde"). Los que no tienen stock o ya se eliminaron no se muestran.
 - **Enlace (`slug`):** sale del título al crearla y se puede corregir antes de guardar. Después ya no cambia, aunque cambie el título, para no romper los enlaces compartidos. DynamoDB no impide repetirlo: el panel lo revisa antes de crear.
 - **Publicación:** nace sin publicar. Publicada, se ve en `/coleccion/<slug>` y en el menú; necesita al menos un producto. `startsAt` y `endsAt` son opcionales y sirven para temporadas: se revisan en cada visita, así que aparece y desaparece a su hora. Fuera de esas fechas o sin publicar, su página da 404.
-- **Menú:** las primeras `MAXIMO_COLECCIONES_MENU` (6) por `position`, y después por título. Las demás siguen abiertas en su enlace.
-- **Foto:** opcional y decorativa (va sobre el título). Se reduce a 2000 px (WebP) y se sube a `collections/`. Al cambiarla, quitarla o eliminar la colección, se borra de S3.
+- **Menú:** las primeras `MAXIMO_COLECCIONES_MENU` (6) por `position`, y después por título. Las demás siguen abiertas en su enlace y salen en `/colecciones`, que no tiene tope.
+- **Foto:** opcional y decorativa (va sobre el título, y de fondo en la tarjeta de `/colecciones`). Se reduce a 2000 px (WebP) y se sube a `collections/`. Al cambiarla, quitarla o eliminar la colección, se borra de S3.
 - **Google y WhatsApp:** `seoTitle` y `seoDescription`; vacíos, se usan `title` y `description`.
-- **Lectura** (`lib/colecciones-servidor.ts`): el menú lee toda la tabla con `unstable_cache` y la etiqueta `"colecciones"` (10 minutos), y el panel la invalida al guardar. Es la excepción a "nunca un Scan": son pocas filas y salen de la caché. La página hace un Query a `bySlug` en cada visita. Si la tabla no responde, el menú sigue sin ellas.
+- **Lectura** (`lib/colecciones-servidor.ts`): el menú y `/colecciones` leen toda la tabla con `unstable_cache` y la etiqueta `"colecciones"` (10 minutos), y el panel la invalida al guardar. Es la excepción a "nunca un Scan": son pocas filas y salen de la caché. La página de cada colección hace un Query a `bySlug` en cada visita. Si la tabla no responde, el menú y `/colecciones` siguen sin ellas.
 
 Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, el panel avisa que falta desplegar.
 
@@ -208,7 +209,7 @@ ADMIN y MARKETING editan la página de inicio, la barra de anuncios y el pie en 
   - **Anuncios:** la barra azul sobre el menú, en todas las páginas. Hasta 4 anuncios con enlace opcional, que rotan cada 3 a 10 segundos; se pueden pausar y pasar con las flechas.
   - **Portada:** hasta 3, cada una con antetítulo, título, texto, botón principal, segundo botón opcional y foto opcional. Sin foto se ven las ilustraciones de vestidos; con más de una portada aparecen los guiones para pasar de una a otra. El panel recomienda fotos de 2000 × 900 px, sin exigirlo: la portada llena la pantalla debajo del encabezado, así que en computadora se ve casi entera y en celular solo la franja central.
   - **Catálogo** (`destacados`): título, subtítulo y hasta 10 productos elegidos del catálogo, en orden y en dos filas de 5, cada uno con una etiqueta opcional sobre la foto ("Nuevo" va en azul, las demás en verde). El precio y la foto salen del producto; los que no tienen stock no se muestran. Sin productos elegidos, se muestran los vestidos más nuevos.
-  - **Colecciones** (`ocasiones`): la modalidad, la descripción y la foto de De Gala, De XV, Cortos y Floreados. Sin foto se ve la ilustración del vestido. Sus nombres y enlaces siguen en `COLECCIONES` porque también arman el menú y los filtros del catálogo.
+  - **Colecciones** (`ocasiones`): la modalidad, la descripción y la foto de De Gala, De XV, Cortos y Floreados. En el inicio se ven dos tarjetas iguales (`OCASIONES_INICIO`: De Gala y De XV) con un botón a `/colecciones`, donde salen las cuatro aunque la sección esté oculta en el inicio. Sin foto se ve la ilustración del vestido. Sus nombres y enlaces siguen en `COLECCIONES` porque también arman el menú y los filtros del catálogo.
   - **Alquiler en 3 pasos:** título, subtítulo, los 3 pasos y el texto del botón, que abre WhatsApp (`enlaceWhatsApp()` en `components/tienda/datos.ts`).
   - **Quiénes somos** (`nosotros`): título, lema opcional, texto y foto de fondo opcional.
   - **Inspiración:** antetítulo opcional, texto, botón y foto opcional.

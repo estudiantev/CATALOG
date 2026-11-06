@@ -13,6 +13,7 @@ import {
   type Imagen,
   MAXIMO_DESTACADOS,
   OCASIONES,
+  OCASIONES_INICIO,
   type Ocasion,
   PAGINA_INICIO,
   armarContenido,
@@ -84,11 +85,16 @@ async function conFoto<T extends { imagen: Imagen | null }>({ imagen, ...resto }
 export type DiapositivaLista = ConFoto<Diapositiva>;
 export type OcasionLista = ConFoto<Ocasion>;
 
+async function firmarOcasiones<C extends ClaveOcasion>(datos: DatosSeccion["ocasiones"], claves: readonly C[]) {
+  const lista = await Promise.all(claves.map(async (clave) => [clave, await conFoto(datos[clave])] as const));
+  return Object.fromEntries(lista) as Record<C, OcasionLista>;
+}
+
 // Lo que necesita la página de inicio; una sección en null está oculta
 export type ContenidoPortada = {
   diapositivas: DiapositivaLista[];
   destacados: (Omit<DatosSeccion["destacados"], "productos"> & { productos: ProductoCatalogo[] }) | null;
-  ocasiones: Record<ClaveOcasion, OcasionLista> | null;
+  ocasiones: Record<(typeof OCASIONES_INICIO)[number], OcasionLista> | null;
   pasos: DatosSeccion["pasos"] | null;
   nosotros: ConFoto<DatosSeccion["nosotros"]> | null;
   inspiracion: ConFoto<DatosSeccion["inspiracion"]> | null;
@@ -104,7 +110,7 @@ export async function leerContenidoMarco() {
 export async function leerContenidoInicio(): Promise<ContenidoPortada> {
   const { portada, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenido();
 
-  const [diapositivas, productos, listaOcasiones, nosotrosListo, inspiracionLista] = await Promise.all([
+  const [diapositivas, productos, ocasionesListas, nosotrosListo, inspiracionLista] = await Promise.all([
     Promise.all(portada.datos.diapositivas.map((d) => conFoto(d))),
     destacados.visible
       ? leerDestacados(destacados.datos.productos, MAXIMO_DESTACADOS).catch((error) => {
@@ -112,7 +118,7 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
           return [];
         })
       : Promise.resolve([]),
-    ocasiones.visible ? Promise.all(OCASIONES.map(async ({ clave }) => [clave, await conFoto(ocasiones.datos[clave])] as const)) : null,
+    ocasiones.visible ? firmarOcasiones(ocasiones.datos, OCASIONES_INICIO) : null,
     nosotros.visible ? conFoto(nosotros.datos) : null,
     inspiracion.visible ? conFoto(inspiracion.datos) : null,
   ]);
@@ -121,9 +127,18 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
     diapositivas,
     // Sin productos con stock la sección no se muestra (nada de tarjetas vacías)
     destacados: destacados.visible && productos.length ? { ...destacados.datos, productos } : null,
-    ocasiones: listaOcasiones && (Object.fromEntries(listaOcasiones) as Record<ClaveOcasion, OcasionLista>),
+    ocasiones: ocasionesListas,
     pasos: pasos.visible ? pasos.datos : null,
     nosotros: nosotrosListo,
     inspiracion: inspiracionLista,
   };
+}
+
+// Las cuatro para /colecciones: "visible" solo oculta la sección de la página de inicio
+export async function leerOcasiones() {
+  const { ocasiones } = await leerContenido();
+  return firmarOcasiones(
+    ocasiones.datos,
+    OCASIONES.map(({ clave }) => clave),
+  );
 }

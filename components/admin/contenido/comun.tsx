@@ -39,6 +39,7 @@ const ENLACES_SUGERIDOS = [
   { valor: "/catalogo?coleccion=xv", nombre: "Vestidos de XV" },
   { valor: "/catalogo?coleccion=cortos", nombre: "Vestidos cortos" },
   { valor: "/catalogo?coleccion=floreados", nombre: "Vestidos floreados" },
+  { valor: "/colecciones", nombre: "Todas las colecciones" },
   { valor: "/#catalogo", nombre: "Sección Catálogo" },
   { valor: "/#colecciones", nombre: "Sección Colecciones" },
   { valor: "/#pasos", nombre: "Sección Alquiler en 3 pasos" },
