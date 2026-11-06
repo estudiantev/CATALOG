@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/admin/ui/card";
 import { Input } from "@/components/admin/ui/input";
-import { type ClaveOcasion, type DatosSeccion, LARGO, OCASIONES, OCASIONES_INICIO, type Ocasion, type SeccionContenido } from "@/lib/contenido";
+import { type ClaveOcasion, type DatosSeccion, LARGO, OCASIONES, type Ocasion, type SeccionContenido, ocasionOpcional } from "@/lib/contenido";
 import { Campo, CasillaVisible, PieSeccion, useSeccion } from "./comun";
 import { CampoFoto, type FotoFormulario, aFormulario, aImagen, subirFoto, useFotosGuardadas } from "./foto";
 
 type OcasionFormulario = Omit<Ocasion, "imagen"> & { foto: FotoFormulario | null };
 type Formulario = Record<ClaveOcasion, OcasionFormulario>;
-
-const enInicio = (clave: ClaveOcasion) => (OCASIONES_INICIO as readonly ClaveOcasion[]).includes(clave);
 
 const aDatos = (datos: Formulario) =>
   Object.fromEntries(
@@ -61,7 +59,7 @@ export function EditorOcasiones({
             <h2>Colecciones</h2>
           </CardTitle>
           <CardDescription>
-            De Gala y De XV se ven en la página de inicio; las cuatro, en la página Colecciones. Sus nombres y enlaces son los del menú de la tienda; aquí cambias el texto y la foto de cada una.
+            De Gala y De XV siempre se ven en la página de inicio. Cortos y Floreados son opcionales: aparecen ahí cuando les pones foto, hasta cuatro en total. En la página Colecciones se ven las cuatro. Sus nombres y enlaces son los del menú de la tienda; aquí cambias el texto y la foto de cada una.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -72,7 +70,7 @@ export function EditorOcasiones({
               <fieldset className="min-w-0 space-y-4">
                 <legend className="mb-3 font-medium">
                   {nombre}
-                  {!enInicio(clave) && <span className="font-normal text-muted-foreground"> · solo en la página Colecciones</span>}
+                  {ocasionOpcional(clave) && <span className="font-normal text-muted-foreground"> · opcional en la página de inicio</span>}
                 </legend>
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
                   <Campo {...s.campo(`${clave}.modalidad`)} etiqueta="Modalidad">
@@ -103,7 +101,7 @@ export function EditorOcasiones({
                   s={s}
                   ruta={`${clave}.imagen`}
                   nombre={`foto-${clave}`}
-                  sinFoto="Sin foto se ve la ilustración del vestido."
+                  sinFoto={ocasionOpcional(clave) ? "Sin foto no aparece en la página de inicio; en la página Colecciones se ve la ilustración." : "Sin foto se ve la ilustración del vestido."}
                   foto={datos[clave].foto}
                   onChange={(foto) => cambiar(clave, { foto })}
                 />

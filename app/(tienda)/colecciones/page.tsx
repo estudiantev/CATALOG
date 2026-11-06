@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
 import { leerColeccionesPublicadas } from "@/lib/colecciones-servidor";
-import { OCASIONES } from "@/lib/contenido";
 import { leerOcasiones } from "@/lib/contenido-servidor";
 
 export const metadata: Metadata = {
@@ -28,9 +27,9 @@ export default async function ColeccionesPage() {
         <p className="mt-1 text-topo">Elige la colección para tu próximo evento.</p>
       </div>
       <ul aria-label="Colecciones" className="grid grid-cols-1 border-t-2 border-tinta sm:grid-cols-2 xl:grid-cols-3">
-        {OCASIONES.map(({ clave }) => (
+        {ocasiones.map(({ clave, ocasion }) => (
           <li key={clave} className={celda}>
-            <TarjetaOcasion clave={clave} ocasion={ocasiones[clave]} sizes={TAMANOS} />
+            <TarjetaOcasion clave={clave} ocasion={ocasion} sizes={TAMANOS} />
           </li>
         ))}
         {colecciones.map((coleccion) => (

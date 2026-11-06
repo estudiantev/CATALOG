@@ -36,8 +36,12 @@ export const OCASIONES = [
 ] as const;
 export type ClaveOcasion = (typeof OCASIONES)[number]["clave"];
 
-// Las dos que se ven en la página de inicio; las cuatro salen en /colecciones
-export const OCASIONES_INICIO = ["gala", "xv"] as const satisfies readonly ClaveOcasion[];
+// En la página de inicio estas dos se ven siempre y las demás solo si tienen foto: de 2 a 4
+// tarjetas. En /colecciones salen las cuatro.
+const OCASIONES_FIJAS_INICIO: readonly ClaveOcasion[] = ["gala", "xv"];
+export const ocasionOpcional = (clave: ClaveOcasion) => !OCASIONES_FIJAS_INICIO.includes(clave);
+export const ocasionesEnInicio = (datos: DatosSeccion["ocasiones"]) =>
+  OCASIONES.map(({ clave }) => clave).filter((clave) => !ocasionOpcional(clave) || datos[clave].imagen);
 
 // Una red sin enlace no se muestra en el pie
 export const REDES = [

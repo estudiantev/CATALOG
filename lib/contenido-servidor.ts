@@ -13,10 +13,10 @@ import {
   type Imagen,
   MAXIMO_DESTACADOS,
   OCASIONES,
-  OCASIONES_INICIO,
   type Ocasion,
   PAGINA_INICIO,
   armarContenido,
+  ocasionesEnInicio,
 } from "@/lib/contenido";
 
 // Cliente de datos para el servidor: cada llamada recibe el contextSpec de runWithAmplifyServerContext
@@ -85,16 +85,17 @@ async function conFoto<T extends { imagen: Imagen | null }>({ imagen, ...resto }
 export type DiapositivaLista = ConFoto<Diapositiva>;
 export type OcasionLista = ConFoto<Ocasion>;
 
-async function firmarOcasiones<C extends ClaveOcasion>(datos: DatosSeccion["ocasiones"], claves: readonly C[]) {
-  const lista = await Promise.all(claves.map(async (clave) => [clave, await conFoto(datos[clave])] as const));
-  return Object.fromEntries(lista) as Record<C, OcasionLista>;
+type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista };
+
+function firmarOcasiones(datos: DatosSeccion["ocasiones"], claves: ClaveOcasion[]): Promise<TarjetaOcasionLista[]> {
+  return Promise.all(claves.map(async (clave) => ({ clave, ocasion: await conFoto(datos[clave]) })));
 }
 
 // Lo que necesita la página de inicio; una sección en null está oculta
 export type ContenidoPortada = {
   diapositivas: DiapositivaLista[];
   destacados: (Omit<DatosSeccion["destacados"], "productos"> & { productos: ProductoCatalogo[] }) | null;
-  ocasiones: Record<(typeof OCASIONES_INICIO)[number], OcasionLista> | null;
+  ocasiones: TarjetaOcasionLista[] | null;
   pasos: DatosSeccion["pasos"] | null;
   nosotros: ConFoto<DatosSeccion["nosotros"]> | null;
   inspiracion: ConFoto<DatosSeccion["inspiracion"]> | null;
@@ -118,7 +119,7 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
           return [];
         })
       : Promise.resolve([]),
-    ocasiones.visible ? firmarOcasiones(ocasiones.datos, OCASIONES_INICIO) : null,
+    ocasiones.visible ? firmarOcasiones(ocasiones.datos, ocasionesEnInicio(ocasiones.datos)) : null,
     nosotros.visible ? conFoto(nosotros.datos) : null,
     inspiracion.visible ? conFoto(inspiracion.datos) : null,
   ]);

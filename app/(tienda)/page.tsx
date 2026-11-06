@@ -8,7 +8,7 @@ import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
 import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
-import { OCASIONES_INICIO, PRODUCTOS_POR_FILA } from "@/lib/contenido";
+import { PRODUCTOS_POR_FILA } from "@/lib/contenido";
 import { leerContenidoInicio } from "@/lib/contenido-servidor";
 import { resolverTarjeta } from "@/lib/variantes";
 
@@ -16,6 +16,14 @@ import { resolverTarjeta } from "@/lib/variantes";
 // se firman en cada visita. Los textos (tabla Content) y los productos sí van en caché
 // (lib/contenido-servidor.ts).
 export const dynamic = "force-dynamic";
+
+// Según cuántas tarjetas de colecciones haya. Las filas siempre van completas: el fondo de la
+// sección es oscuro y una celda vacía se vería como un hueco negro.
+const COLUMNAS_COLECCIONES: Record<number, string> = {
+  2: "sm:grid-cols-2",
+  3: "min-[841px]:grid-cols-3",
+  4: "sm:grid-cols-2 xl:grid-cols-4",
+};
 
 export default async function InicioPage() {
   const { diapositivas, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenidoInicio();
@@ -82,17 +90,10 @@ export default async function InicioPage() {
       )}
 
       {ocasiones && (
-        <section id="colecciones" aria-label="Colecciones" className="pantalla flex flex-col border-t border-tinta bg-white">
-          <div className="grid flex-auto grid-cols-1 gap-px border-b border-tinta bg-tinta sm:grid-cols-2">
-            {OCASIONES_INICIO.map((clave) => (
-              <TarjetaOcasion key={clave} clave={clave} ocasion={ocasiones[clave]} sizes="(min-width: 640px) 50vw, 100vw" />
-            ))}
-          </div>
-          <div className="flex flex-none justify-center py-2.5">
-            <Link href="/colecciones" className={botonAncho}>
-              Ver todas<span className="sr-only"> las colecciones</span> <Flecha tamano={14} />
-            </Link>
-          </div>
+        <section id="colecciones" aria-label="Colecciones" className={`pantalla grid grid-cols-1 gap-px border-t border-tinta bg-tinta ${COLUMNAS_COLECCIONES[ocasiones.length]}`}>
+          {ocasiones.map(({ clave, ocasion }) => (
+            <TarjetaOcasion key={clave} clave={clave} ocasion={ocasion} sizes="(min-width: 640px) 50vw, 100vw" />
+          ))}
         </section>
       )}
 
