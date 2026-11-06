@@ -82,8 +82,13 @@ async function conFoto<T extends { imagen: Imagen | null }>({ imagen, ...resto }
   return { ...resto, foto: await firmarFoto(imagen) };
 }
 
-export type DiapositivaLista = ConFoto<Diapositiva>;
+export type DiapositivaLista = ConFoto<Omit<Diapositiva, "imagenMovil">> & { fotoMovil: FotoAmbiente | null };
 export type OcasionLista = ConFoto<Ocasion>;
+
+async function firmarDiapositiva({ imagenMovil, ...diapositiva }: Diapositiva): Promise<DiapositivaLista> {
+  const [lista, fotoMovil] = await Promise.all([conFoto(diapositiva), firmarFoto(imagenMovil)]);
+  return { ...lista, fotoMovil };
+}
 
 type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista };
 
@@ -112,7 +117,7 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
   const { portada, destacados, ocasiones, pasos, nosotros, inspiracion } = await leerContenido();
 
   const [diapositivas, productos, ocasionesListas, nosotrosListo, inspiracionLista] = await Promise.all([
-    Promise.all(portada.datos.diapositivas.map((d) => conFoto(d))),
+    Promise.all(portada.datos.diapositivas.map(firmarDiapositiva)),
     destacados.visible
       ? leerDestacados(destacados.datos.productos, MAXIMO_DESTACADOS).catch((error) => {
           console.error("No se pudieron leer los productos destacados:", error);

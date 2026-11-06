@@ -37,6 +37,9 @@
   --breakpoint-detalle: 53.8125rem;
 }
 
+/* Celulares y tablets en vertical. La portada repite esta condición para elegir su foto. */
+@custom-variant movil (@media (max-width: 999px) and (orientation: portrait));
+
 /* Las fuentes las carga next/font en app/(tienda)/layout.tsx */
 @theme inline {
   --font-sans: var(--font-jost), "Futura", "Century Gothic", system-ui, sans-serif;
@@ -73,14 +76,13 @@
 }
 
 /*
- * Solo en la página de inicio (la que tiene #inicio): el marco queda fijo arriba y el scroll
- * salta de sección en sección. En pantallas chicas las secciones son más altas que la
- * pantalla, por eso ahí el salto es suave (proximity) y no obligatorio.
+ * Solo en la página de inicio (la que tiene #inicio): el marco queda fijo arriba y, desde
+ * 1000 px, el scroll salta de sección en sección. Más abajo las secciones son más altas que
+ * la pantalla, así que ahí el scroll es libre.
  */
 html:has(#inicio) {
   scroll-behavior: smooth;
   scroll-padding-top: var(--alto-marco);
-  scroll-snap-type: y proximity;
   scrollbar-width: none;
 }
 html:has(#inicio) #marco {

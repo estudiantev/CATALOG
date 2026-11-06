@@ -67,6 +67,8 @@ export function CampoFoto({
   foto,
   onChange,
   recomendacion,
+  etiqueta = "Foto (opcional)",
+  vertical = false,
 }: {
   s: Controles;
   ruta: string;
@@ -75,6 +77,8 @@ export function CampoFoto({
   foto: FotoFormulario | null;
   onChange: (foto: FotoFormulario | null) => void;
   recomendacion?: string; // aviso que no bloquea, como la medida ideal
+  etiqueta?: string;
+  vertical?: boolean; // la vista previa con la forma de una foto para celular
 }) {
   const selector = useRef<HTMLInputElement>(null);
   const error = s.errores[ruta];
@@ -100,9 +104,9 @@ export function CampoFoto({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">Foto (opcional)</p>
+      <p className="text-sm font-medium">{etiqueta}</p>
       <div className="flex flex-wrap items-start gap-4">
-        <div className="relative aspect-[4/3] w-44 shrink-0 overflow-hidden rounded-md border bg-muted">
+        <div className={`relative shrink-0 overflow-hidden rounded-md border bg-muted ${vertical ? "aspect-[4/5] w-36" : "aspect-[4/3] w-44"}`}>
           {foto?.vistaPrevia ? (
             <Image src={foto.vistaPrevia} alt="" fill unoptimized sizes="176px" className="object-cover" />
           ) : (

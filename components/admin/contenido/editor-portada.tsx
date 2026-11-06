@@ -10,10 +10,10 @@ import { type Boton, type Diapositiva, LARGO, MAXIMO_DIAPOSITIVAS, type SeccionC
 import { Campo, CamposEnlace, PieSeccion, useSeccion } from "./comun";
 import { CampoFoto, type FotoFormulario, aFormulario, aImagen, subirFoto, useFotosGuardadas } from "./foto";
 
-type DiapositivaFormulario = Omit<Diapositiva, "imagen"> & { id: string; imagen: FotoFormulario | null };
+type DiapositivaFormulario = Omit<Diapositiva, "imagen" | "imagenMovil"> & { id: string; imagen: FotoFormulario | null; imagenMovil: FotoFormulario | null };
 type CualBoton = "botonPrincipal" | "botonSecundario";
 
-const NUEVA: Omit<Diapositiva, "imagen"> = {
+const NUEVA: Omit<Diapositiva, "imagen" | "imagenMovil"> = {
   antetitulo: "",
   titulo: "",
   texto: "",
@@ -28,6 +28,7 @@ const aDatos = (d: DiapositivaFormulario): Diapositiva => ({
   botonPrincipal: d.botonPrincipal,
   botonSecundario: d.botonSecundario,
   imagen: aImagen(d.imagen),
+  imagenMovil: aImagen(d.imagenMovil),
 });
 
 export function EditorPortada({
@@ -39,13 +40,14 @@ export function EditorPortada({
 }) {
   const s = useSeccion("portada", inicial);
   const [diapositivas, setDiapositivas] = useState<DiapositivaFormulario[]>(() =>
-    inicial.datos.diapositivas.map(({ imagen, ...d }) => ({
+    inicial.datos.diapositivas.map(({ imagen, imagenMovil, ...d }) => ({
       ...d,
       id: crypto.randomUUID(),
       imagen: aFormulario(imagen, vistasPrevias),
+      imagenMovil: aFormulario(imagenMovil, vistasPrevias),
     })),
   );
-  const limpiarFotos = useFotosGuardadas(inicial.datos.diapositivas.map((d) => d.imagen));
+  const limpiarFotos = useFotosGuardadas(inicial.datos.diapositivas.flatMap((d) => [d.imagen, d.imagenMovil]));
 
   const cambiar = (indice: number, cambios: Partial<DiapositivaFormulario>, ruta?: string) => {
     setDiapositivas((actuales) => actuales.map((d, i) => (i === indice ? { ...d, ...cambios } : d)));
@@ -67,8 +69,10 @@ export function EditorPortada({
     reordenar(lista);
   };
   const quitar = (indice: number) => {
-    const foto = diapositivas[indice].imagen;
-    if (foto?.archivo) URL.revokeObjectURL(foto.vistaPrevia);
+    const { imagen, imagenMovil } = diapositivas[indice];
+    for (const foto of [imagen, imagenMovil]) {
+      if (foto?.archivo) URL.revokeObjectURL(foto.vistaPrevia);
+    }
     reordenar(diapositivas.filter((_, i) => i !== indice));
   };
 
@@ -76,11 +80,16 @@ export function EditorPortada({
     e.preventDefault();
     let subidas = diapositivas;
     const guardado = await s.guardar({ diapositivas: diapositivas.map(aDatos) }, async () => {
-      subidas = await Promise.all(diapositivas.map(async (d) => ({ ...d, imagen: await subirFoto(d.imagen) })));
+      subidas = await Promise.all(
+        diapositivas.map(async (d) => {
+          const [imagen, imagenMovil] = await Promise.all([subirFoto(d.imagen), subirFoto(d.imagenMovil)]);
+          return { ...d, imagen, imagenMovil };
+        }),
+      );
       setDiapositivas(subidas); // si el guardado falla, al reintentar no se vuelven a subir
       return { diapositivas: subidas.map(aDatos) };
     });
-    if (guardado) await limpiarFotos(subidas.map((d) => d.imagen));
+    if (guardado) await limpiarFotos(subidas.flatMap((d) => [d.imagen, d.imagenMovil]));
   }
 
   const campoBoton = (i: number, cual: CualBoton, etiqueta: string, opcional: boolean) => (
@@ -150,15 +159,27 @@ export function EditorPortada({
                   {campoBoton(i, "botonSecundario", "Segundo botón (opcional)", true)}
                 </div>
 
-                <div className="border-t pt-4">
+                <div className="space-y-5 border-t pt-4">
                   <CampoFoto
                     s={s}
                     ruta={`${ruta}.imagen`}
                     nombre={`foto-${i + 1}`}
+                    etiqueta="Foto para computadora (opcional)"
                     sinFoto="Sin foto se ven las ilustraciones de vestidos."
-                    recomendacion="Medida recomendada: 2000 × 900 px, en horizontal. Deja lo importante arriba y al centro: en celular se recortan los lados y la caja de texto tapa lo que queda debajo."
+                    recomendacion="Medida recomendada: 2000 × 900 px, en horizontal. Si no subes foto para celular, ahí se usa esta con los lados recortados."
                     foto={d.imagen}
                     onChange={(imagen) => cambiar(i, { imagen })}
+                  />
+                  <CampoFoto
+                    s={s}
+                    ruta={`${ruta}.imagenMovil`}
+                    nombre={`foto-movil-${i + 1}`}
+                    etiqueta="Foto para celular (opcional)"
+                    vertical
+                    sinFoto="Sin esta foto, en celular se ve la de computadora."
+                    recomendacion="Medida recomendada: 1080 × 1350 px, en vertical (4:5, como en Instagram). Deja lo importante al centro: según el celular se recorta un poco por los bordes. El texto va debajo de la foto, no encima."
+                    foto={d.imagenMovil}
+                    onChange={(imagenMovil) => cambiar(i, { imagenMovil })}
                   />
                 </div>
               </fieldset>
@@ -169,7 +190,7 @@ export function EditorPortada({
             <Button
               type="button"
               variant="outline"
-              onClick={() => reordenar([...diapositivas, { ...structuredClone(NUEVA), id: crypto.randomUUID(), imagen: null }])}
+              onClick={() => reordenar([...diapositivas, { ...structuredClone(NUEVA), id: crypto.randomUUID(), imagen: null, imagenMovil: null }])}
             >
               <Plus />
               Agregar otra portada

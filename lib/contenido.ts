@@ -93,6 +93,7 @@ export type Diapositiva = {
   botonPrincipal: Boton;
   botonSecundario: Boton; // sin texto, no se muestra
   imagen: Imagen | null; // sin foto se ven las ilustraciones de vestidos
+  imagenMovil: Imagen | null; // la del celular; sin ella, ahí se usa `imagen`
 };
 export type Anuncio = { texto: string; boton: Boton }; // sin texto en el botón, va sin enlace
 export type Ocasion = { modalidad: string; descripcion: string; imagen: Imagen | null }; // sin foto, la ilustración
@@ -144,6 +145,7 @@ export const POR_DEFECTO: DatosSeccion = {
         botonPrincipal: { texto: "Comprar", enlace: "/catalogo" },
         botonSecundario: { texto: "Alquilar", enlace: "#pasos" },
         imagen: null,
+        imagenMovil: null,
       },
     ],
   },
@@ -239,6 +241,7 @@ function diapositiva(v: unknown): Diapositiva {
     botonPrincipal: boton(o.botonPrincipal, porDefecto.botonPrincipal, false),
     botonSecundario: boton(o.botonSecundario, porDefecto.botonSecundario, true),
     imagen: imagen(o.imagen),
+    imagenMovil: imagen(o.imagenMovil),
   };
 }
 

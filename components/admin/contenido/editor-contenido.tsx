@@ -32,7 +32,7 @@ async function cargarContenido(): Promise<ContenidoInicio> {
 // Vista previa de las fotos ya guardadas
 async function firmarVistasPrevias({ portada, ocasiones, nosotros, inspiracion }: ContenidoInicio) {
   const rutas = [
-    ...portada.datos.diapositivas.map((d) => d.imagen),
+    ...portada.datos.diapositivas.flatMap((d) => [d.imagen, d.imagenMovil]),
     ...OCASIONES.map(({ clave }) => ocasiones.datos[clave].imagen),
     nosotros.datos.imagen,
     inspiracion.datos.imagen,
