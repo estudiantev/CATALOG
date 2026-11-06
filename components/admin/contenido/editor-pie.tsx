@@ -42,44 +42,46 @@ export function EditorPie({ inicial }: { inicial: SeccionContenido<"pie"> }) {
             <Textarea {...s.entrada("descripcion")} maxLength={LARGO.descripcionPie} rows={3} value={datos.descripcion} onChange={(e) => cambiar("descripcion", e.target.value)} />
           </Campo>
 
-          <div className="border-t pt-5">
-            <fieldset className="min-w-0">
-              <legend className="mb-3 font-medium">Suscripción</legend>
-              <div className="grid gap-4">
-                <Campo
-                  {...s.campo("boletinTitulo")}
-                  etiqueta="Título (opcional)"
-                  ayuda="Déjalo vacío para ocultar el formulario. Quien se suscribe abre WhatsApp con su correo ya escrito: la tienda todavía no guarda una lista."
-                >
-                  <Input {...s.entrada("boletinTitulo", true)} maxLength={LARGO.tituloSeccion} value={datos.boletinTitulo} onChange={(e) => cambiar("boletinTitulo", e.target.value)} />
-                </Campo>
-                <Campo {...s.campo("boletinNota")} etiqueta="Nota debajo del formulario (opcional)">
-                  <Input {...s.entrada("boletinNota")} maxLength={LARGO.notaBoletin} value={datos.boletinNota} onChange={(e) => cambiar("boletinNota", e.target.value)} />
-                </Campo>
-              </div>
-            </fieldset>
-          </div>
-
-          <div className="border-t pt-5">
-            <fieldset className="min-w-0">
-              <legend className="mb-3 font-medium">Redes</legend>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {REDES.map(({ clave, nombre }) => (
-                  <Campo key={clave} {...s.campo(`redes.${clave}`)} etiqueta={nombre}>
-                    <Input
-                      {...s.entrada(`redes.${clave}`)}
-                      maxLength={LARGO.enlace}
-                      spellCheck={false}
-                      autoCapitalize="none"
-                      placeholder="https://"
-                      value={datos.redes[clave]}
-                      onChange={(e) => cambiarRed(clave, e.target.value)}
-                    />
+          <div className="grid gap-x-8 gap-y-5 xl:grid-cols-2">
+            <div className="min-w-0 border-t pt-5">
+              <fieldset className="min-w-0">
+                <legend className="mb-3 font-medium">Suscripción</legend>
+                <div className="grid gap-4">
+                  <Campo
+                    {...s.campo("boletinTitulo")}
+                    etiqueta="Título (opcional)"
+                    ayuda="Déjalo vacío para ocultar el formulario. Quien se suscribe abre WhatsApp con su correo ya escrito: la tienda todavía no guarda una lista."
+                  >
+                    <Input {...s.entrada("boletinTitulo", true)} maxLength={LARGO.tituloSeccion} value={datos.boletinTitulo} onChange={(e) => cambiar("boletinTitulo", e.target.value)} />
                   </Campo>
-                ))}
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">Una red sin enlace no se muestra.</p>
-            </fieldset>
+                  <Campo {...s.campo("boletinNota")} etiqueta="Nota debajo del formulario (opcional)">
+                    <Input {...s.entrada("boletinNota")} maxLength={LARGO.notaBoletin} value={datos.boletinNota} onChange={(e) => cambiar("boletinNota", e.target.value)} />
+                  </Campo>
+                </div>
+              </fieldset>
+            </div>
+
+            <div className="min-w-0 border-t pt-5">
+              <fieldset className="min-w-0">
+                <legend className="mb-3 font-medium">Redes</legend>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {REDES.map(({ clave, nombre }) => (
+                    <Campo key={clave} {...s.campo(`redes.${clave}`)} etiqueta={nombre}>
+                      <Input
+                        {...s.entrada(`redes.${clave}`)}
+                        maxLength={LARGO.enlace}
+                        spellCheck={false}
+                        autoCapitalize="none"
+                        placeholder="https://"
+                        value={datos.redes[clave]}
+                        onChange={(e) => cambiarRed(clave, e.target.value)}
+                      />
+                    </Campo>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">Una red sin enlace no se muestra.</p>
+              </fieldset>
+            </div>
           </div>
         </CardContent>
         <PieSeccion estado={s.estado} texto="Guardar pie de página" />

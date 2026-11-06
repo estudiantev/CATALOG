@@ -44,44 +44,46 @@ export function EditorNosotros({
         </CardHeader>
         <CardContent className="space-y-6">
           <CasillaVisible id="nosotros-visible" visible={s.visible} onChange={s.cambiarVisible} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo {...s.campo("titulo")} etiqueta="Título">
-              <Input
-                {...s.entrada("titulo")}
-                maxLength={LARGO.tituloSeccion}
-                value={titulo}
-                onChange={(e) => {
-                  setTitulo(e.target.value);
-                  s.editado("titulo");
-                }}
-              />
-            </Campo>
-            <Campo {...s.campo("lema")} etiqueta="Lema (opcional)">
-              <Input
-                {...s.entrada("lema")}
-                maxLength={LARGO.lema}
-                value={lema}
-                onChange={(e) => {
-                  setLema(e.target.value);
-                  s.editado("lema");
-                }}
-              />
-            </Campo>
-            <Campo {...s.campo("texto")} etiqueta="Texto" className="sm:col-span-2">
-              <Textarea
-                {...s.entrada("texto")}
-                maxLength={LARGO.textoNosotros}
-                rows={4}
-                value={texto}
-                onChange={(e) => {
-                  setTexto(e.target.value);
-                  s.editado("texto");
-                }}
-              />
-            </Campo>
-          </div>
-          <div className="border-t pt-5">
-            <CampoFoto s={s} ruta="imagen" nombre="foto-nosotros" sinFoto="Sin foto se ve el fondo de color." foto={foto} onChange={setFoto} />
+          <div className="grid gap-x-8 gap-y-5 xl:grid-cols-2">
+            <div className="grid content-start gap-4 sm:grid-cols-2">
+              <Campo {...s.campo("titulo")} etiqueta="Título">
+                <Input
+                  {...s.entrada("titulo")}
+                  maxLength={LARGO.tituloSeccion}
+                  value={titulo}
+                  onChange={(e) => {
+                    setTitulo(e.target.value);
+                    s.editado("titulo");
+                  }}
+                />
+              </Campo>
+              <Campo {...s.campo("lema")} etiqueta="Lema (opcional)">
+                <Input
+                  {...s.entrada("lema")}
+                  maxLength={LARGO.lema}
+                  value={lema}
+                  onChange={(e) => {
+                    setLema(e.target.value);
+                    s.editado("lema");
+                  }}
+                />
+              </Campo>
+              <Campo {...s.campo("texto")} etiqueta="Texto" className="sm:col-span-2">
+                <Textarea
+                  {...s.entrada("texto")}
+                  maxLength={LARGO.textoNosotros}
+                  rows={4}
+                  value={texto}
+                  onChange={(e) => {
+                    setTexto(e.target.value);
+                    s.editado("texto");
+                  }}
+                />
+              </Campo>
+            </div>
+            <div className="min-w-0 border-t pt-5 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-8">
+              <CampoFoto s={s} ruta="imagen" nombre="foto-nosotros" sinFoto="Sin foto se ve el fondo de color." foto={foto} onChange={setFoto} />
+            </div>
           </div>
         </CardContent>
         <PieSeccion estado={s.estado} texto="Guardar quiénes somos" />

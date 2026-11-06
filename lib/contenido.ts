@@ -1,3 +1,4 @@
+import { slugValido } from "@/lib/colecciones";
 import { leerJson } from "@/lib/productos";
 
 // Contenido editable de la tienda, como un CMS. La tabla Content guarda una fila por sección
@@ -36,12 +37,28 @@ export const OCASIONES = [
 ] as const;
 export type ClaveOcasion = (typeof OCASIONES)[number]["clave"];
 
-// En la página de inicio estas dos se ven siempre y las demás solo si tienen foto: de 2 a 4
-// tarjetas. En /colecciones salen las cuatro.
-const OCASIONES_FIJAS_INICIO: readonly ClaveOcasion[] = ["gala", "xv"];
-export const ocasionOpcional = (clave: ClaveOcasion) => !OCASIONES_FIJAS_INICIO.includes(clave);
-export const ocasionesEnInicio = (datos: DatosSeccion["ocasiones"]) =>
-  OCASIONES.map(({ clave }) => clave).filter((clave) => !ocasionOpcional(clave) || datos[clave].imagen);
+// La página de inicio muestra de 2 a 4 colecciones, en el orden elegido en el panel. Cada elección
+// es la clave de una de OCASIONES ("gala") o el enlace de una de /admin/colecciones con este
+// prefijo ("coleccion:novias-2027"), que no choca con las claves aunque el enlace sea "gala".
+export const MINIMO_EN_INICIO = 2;
+export const MAXIMO_EN_INICIO = 4;
+const PREFIJO_COLECCION = "coleccion:";
+const OCASIONES_BASE: readonly ClaveOcasion[] = ["gala", "xv"];
+
+export const eleccionDeColeccion = (slug: string) => `${PREFIJO_COLECCION}${slug}`;
+export const slugDeEleccion = (eleccion: string) => (eleccion.startsWith(PREFIJO_COLECCION) ? eleccion.slice(PREFIJO_COLECCION.length) : null);
+export const esOcasion = (eleccion: string): eleccion is ClaveOcasion => OCASIONES.some(({ clave }) => clave === eleccion);
+
+// Lo que se ve de verdad: se saltan las colecciones despublicadas o borradas y, si quedan menos
+// de dos, entran De Gala y De XV
+export function eleccionesVigentes(enInicio: string[], estaVisible: (slug: string) => boolean) {
+  const vigentes = enInicio.filter((eleccion) => {
+    const slug = slugDeEleccion(eleccion);
+    return slug === null || estaVisible(slug);
+  });
+  const relleno = OCASIONES_BASE.filter((clave) => !vigentes.includes(clave));
+  return [...vigentes, ...relleno.slice(0, Math.max(0, MINIMO_EN_INICIO - vigentes.length))];
+}
 
 // Una red sin enlace no se muestra en el pie
 export const REDES = [
@@ -108,7 +125,7 @@ export type DatosSeccion = {
     productos: string[]; // productIds, en orden
     etiquetas: Record<string, string>; // productId → "Nuevo"; sin etiqueta, no se muestra
   };
-  ocasiones: Record<ClaveOcasion, Ocasion>;
+  ocasiones: Record<ClaveOcasion, Ocasion> & { enInicio: string[] };
   pasos: { titulo: string; subtitulo: string; pasos: Paso[]; boton: string };
   nosotros: { titulo: string; lema: string; texto: string; imagen: Imagen | null };
   inspiracion: { antetitulo: string; texto: string; boton: Boton; imagen: Imagen | null };
@@ -155,6 +172,7 @@ export const POR_DEFECTO: DatosSeccion = {
     xv: { modalidad: "Venta y alquiler", descripcion: "Para tu fiesta de quince años.", imagen: null },
     cortos: { modalidad: "Venta", descripcion: "Para cócteles, cumpleaños y celebraciones.", imagen: null },
     floreados: { modalidad: "Venta", descripcion: "Estampados en flor para eventos de día.", imagen: null },
+    enInicio: [...OCASIONES_BASE],
   },
   pasos: {
     titulo: "Alquiler en 3 pasos",
@@ -247,6 +265,12 @@ function diapositiva(v: unknown): Diapositiva {
 
 const BOTON_VACIO: Boton = { texto: "", enlace: "" };
 
+function eleccionValida(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  const slug = slugDeEleccion(v);
+  return slug === null ? esOcasion(v) : slugValido(slug);
+}
+
 function anuncio(v: unknown): Anuncio {
   const o = objeto(v);
   return { texto: texto(o.texto, "", LARGO.anuncio, true), boton: boton(o.boton, BOTON_VACIO, true) };
@@ -267,8 +291,8 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
     const diapositivas = lista(d.diapositivas).slice(0, MAXIMO_DIAPOSITIVAS).map(diapositiva);
     return { diapositivas: diapositivas.length ? diapositivas : structuredClone(POR_DEFECTO.portada.diapositivas) };
   },
-  ocasiones: (d) =>
-    Object.fromEntries(
+  ocasiones: (d) => {
+    const tarjetas = Object.fromEntries(
       OCASIONES.map(({ clave }) => {
         const o = objeto(d[clave]);
         const porDefecto = POR_DEFECTO.ocasiones[clave];
@@ -281,7 +305,14 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
           },
         ];
       }),
-    ) as DatosSeccion["ocasiones"],
+    ) as Record<ClaveOcasion, Ocasion>;
+    const elegidas = Array.from(new Set(lista(d.enInicio).filter(eleccionValida))).slice(0, MAXIMO_EN_INICIO);
+    return {
+      ...tarjetas,
+      // Lo guardado antes de poder elegir no trae la lista: De Gala, De XV y las demás con foto
+      enInicio: elegidas.length >= MINIMO_EN_INICIO ? elegidas : OCASIONES.map(({ clave }) => clave).filter((clave) => OCASIONES_BASE.includes(clave) || tarjetas[clave].imagen),
+    };
+  },
   destacados: (d) => {
     const productos = Array.from(
       new Set(lista(d.productos).filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 64)),
@@ -385,6 +416,7 @@ export type Errores = Record<string, string>;
 type Revisor = {
   texto: (ruta: string, valor: string, largo: number, falta?: string) => void;
   enlace: (ruta: string, valor: string, falta?: string) => void;
+  minimo: (ruta: string, cantidad: number, minimo: number, falta: string) => void;
 };
 
 
@@ -415,6 +447,7 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
     });
   },
   ocasiones: (d, r) => {
+    r.minimo("enInicio", d.enInicio.length, MINIMO_EN_INICIO, `Elige al menos ${MINIMO_EN_INICIO} colecciones.`);
     for (const { clave } of OCASIONES) {
       r.texto(`${clave}.modalidad`, d[clave].modalidad, LARGO.modalidad, "Escribe la modalidad, por ejemplo «Venta y alquiler».");
       r.texto(`${clave}.descripcion`, d[clave].descripcion, LARGO.descripcion, "Escribe la descripción.");
@@ -467,6 +500,9 @@ export function validarSeccion<S extends Seccion>(seccion: S, datos: DatosSeccio
       } else if (limpio.length > LARGO.enlace || !enlaceValido(limpio)) {
         errores[ruta] = "Usa una página de la tienda (/catalogo), una sección (/#pasos) o una dirección que empiece con https://.";
       }
+    },
+    minimo: (ruta, cantidad, minimo, falta) => {
+      if (cantidad < minimo) errores[ruta] = falta;
     },
   };
   VALIDAR[seccion](datos, revisor);

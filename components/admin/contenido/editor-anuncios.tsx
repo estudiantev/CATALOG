@@ -79,10 +79,10 @@ export function EditorAnuncios({ inicial }: { inicial: SeccionContenido<"anuncio
                     </div>
                   )}
                 </div>
-                <Campo {...s.campo(`${ruta}.texto`)} etiqueta="Texto">
-                  <Input {...s.entrada(`${ruta}.texto`)} maxLength={LARGO.anuncio} value={m.texto} onChange={(e) => cambiarTexto(i, e.target.value)} />
-                </Campo>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                  <Campo {...s.campo(`${ruta}.texto`)} etiqueta="Texto" className="sm:col-span-2 xl:col-span-1">
+                    <Input {...s.entrada(`${ruta}.texto`)} maxLength={LARGO.anuncio} value={m.texto} onChange={(e) => cambiarTexto(i, e.target.value)} />
+                  </Campo>
                   <CamposEnlace
                     s={s}
                     ruta={`${ruta}.boton`}

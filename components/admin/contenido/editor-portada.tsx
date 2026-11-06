@@ -119,7 +119,7 @@ export function EditorPortada({
             const ruta = `diapositivas.${i}`;
             const nombre = `Portada ${i + 1}`;
             return (
-              <fieldset key={d.id} className="space-y-4 rounded-lg border p-4">
+              <fieldset key={d.id} className="min-w-0 space-y-4 rounded-lg border p-4">
                 <legend className="sr-only">{nombre}</legend>
                 <div className="flex items-center justify-between gap-2">
                   <p aria-hidden="true" className="font-medium">
@@ -140,47 +140,49 @@ export function EditorPortada({
                   )}
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Campo {...s.campo(`${ruta}.antetitulo`)} etiqueta="Antetítulo (opcional)" ayuda="El texto pequeño sobre el título.">
-                    <Input
-                      {...s.entrada(`${ruta}.antetitulo`, true)}
-                      maxLength={LARGO.antetitulo}
-                      value={d.antetitulo}
-                      onChange={(e) => cambiar(i, { antetitulo: e.target.value }, "antetitulo")}
-                    />
-                  </Campo>
-                  <Campo {...s.campo(`${ruta}.titulo`)} etiqueta="Título">
-                    <Input {...s.entrada(`${ruta}.titulo`)} maxLength={LARGO.titulo} value={d.titulo} onChange={(e) => cambiar(i, { titulo: e.target.value }, "titulo")} />
-                  </Campo>
-                  <Campo {...s.campo(`${ruta}.texto`)} etiqueta="Texto (opcional)" className="sm:col-span-2">
-                    <Textarea {...s.entrada(`${ruta}.texto`)} maxLength={LARGO.texto} rows={2} value={d.texto} onChange={(e) => cambiar(i, { texto: e.target.value }, "texto")} />
-                  </Campo>
-                  {campoBoton(i, "botonPrincipal", "Botón principal", false)}
-                  {campoBoton(i, "botonSecundario", "Segundo botón (opcional)", true)}
-                </div>
+                <div className="grid gap-x-8 gap-y-4 xl:grid-cols-2">
+                  <div className="grid content-start gap-4 sm:grid-cols-2">
+                    <Campo {...s.campo(`${ruta}.antetitulo`)} etiqueta="Antetítulo (opcional)" ayuda="El texto pequeño sobre el título.">
+                      <Input
+                        {...s.entrada(`${ruta}.antetitulo`, true)}
+                        maxLength={LARGO.antetitulo}
+                        value={d.antetitulo}
+                        onChange={(e) => cambiar(i, { antetitulo: e.target.value }, "antetitulo")}
+                      />
+                    </Campo>
+                    <Campo {...s.campo(`${ruta}.titulo`)} etiqueta="Título">
+                      <Input {...s.entrada(`${ruta}.titulo`)} maxLength={LARGO.titulo} value={d.titulo} onChange={(e) => cambiar(i, { titulo: e.target.value }, "titulo")} />
+                    </Campo>
+                    <Campo {...s.campo(`${ruta}.texto`)} etiqueta="Texto (opcional)" className="sm:col-span-2">
+                      <Textarea {...s.entrada(`${ruta}.texto`)} maxLength={LARGO.texto} rows={2} value={d.texto} onChange={(e) => cambiar(i, { texto: e.target.value }, "texto")} />
+                    </Campo>
+                    {campoBoton(i, "botonPrincipal", "Botón principal", false)}
+                    {campoBoton(i, "botonSecundario", "Segundo botón (opcional)", true)}
+                  </div>
 
-                <div className="space-y-5 border-t pt-4">
-                  <CampoFoto
-                    s={s}
-                    ruta={`${ruta}.imagen`}
-                    nombre={`foto-${i + 1}`}
-                    etiqueta="Foto para computadora (opcional)"
-                    sinFoto="Sin foto se ven las ilustraciones de vestidos."
-                    recomendacion="Medida recomendada: 2000 × 900 px, en horizontal. Si no subes foto para celular, ahí se usa esta con los lados recortados."
-                    foto={d.imagen}
-                    onChange={(imagen) => cambiar(i, { imagen })}
-                  />
-                  <CampoFoto
-                    s={s}
-                    ruta={`${ruta}.imagenMovil`}
-                    nombre={`foto-movil-${i + 1}`}
-                    etiqueta="Foto para celular (opcional)"
-                    vertical
-                    sinFoto="Sin esta foto, en celular se ve la de computadora."
-                    recomendacion="Medida recomendada: 1080 × 1350 px, en vertical (4:5, como en Instagram). Deja lo importante al centro: según el celular se recorta un poco por los bordes. El texto va debajo de la foto, no encima."
-                    foto={d.imagenMovil}
-                    onChange={(imagenMovil) => cambiar(i, { imagenMovil })}
-                  />
+                  <div className="min-w-0 space-y-5 border-t pt-4 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-8">
+                    <CampoFoto
+                      s={s}
+                      ruta={`${ruta}.imagen`}
+                      nombre={`foto-${i + 1}`}
+                      etiqueta="Foto para computadora (opcional)"
+                      sinFoto="Sin foto se ven las ilustraciones de vestidos."
+                      recomendacion="Medida recomendada: 2000 × 900 px, en horizontal. Si no subes foto para celular, ahí se usa esta con los lados recortados."
+                      foto={d.imagen}
+                      onChange={(imagen) => cambiar(i, { imagen })}
+                    />
+                    <CampoFoto
+                      s={s}
+                      ruta={`${ruta}.imagenMovil`}
+                      nombre={`foto-movil-${i + 1}`}
+                      etiqueta="Foto para celular (opcional)"
+                      vertical
+                      sinFoto="Sin esta foto, en celular se ve la de computadora."
+                      recomendacion="Medida recomendada: 1080 × 1350 px, en vertical (4:5, como en Instagram). Deja lo importante al centro: según el celular se recorta un poco por los bordes. El texto va debajo de la foto, no encima."
+                      foto={d.imagenMovil}
+                      onChange={(imagenMovil) => cambiar(i, { imagenMovil })}
+                    />
+                  </div>
                 </div>
               </fieldset>
             );

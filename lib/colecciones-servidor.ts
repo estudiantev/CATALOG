@@ -13,7 +13,7 @@ import {
   rutaColeccion,
   slugValido,
 } from "@/lib/colecciones";
-import { firmarFoto } from "@/lib/contenido-servidor";
+import { firmarFoto } from "@/lib/foto-servidor";
 
 // Cliente de datos para el servidor: cada llamada recibe el contextSpec de runWithAmplifyServerContext
 const clienteDatosServidor = generateServerClientUsingReqRes<Schema>({ config: outputs });

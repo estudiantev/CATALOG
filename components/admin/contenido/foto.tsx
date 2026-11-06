@@ -121,7 +121,7 @@ export function CampoFoto({
             </Badge>
           )}
         </div>
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1 basis-48 space-y-2">
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={() => selector.current?.click()}>
               <Upload />

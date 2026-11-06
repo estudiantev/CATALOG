@@ -50,33 +50,35 @@ export function EditorPasos({ inicial }: { inicial: SeccionContenido<"pasos"> })
               <Input {...s.entrada("subtitulo")} maxLength={LARGO.subtitulo} value={datos.subtitulo} onChange={(e) => cambiar("subtitulo", e.target.value)} />
             </Campo>
           </div>
-          {datos.pasos.map((paso, i) => (
-            // El borde va en un div: en el <fieldset> el <legend> quedaría encima de la línea
-            <div key={i} className="border-t pt-5">
-              <fieldset className="min-w-0">
-                <legend className="mb-3 font-medium">Paso {i + 1}</legend>
-                <div className="grid gap-4">
-                  <Campo {...s.campo(`pasos.${i}.titulo`)} etiqueta="Título">
-                    <Input
-                      {...s.entrada(`pasos.${i}.titulo`)}
-                      maxLength={LARGO.tituloPaso}
-                      value={paso.titulo}
-                      onChange={(e) => cambiarPaso(i, "titulo", e.target.value)}
-                    />
-                  </Campo>
-                  <Campo {...s.campo(`pasos.${i}.texto`)} etiqueta="Texto">
-                    <Textarea
-                      {...s.entrada(`pasos.${i}.texto`)}
-                      maxLength={LARGO.textoPaso}
-                      rows={2}
-                      value={paso.texto}
-                      onChange={(e) => cambiarPaso(i, "texto", e.target.value)}
-                    />
-                  </Campo>
-                </div>
-              </fieldset>
-            </div>
-          ))}
+          <div className="grid gap-x-8 gap-y-5 xl:grid-cols-3">
+            {datos.pasos.map((paso, i) => (
+              // El borde va en un div: en el <fieldset> el <legend> quedaría encima de la línea
+              <div key={i} className="min-w-0 border-t pt-5">
+                <fieldset className="min-w-0">
+                  <legend className="mb-3 font-medium">Paso {i + 1}</legend>
+                  <div className="grid gap-4">
+                    <Campo {...s.campo(`pasos.${i}.titulo`)} etiqueta="Título">
+                      <Input
+                        {...s.entrada(`pasos.${i}.titulo`)}
+                        maxLength={LARGO.tituloPaso}
+                        value={paso.titulo}
+                        onChange={(e) => cambiarPaso(i, "titulo", e.target.value)}
+                      />
+                    </Campo>
+                    <Campo {...s.campo(`pasos.${i}.texto`)} etiqueta="Texto">
+                      <Textarea
+                        {...s.entrada(`pasos.${i}.texto`)}
+                        maxLength={LARGO.textoPaso}
+                        rows={2}
+                        value={paso.texto}
+                        onChange={(e) => cambiarPaso(i, "texto", e.target.value)}
+                      />
+                    </Campo>
+                  </div>
+                </fieldset>
+              </div>
+            ))}
+          </div>
           <Campo {...s.campo("boton")} etiqueta="Texto del botón de WhatsApp" className="border-t pt-5">
             <Input {...s.entrada("boton")} maxLength={LARGO.boton} value={datos.boton} onChange={(e) => cambiar("boton", e.target.value)} />
           </Campo>

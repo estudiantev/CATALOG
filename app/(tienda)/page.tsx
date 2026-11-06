@@ -5,7 +5,7 @@ import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
 import { barraSeccion, botonAncho, botonCaja, chip, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { Flecha, IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
-import { TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
+import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
 import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
 import { PRODUCTOS_POR_FILA } from "@/lib/contenido";
@@ -91,9 +91,13 @@ export default async function InicioPage() {
 
       {ocasiones && (
         <section id="colecciones" aria-label="Colecciones" className={`pantalla grid grid-cols-1 gap-px border-t border-tinta bg-tinta ${COLUMNAS_COLECCIONES[ocasiones.length]}`}>
-          {ocasiones.map(({ clave, ocasion }) => (
-            <TarjetaOcasion key={clave} clave={clave} ocasion={ocasion} sizes="(min-width: 640px) 50vw, 100vw" />
-          ))}
+          {ocasiones.map((tarjeta) =>
+            "clave" in tarjeta ? (
+              <TarjetaOcasion key={tarjeta.clave} {...tarjeta} sizes="(min-width: 640px) 50vw, 100vw" grande />
+            ) : (
+              <TarjetaColeccion key={tarjeta.href} {...tarjeta} sizes="(min-width: 640px) 50vw, 100vw" grande />
+            ),
+          )}
         </section>
       )}
 

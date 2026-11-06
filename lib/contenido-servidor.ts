@@ -1,10 +1,11 @@
 import { unstable_cache } from "next/cache";
 import { generateServerClientUsingReqRes } from "@aws-amplify/adapter-nextjs/data";
-import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
 import { type ProductoCatalogo, leerDestacados } from "@/lib/catalogo";
+import { rutaColeccion } from "@/lib/colecciones";
+import { leerColeccionesPublicadas } from "@/lib/colecciones-servidor";
 import {
   type ClaveOcasion,
   type ContenidoInicio,
@@ -16,8 +17,11 @@ import {
   type Ocasion,
   PAGINA_INICIO,
   armarContenido,
-  ocasionesEnInicio,
+  eleccionesVigentes,
+  esOcasion,
+  slugDeEleccion,
 } from "@/lib/contenido";
+import { type FotoAmbiente, firmarFoto } from "@/lib/foto-servidor";
 
 // Cliente de datos para el servidor: cada llamada recibe el contextSpec de runWithAmplifyServerContext
 const clienteDatosServidor = generateServerClientUsingReqRes<Schema>({ config: outputs });
@@ -25,8 +29,6 @@ const clienteDatosServidor = generateServerClientUsingReqRes<Schema>({ config: o
 // Los textos se leen de DynamoDB como mucho una vez cada 10 minutos. Al guardar, el panel
 // invalida la caché con revalidateTag("contenido"), así que los cambios se ven enseguida.
 const CACHE_CONTENIDO = 10 * 60;
-// Las URLs firmadas de las fotos duran 1 hora y se generan en cada visita
-const VIGENCIA_URL = 60 * 60;
 
 // Query a las filas de la página (clave de partición "inicio"), como visitante
 const leerFilas = unstable_cache(
@@ -59,23 +61,6 @@ function leerContenido(): Promise<ContenidoInicio> {
   });
 }
 
-// Fotos de ambiente: el texto que las acompaña dice lo importante, así que van con alt=""
-type FotoAmbiente = { url: string };
-
-// Una foto que no se puede firmar se trata como si no hubiera foto: se ve la ilustración
-export async function firmarFoto(imagen: Imagen | null): Promise<FotoAmbiente | null> {
-  if (!imagen) return null;
-  const url = await runWithAmplifyServerContext({
-    nextServerContext: null,
-    operation: (contextSpec) =>
-      getUrl(contextSpec, { path: imagen.key, options: { expiresIn: VIGENCIA_URL } }).then(
-        ({ url }) => url.toString(),
-        () => null,
-      ),
-  });
-  return url ? { url } : null;
-}
-
 // Cambia la `imagen` guardada por la `foto` ya firmada
 type ConFoto<T> = Omit<T, "imagen"> & { foto: FotoAmbiente | null };
 async function conFoto<T extends { imagen: Imagen | null }>({ imagen, ...resto }: T): Promise<ConFoto<T>> {
@@ -91,16 +76,29 @@ async function firmarDiapositiva({ imagenMovil, ...diapositiva }: Diapositiva): 
 }
 
 type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista };
+type TarjetaInicio = TarjetaOcasionLista | Awaited<ReturnType<typeof leerColeccionesPublicadas>>[number];
 
 function firmarOcasiones(datos: DatosSeccion["ocasiones"], claves: ClaveOcasion[]): Promise<TarjetaOcasionLista[]> {
   return Promise.all(claves.map(async (clave) => ({ clave, ocasion: await conFoto(datos[clave]) })));
+}
+
+// Las elegidas en el panel, en su orden
+async function leerTarjetasInicio(datos: DatosSeccion["ocasiones"]): Promise<TarjetaInicio[]> {
+  const publicadas = new Map((await leerColeccionesPublicadas()).map((coleccion) => [coleccion.href, coleccion]));
+  const elecciones = eleccionesVigentes(datos.enInicio, (slug) => publicadas.has(rutaColeccion(slug)));
+  return Promise.all(
+    elecciones.map(async (eleccion) => {
+      if (esOcasion(eleccion)) return { clave: eleccion, ocasion: await conFoto(datos[eleccion]) };
+      return publicadas.get(rutaColeccion(slugDeEleccion(eleccion) ?? ""))!;
+    }),
+  );
 }
 
 // Lo que necesita la página de inicio; una sección en null está oculta
 export type ContenidoPortada = {
   diapositivas: DiapositivaLista[];
   destacados: (Omit<DatosSeccion["destacados"], "productos"> & { productos: ProductoCatalogo[] }) | null;
-  ocasiones: TarjetaOcasionLista[] | null;
+  ocasiones: TarjetaInicio[] | null;
   pasos: DatosSeccion["pasos"] | null;
   nosotros: ConFoto<DatosSeccion["nosotros"]> | null;
   inspiracion: ConFoto<DatosSeccion["inspiracion"]> | null;
@@ -124,7 +122,7 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
           return [];
         })
       : Promise.resolve([]),
-    ocasiones.visible ? firmarOcasiones(ocasiones.datos, ocasionesEnInicio(ocasiones.datos)) : null,
+    ocasiones.visible ? leerTarjetasInicio(ocasiones.datos) : null,
     nosotros.visible ? conFoto(nosotros.datos) : null,
     inspiracion.visible ? conFoto(inspiracion.datos) : null,
   ]);
