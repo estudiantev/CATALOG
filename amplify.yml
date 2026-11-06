@@ -10,7 +10,8 @@ frontend:
   phases:
     build:
       commands:
-        - npm run build
+        # Con la caché del build anterior, la revisión de tipos pasa de los 2 GB que Node usa por defecto
+        - NODE_OPTIONS=--max-old-space-size=6144 npm run build
   artifacts:
     baseDirectory: .next
     files:
