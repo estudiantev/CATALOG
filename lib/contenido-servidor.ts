@@ -13,7 +13,6 @@ import {
   type Diapositiva,
   type Imagen,
   MAXIMO_DESTACADOS,
-  OCASIONES,
   type Ocasion,
   PAGINA_INICIO,
   armarContenido,
@@ -86,10 +85,6 @@ type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista; titulo?
 type TarjetaColeccionLista = Awaited<ReturnType<typeof leerColeccionesPublicadas>>[number] & { modalidad?: string };
 type TarjetaInicioLista = TarjetaOcasionLista | TarjetaColeccionLista;
 
-function firmarOcasiones(datos: DatosSeccion["ocasiones"], claves: ClaveOcasion[]): Promise<TarjetaOcasionLista[]> {
-  return Promise.all(claves.map(async (clave) => ({ clave, ocasion: await conFoto(datos[clave]) })));
-}
-
 // Las elegidas en el panel, en su orden. Lo que su tarjeta deja vacío sale de la colección.
 async function leerTarjetasInicio(datos: DatosSeccion["ocasiones"]): Promise<TarjetaInicioLista[]> {
   const publicadas = new Map((await leerColeccionesPublicadas()).map((coleccion) => [coleccion.href, coleccion]));
@@ -161,13 +156,4 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
 export async function leerPasosAlquiler() {
   const { pasos } = await leerContenido();
   return pasos.datos.pasos;
-}
-
-// Las cuatro para /colecciones: "visible" solo oculta la sección de la página de inicio
-export async function leerOcasiones() {
-  const { ocasiones } = await leerContenido();
-  return firmarOcasiones(
-    ocasiones.datos,
-    OCASIONES.map(({ clave }) => clave),
-  );
 }
