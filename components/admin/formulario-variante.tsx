@@ -26,6 +26,7 @@ import {
   type Talla,
   type Variante,
   describirOpciones,
+  formatoSoles,
   opcionesDeVariante,
 } from "@/lib/productos";
 import { fotosOrdenadas } from "@/lib/variantes";
@@ -99,6 +100,42 @@ const vacio = (posicion: string): Formulario => ({
 });
 
 const valor = (v: string) => (v === NINGUNO ? null : v);
+const nombreVariante = (v: Variante) => describirOpciones(opcionesDeVariante(v)) || `Variante ${v.position ?? ""}`;
+
+// Para copiar una parte de otra variante (la combinación, el precio y stock o las fotos). Después
+// de elegir vuelve a quedar vacío, así se puede volver a usar.
+function CopiarDeVariante({
+  id,
+  etiqueta,
+  placeholder,
+  opciones,
+  onElegir,
+}: {
+  id: string;
+  etiqueta: string;
+  placeholder: string;
+  opciones: { id: string; nombre: string }[];
+  onElegir: (id: string) => void;
+}) {
+  if (!opciones.length) return null;
+  return (
+    <div className="max-w-sm space-y-2">
+      <Label htmlFor={id}>{etiqueta}</Label>
+      <Select value="" onValueChange={onElegir}>
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {opciones.map((o) => (
+            <SelectItem key={o.id} value={o.id}>
+              {o.nombre}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 const entero = (v: string) => (/^\d+$/.test(v.trim()) ? Number(v.trim()) : NaN);
 
 export function FormularioVariante({
@@ -171,6 +208,28 @@ export function FormularioVariante({
   async function usarFotosDe(id: string) {
     const origen = variantes.find((v) => v.id === id);
     if (origen && form) setForm({ ...form, imagenes: await imagenesDe(origen) });
+  }
+  // Las 6 opciones y el nombre y tono del color. Quedan iguales a los de esa variante: hay que
+  // cambiar al menos una antes de guardar (dos variantes no pueden tener la misma combinación).
+  function usarCombinacionDe(id: string) {
+    const origen = variantes.find((v) => v.id === id);
+    if (!origen || !form) return;
+    setForm({
+      ...form,
+      size: origen.size ?? NINGUNO,
+      length: origen.length ?? NINGUNO,
+      neckline: origen.neckline ?? NINGUNO,
+      sleeve: origen.sleeve ?? NINGUNO,
+      silhouette: origen.silhouette ?? NINGUNO,
+      colorFamily: origen.colorFamily ?? NINGUNO,
+      colorName: origen.colorName ?? "",
+      colorHex: origen.colorHex ?? "#000000",
+    });
+  }
+  // El SKU y la posición no: son propios de cada variante
+  function usarPrecioDe(id: string) {
+    const origen = variantes.find((v) => v.id === id);
+    if (origen && form) setForm({ ...form, priceSale: String(origen.priceSale), priceRent: String(origen.priceRent), stock: String(origen.stock ?? 0) });
   }
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
@@ -290,25 +349,34 @@ export function FormularioVariante({
           <CardTitle>Combinación</CardTitle>
           <CardDescription>Llena todas las opciones que apliquen, aunque se repitan entre variantes: así los filtros coinciden.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          {selector("size", "Talla", "size", TALLAS, "Sin talla (joyas y accesorios)")}
-          {selector("length", "Largo", "length", LARGOS, "Sin largo")}
-          {selector("neckline", "Escote", "neckline", ESCOTES, "Sin escote")}
-          {selector("sleeve", "Manga", "sleeve", MANGAS, "Sin manga")}
-          {selector("silhouette", "Silueta", "silhouette", SILUETAS, "Sin silueta")}
-          {selector("colorFamily", "Familia de color", "colorFamily", FAMILIAS_COLOR, "Sin color")}
-          {form.colorFamily !== NINGUNO && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="colorName">Nombre del color</Label>
-                <Input id="colorName" placeholder="Rojo vino" value={form.colorName} onChange={(e) => cambiar("colorName", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="colorHex">Tono</Label>
-                <Input id="colorHex" type="color" className="w-16 p-1" value={form.colorHex} onChange={(e) => cambiar("colorHex", e.target.value)} />
-              </div>
-            </>
-          )}
+        <CardContent className="space-y-4">
+          <CopiarDeVariante
+            id="copiarCombinacion"
+            etiqueta="Usar la combinación de otra variante"
+            placeholder="Elige una variante (luego cambia la talla u otra opción)"
+            opciones={otras.map((v) => ({ id: v.id, nombre: nombreVariante(v) }))}
+            onElegir={usarCombinacionDe}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {selector("size", "Talla", "size", TALLAS, "Sin talla (joyas y accesorios)")}
+            {selector("length", "Largo", "length", LARGOS, "Sin largo")}
+            {selector("neckline", "Escote", "neckline", ESCOTES, "Sin escote")}
+            {selector("sleeve", "Manga", "sleeve", MANGAS, "Sin manga")}
+            {selector("silhouette", "Silueta", "silhouette", SILUETAS, "Sin silueta")}
+            {selector("colorFamily", "Familia de color", "colorFamily", FAMILIAS_COLOR, "Sin color")}
+            {form.colorFamily !== NINGUNO && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="colorName">Nombre del color</Label>
+                  <Input id="colorName" placeholder="Rojo vino" value={form.colorName} onChange={(e) => cambiar("colorName", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="colorHex">Tono</Label>
+                  <Input id="colorHex" type="color" className="w-16 p-1" value={form.colorHex} onChange={(e) => cambiar("colorHex", e.target.value)} />
+                </div>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -317,26 +385,38 @@ export function FormularioVariante({
           <CardTitle>Precio y stock</CardTitle>
           <CardDescription>En soles (S/). El alquiler es por día.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="priceSale">Precio de venta</Label>
-            <Input id="priceSale" type="number" min="0" step="0.01" inputMode="decimal" value={form.priceSale} onChange={(e) => cambiar("priceSale", e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="priceRent">Alquiler por día</Label>
-            <Input id="priceRent" type="number" min="0" step="0.01" inputMode="decimal" value={form.priceRent} onChange={(e) => cambiar("priceRent", e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="stock">Stock</Label>
-            <Input id="stock" type="number" min="0" step="1" inputMode="numeric" value={form.stock} onChange={(e) => cambiar("stock", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="position">Posición</Label>
-            <Input id="position" type="number" min="0" step="1" inputMode="numeric" value={form.position} onChange={(e) => cambiar("position", e.target.value)} />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="sku">SKU</Label>
-            <Input id="sku" placeholder="Opcional" value={form.sku} onChange={(e) => cambiar("sku", e.target.value)} />
+        <CardContent className="space-y-4">
+          <CopiarDeVariante
+            id="copiarPrecio"
+            etiqueta="Usar el precio y stock de otra variante"
+            placeholder="Elige una variante"
+            opciones={otras.map((v) => ({
+              id: v.id,
+              nombre: `${nombreVariante(v)} — ${formatoSoles.format(v.priceSale)} · ${formatoSoles.format(v.priceRent)} por día · stock ${v.stock ?? 0}`,
+            }))}
+            onElegir={usarPrecioDe}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="priceSale">Precio de venta</Label>
+              <Input id="priceSale" type="number" min="0" step="0.01" inputMode="decimal" value={form.priceSale} onChange={(e) => cambiar("priceSale", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priceRent">Alquiler por día</Label>
+              <Input id="priceRent" type="number" min="0" step="0.01" inputMode="decimal" value={form.priceRent} onChange={(e) => cambiar("priceRent", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stock">Stock</Label>
+              <Input id="stock" type="number" min="0" step="1" inputMode="numeric" value={form.stock} onChange={(e) => cambiar("stock", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="position">Posición</Label>
+              <Input id="position" type="number" min="0" step="1" inputMode="numeric" value={form.position} onChange={(e) => cambiar("position", e.target.value)} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="sku">SKU</Label>
+              <Input id="sku" placeholder="Opcional" value={form.sku} onChange={(e) => cambiar("sku", e.target.value)} />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -350,25 +430,13 @@ export function FormularioVariante({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {otras.some((v) => fotosOrdenadas(v.images).length > 0) && (
-            <div className="max-w-sm space-y-2">
-              <Label htmlFor="copiarFotos">Usar las fotos de otra variante</Label>
-              <Select value="" onValueChange={usarFotosDe}>
-                <SelectTrigger id="copiarFotos" className="w-full">
-                  <SelectValue placeholder="Elige una variante (misma prenda, otra talla)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {otras
-                    .filter((v) => fotosOrdenadas(v.images).length > 0)
-                    .map((v) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        {describirOpciones(opcionesDeVariante(v)) || `Variante ${v.position ?? ""}`}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <CopiarDeVariante
+            id="copiarFotos"
+            etiqueta="Usar las fotos de otra variante"
+            placeholder="Elige una variante (misma prenda, otra talla)"
+            opciones={otras.filter((v) => fotosOrdenadas(v.images).length > 0).map((v) => ({ id: v.id, nombre: nombreVariante(v) }))}
+            onElegir={usarFotosDe}
+          />
           <EditorImagenes imagenes={form.imagenes} onChange={(imagenes) => cambiar("imagenes", imagenes)} onError={setError} />
         </CardContent>
       </Card>

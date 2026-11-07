@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { etiquetaDato, margenCuenta, panelCuenta, panelesCuenta, valorDato } from "@/components/tienda/estilos-cuenta";
-import { botonAzul, botonBlanco, tituloCaja, tituloCajaAzul } from "@/components/tienda/estilos-inicio";
+import { etiquetaDato, margenCuenta, panelCuenta, panelesCuenta, tituloPanelAzul, tituloPanelVerde, valorDato } from "@/components/tienda/estilos-cuenta";
+import { botonAzul, botonBlanco } from "@/components/tienda/estilos-inicio";
 import { FichaMedidas } from "@/components/tienda/ficha-medidas";
 import { MEDIDAS, type Perfil, formatoFecha, formatoTelefono } from "@/lib/perfil";
 
@@ -12,7 +12,7 @@ export function ResumenCuenta({ perfil, guardado = false }: { perfil: Perfil; gu
   const datos = [
     { etiqueta: "Nombre", valor: [perfil.nombre, perfil.apellido].filter(Boolean).join(" ") },
     { etiqueta: "Celular", valor: perfil.telefono && formatoTelefono(perfil.telefono) },
-    { etiqueta: "Correo", valor: perfil.correo, ancho: true },
+    { etiqueta: "Correo", valor: perfil.correo },
     { etiqueta: "Fecha de nacimiento", valor: perfil.nacimiento && formatoFecha(perfil.nacimiento) },
   ];
 
@@ -29,31 +29,31 @@ export function ResumenCuenta({ perfil, guardado = false }: { perfil: Perfil; gu
 
       <div className={panelesCuenta}>
         <section aria-labelledby="titulo-datos" className={`${panelCuenta} bg-white`}>
-          <h2 id="titulo-datos" className={tituloCaja}>
+          <h2 id="titulo-datos" className={tituloPanelVerde}>
             Tus datos
           </h2>
-          <dl className="mt-7 grid w-full grid-cols-1 gap-x-6 gap-y-[18px] border-y border-tinta py-[18px] sm:grid-cols-2">
+          <dl className="mt-5 grid w-full grid-cols-1 gap-x-6 gap-y-3.5 border-y border-tinta py-3.5 sm:grid-cols-2">
             {datos.map((dato) => (
-              <div key={dato.etiqueta} className={`flex min-w-0 flex-col gap-0.5 ${dato.ancho ? "sm:col-span-2" : ""}`}>
+              <div key={dato.etiqueta} className="flex min-w-0 flex-col gap-0.5">
                 <dt className={etiquetaDato}>{dato.etiqueta}</dt>
                 <dd className={`${valorDato} ${dato.valor ? "" : "text-[#8a8a8a]"}`}>{dato.valor || "Sin registrar"}</dd>
               </div>
             ))}
           </dl>
-          <Link href="/cuenta/perfil" className={`${botonAzul} mt-8`}>
+          <Link href="/cuenta/perfil" className={`${botonAzul} mt-6`}>
             Editar mis datos
           </Link>
         </section>
 
         <section aria-labelledby="titulo-medidas" className={`${panelCuenta} bg-tinte-azul`}>
-          <h2 id="titulo-medidas" className={tituloCajaAzul}>
+          <h2 id="titulo-medidas" className={tituloPanelAzul}>
             Tus medidas
           </h2>
-          <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.5] text-[#444444]">Con ellas te recomendamos la talla y el largo de cada vestido.</p>
-          <div className="mt-6 w-full border border-tinta bg-white p-[clamp(16px,2vw,24px)]">
+          <p className="mt-3 max-w-[46ch] text-[14px] leading-[1.5] text-[#444444]">Con ellas te recomendamos la talla y el largo de cada vestido.</p>
+          <div className="mt-4 w-full max-w-[22rem] border border-tinta bg-white p-3.5">
             <FichaMedidas medidas={medidas} copa={medidas.copa} />
           </div>
-          <Link href="/cuenta/perfil#medidas" className={`${botonBlanco} mt-8`}>
+          <Link href="/cuenta/perfil#medidas" className={`${botonBlanco} mt-6`}>
             {hayMedidas ? "Editar mis medidas" : "Agregar mis medidas"}
           </Link>
         </section>

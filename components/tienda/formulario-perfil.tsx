@@ -15,9 +15,11 @@ import {
   panelesCuenta,
   textoAyuda,
   textoError,
+  tituloPanelAzul,
+  tituloPanelVerde,
   valorDato,
 } from "@/components/tienda/estilos-cuenta";
-import { botonAzul, botonBlanco, tituloCaja, tituloCajaAzul } from "@/components/tienda/estilos-inicio";
+import { botonAzul, botonBlanco } from "@/components/tienda/estilos-inicio";
 import { FichaMedidas } from "@/components/tienda/ficha-medidas";
 import {
   type CampoMedida,
@@ -72,7 +74,7 @@ function Campo({
       <label htmlFor={id} className={etiquetaCampo}>
         {etiqueta}
       </label>
-      <div className="mt-2">{children}</div>
+      <div className="mt-1.5">{children}</div>
       {/* Con error se muestra solo el error: ya explica qué escribir */}
       {ayuda && !error && (
         <p id={`${id}-ayuda`} className={`${textoAyuda} mt-1.5`}>
@@ -162,20 +164,20 @@ export function FormularioPerfil({
   }
 
   return (
-    <form onSubmit={guardar} noValidate>
+    <form onSubmit={guardar} noValidate className="flex flex-col lg:flex-auto">
       <div className={panelesCuenta}>
         {/* El relleno va en un div: en un <fieldset> quedaría debajo del <legend> */}
         <div className={`${panelCuenta} bg-white`}>
           <fieldset className="w-full min-w-0">
-            <legend className={tituloCaja}>Tus datos</legend>
-            <div className="mt-7 grid gap-x-4 gap-y-6 sm:grid-cols-2">
+            <legend className={tituloPanelVerde}>Tus datos</legend>
+            <div className="mt-5 grid gap-x-4 gap-y-4 sm:grid-cols-2">
               <Campo id="nombre" etiqueta="Nombre" error={errores.nombre}>
                 <input {...campo("nombre")} autoComplete="given-name" maxLength={LARGO_NOMBRE} required />
               </Campo>
               <Campo id="apellido" etiqueta="Apellido" error={errores.apellido}>
                 <input {...campo("apellido")} autoComplete="family-name" maxLength={LARGO_NOMBRE} />
               </Campo>
-              <div className="flex min-w-0 flex-col gap-0.5 border-y border-tinta py-[18px] sm:col-span-2">
+              <div className="flex min-w-0 flex-col gap-0.5 border-y border-tinta py-3 sm:col-span-2">
                 <p className={etiquetaDato}>Correo</p>
                 <p className={valorDato}>{perfil.correo || "—"}</p>
                 <p className={`${textoAyuda} mt-1`}>Es tu usuario para iniciar sesión, por eso no se cambia aquí.</p>
@@ -193,40 +195,43 @@ export function FormularioPerfil({
         {/* El fondo va en un div: un <fieldset> con fondo y relleno descoloca su <legend> */}
         <div id="medidas" className={`${panelCuenta} scroll-mt-6 bg-tinte-azul`}>
           <fieldset className="w-full min-w-0">
-            <legend className={tituloCajaAzul}>Tus medidas</legend>
-            <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.5] text-[#444444]">Todas son opcionales y van en centímetros.</p>
-            <div className="mt-6 border border-tinta bg-white p-[clamp(16px,2vw,24px)]">
-              <FichaMedidas medidas={medidasEnVivo} copa={valores.copa || null} resaltar={enfocada} decorativa />
-            </div>
-            <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-6">
-              {MEDIDAS.map((m) => (
-                <Campo key={m.campo} id={m.campo} etiqueta={m.etiqueta} error={errores[m.campo]}>
-                  <input
-                    {...campo(m.campo)}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder="cm"
-                    onFocus={() => setEnfocada(m.campo)}
-                    onBlur={() => setEnfocada(null)}
-                  />
+            <legend className={tituloPanelAzul}>Tus medidas</legend>
+            <p className="mt-3 max-w-[46ch] text-[14px] leading-[1.5] text-[#444444]">Todas son opcionales y van en centímetros.</p>
+            {/* Desde 1280 px la ficha va al lado de los campos; más abajo, encima */}
+            <div className="mt-4 grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)] xl:items-start">
+              <div className="max-w-[22rem] border border-tinta bg-white p-3.5">
+                <FichaMedidas medidas={medidasEnVivo} copa={valores.copa || null} resaltar={enfocada} decorativa />
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 xl:grid-cols-2">
+                {MEDIDAS.map((m) => (
+                  <Campo key={m.campo} id={m.campo} etiqueta={m.etiqueta} error={errores[m.campo]}>
+                    <input
+                      {...campo(m.campo)}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder="cm"
+                      onFocus={() => setEnfocada(m.campo)}
+                      onBlur={() => setEnfocada(null)}
+                    />
+                  </Campo>
+                ))}
+                <Campo id="copa" etiqueta="Copa" error={errores.copa}>
+                  <select {...campo("copa")} onFocus={() => setEnfocada("copa")} onBlur={() => setEnfocada(null)}>
+                    <option value="">Sin indicar</option>
+                    {TALLAS_COPA.map((talla) => (
+                      <option key={talla} value={talla}>
+                        {talla}
+                      </option>
+                    ))}
+                  </select>
                 </Campo>
-              ))}
-              <Campo id="copa" etiqueta="Copa" error={errores.copa}>
-                <select {...campo("copa")} onFocus={() => setEnfocada("copa")} onBlur={() => setEnfocada(null)}>
-                  <option value="">Sin indicar</option>
-                  {TALLAS_COPA.map((talla) => (
-                    <option key={talla} value={talla}>
-                      {talla}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
+              </div>
             </div>
           </fieldset>
         </div>
       </div>
 
-      <div className={`flex flex-wrap items-center gap-2 border-b border-tinta py-6 ${margenCuenta}`}>
+      <div className={`flex flex-wrap items-center gap-2 border-b border-tinta py-4 ${margenCuenta}`}>
         <button type="submit" disabled={enviando} className={`${botonAzul} cursor-pointer disabled:cursor-wait disabled:opacity-70`}>
           {enviando ? "Guardando…" : "Guardar cambios"}
         </button>

@@ -27,15 +27,16 @@ export function CabeceraCuenta({
   return (
     <>
       <RutaNavegacion
+        sinLinea
         pasos={[
           { nombre: "Inicio", href: "/" },
           ...(seccion === "resumen" ? [{ nombre: "Mi cuenta" }] : [{ nombre: "Mi cuenta", href: "/cuenta" }, { nombre: "Mi perfil" }]),
         ]}
       />
-      <header className={`flex flex-wrap items-end justify-between gap-x-8 gap-y-6 border-b border-tinta pt-10 pb-8 ${margenCuenta}`}>
+      <header className={`flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-b border-tinta pt-1 pb-6 ${margenCuenta}`}>
         <div className="min-w-0">
-          <h1 className="text-[clamp(32px,2.8vw,42px)] leading-[1.1] font-medium tracking-[-0.01em] [overflow-wrap:anywhere]">{titulo}</h1>
-          <p className="mt-3 max-w-[52ch] text-[16px] text-[#555555]">{descripcion}</p>
+          <h1 className="text-[clamp(24px,2vw,28px)] leading-[1.15] font-medium tracking-[-0.01em] [overflow-wrap:anywhere]">{titulo}</h1>
+          <p className="mt-1.5 max-w-[52ch] text-[15px] text-[#555555]">{descripcion}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <nav aria-label="Mi cuenta" className="flex border border-tinta">

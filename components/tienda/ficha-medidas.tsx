@@ -42,12 +42,12 @@ export function FichaMedidas({
 
   const dato = (activo: boolean) => ({
     dt: `text-[13px] leading-[20px] ${activo ? "font-medium text-acento" : "text-[#666666]"}`,
-    dd: `text-[20px] leading-[26px] ${activo ? "font-semibold text-acento" : "text-tinta"}`,
+    dd: `text-[17px] leading-[22px] ${activo ? "font-semibold text-acento" : "text-tinta"}`,
   });
 
   return (
     <div aria-hidden={decorativa || undefined}>
-      <div className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] gap-x-3 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,11.5rem)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-x-3">
         <div className="relative aspect-[220/400] overflow-hidden">
           {/* 136.36% = 300/220 y -18.18% = -40/220: el vestido queda alineado con el recorte */}
           <Vestido
