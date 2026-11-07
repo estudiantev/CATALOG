@@ -183,6 +183,15 @@ export async function leerProductosColeccion(ids: string[], orden: OrdenColeccio
   return aCatalogo(ordenarProductos(productos, ids, orden));
 }
 
+// "También te puede gustar" del detalle: otros productos con stock de la misma categoría, los
+// más nuevos primero
+export async function leerRelacionados(productId: string, categoria: string, cantidad: number): Promise<ProductoCatalogo[]> {
+  const valida = CATEGORIAS.find((c) => c.valor === categoria)?.valor;
+  if (!valida) return [];
+  const productos = (await leerProductosDeCategoria(valida)).filter((p) => p.productId !== productId && tieneStock(p));
+  return aCatalogo(productos.slice(0, cantidad));
+}
+
 // Firma las fotos y arma las tarjetas del catálogo
 async function aCatalogo(productos: ProductoGuardado[]): Promise<ProductoCatalogo[]> {
   return runWithAmplifyServerContext({

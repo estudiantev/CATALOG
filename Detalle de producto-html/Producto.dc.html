@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Detalle de producto</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&amp;family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;display=swap">
+<style>
+body{margin:0}
+html{scroll-behavior:smooth}
+sc-for,sc-if{display:contents}
+a{color:#111111}a:hover{color:#000000}
+.ann-item{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .45s ease,visibility 0s linear .55s}
+.ann-item[data-on="true"]{transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .45s ease,visibility 0s}
+.ann-btn:hover{background:rgba(255,255,255,.16) !important}
+.nav-box{transition:background .15s,color .15s}
+.nav-box:hover{background:var(--accent2,#04817F) !important;border-color:var(--accent2,#04817F) !important;color:#FFFFFF !important}
+.cta{transition:background .15s,color .15s}
+.cta:not(:disabled):hover{background:var(--accent,#010081) !important;color:#FFFFFF !important}
+.seg{transition:background .15s,color .15s}
+.seg[aria-pressed="false"]:hover{background:#EFEFEF !important}
+.thumbs{scrollbar-width:none;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;cursor:grab;user-select:none;-webkit-user-select:none}
+.thumbs::-webkit-scrollbar{display:none}
+.thumbs .thumb{cursor:grab}
+.thumbs.is-dragging,.thumbs.is-dragging .thumb{cursor:grabbing}
+.thumb{flex:0 0 max(180px,22%);scroll-snap-align:start}
+@media (max-width:700px){.thumb{flex-basis:40%}}
+.thumb{transition:background .15s}
+.thumb[aria-current="false"]:hover{background:#E2E2E2 !important}
+.arrow:hover{background:#111111 !important;color:#FFFFFF !important}
+.sw:hover{outline:1px solid #111111 !important}
+.pill{transition:background .15s,color .15s}
+.pill[aria-pressed="false"]:not(:disabled):hover{background:#EFEFEF !important}
+.per[aria-pressed="false"]:hover{background:#F5F5F5 !important}
+.acc-btn:hover span:first-child{text-decoration:underline;text-underline-offset:3px}
+.chip{transition:background .15s,color .15s,border-color .15s}
+.chip:hover{background:var(--accent2,#04817F) !important;border-color:var(--accent2,#04817F) !important;color:#FFFFFF !important}
+.fav{transition:background .15s,color .15s,border-color .15s}
+.fav-green:hover{background:var(--accent2,#04817F) !important;border-color:var(--accent2,#04817F) !important;color:#FFFFFF !important}
+.txt-link:hover{color:var(--accent2,#04817F) !important}
+.info-col{position:sticky;top:0;align-self:flex-start}
+.ft-cols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:32px}
+.ft-social{grid-column:6}
+.ft-link:hover{text-decoration:underline !important;text-underline-offset:3px}
+.nl-box input:focus{outline:none}
+.nl-box:focus-within{box-shadow:0 0 0 3px rgba(1,0,129,.22)}
+.nl-btn{transition:background .15s}
+.nl-btn:hover{background:var(--accent2,#04817F) !important}
+.soc-ico{transition:background .15s}
+.soc:hover .soc-ico{background:var(--accent2,#04817F) !important}
+.soc:hover{text-decoration:underline;text-underline-offset:3px}
+@media (prefers-reduced-motion:reduce){.ann-item,.ann-item[data-on="true"],.cta{transition:none !important}html{scroll-behavior:auto}}
+@media (max-width:1000px){.ft-cols{grid-template-columns:repeat(2,minmax(0,1fr))}.ft-social{grid-column:auto}}
+@media (max-width:900px){.info-col{position:static}}
+@media (max-width:700px){.ann-spacer{display:none !important}}
+</style>
+</helmet>
+<div style="--accent: {{accent}}; --accent2: {{accent2}}; min-height: 100%; background: #FFFFFF; color: #111111; font-family: 'DM Sans', system-ui, sans-serif; font-size: 15px">
+
+<div role="region" aria-label="Anuncios" aria-roledescription="carrusel" style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px; background: {{accent}}; color: #FFFFFF; font-size: 12.5px; letter-spacing: 0.01em">
+<div class="ann-spacer" aria-hidden="true" style="flex: none; width: 84px"></div>
+<div aria-live="{{live}}" style="position: relative; flex: 1 1 auto; height: 30px; overflow: hidden">
+<sc-for list="{{messages}}" as="m" hint-placeholder-count="1">
+<p class="ann-item" data-on="{{m.on}}" aria-hidden="{{m.hidden}}" style="position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transform: {{m.x}}; opacity: {{m.op}}; visibility: {{m.vis}}">{{m.text}} <a href="{{m.href}}" style="color: #FFFFFF; text-decoration: underline; text-underline-offset: 3px">{{m.link}}</a></p>
+</sc-for>
+</div>
+<div style="flex: none; display: flex; align-items: center; gap: 2px">
+<button class="ann-btn" type="button" aria-label="Anuncio anterior" onClick="{{annPrev}}" style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; padding: 0; background: transparent; border: 0; color: #FFFFFF; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<button class="ann-btn" type="button" aria-label="Anuncio siguiente" onClick="{{annNext}}" style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; padding: 0; background: transparent; border: 0; color: #FFFFFF; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+<button class="ann-btn" type="button" aria-label="{{pauseLabel}}" onClick="{{togglePause}}" style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; padding: 0; background: transparent; border: 0; color: #FFFFFF; cursor: pointer">
+<sc-if value="{{paused}}" hint-placeholder-val="{{false}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"></path></svg></sc-if>
+<sc-if value="{{playing}}" hint-placeholder-val="{{true}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></sc-if>
+</button>
+</div>
+</div>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #111111; background: #FFFFFF">
+<a class="nav-box" href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border: 1px solid #111111; background: #FFFFFF; color: #111111; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.14em">LOGO</a>
+<nav aria-label="Principal" style="flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 8px; margin-left: clamp(0px, 4vw, 56px)">
+<a class="nav-box" href="Catalogo.dc.html" aria-current="page" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border: 1px solid #111111; background: #111111; color: #FFFFFF; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase">Productos</a>
+<a class="nav-box" href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border: 1px solid #111111; background: #FFFFFF; color: #111111; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase">Colecciones</a>
+<a class="nav-box" href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 14px; border: 1px solid #111111; background: #FFFFFF; color: #111111; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase">Artículos</a>
+</nav>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px">
+<a class="nav-box" href="#detalle" style="display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid #111111; background: #FFFFFF; color: #111111; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>Favoritos</a>
+<a class="nav-box" href="#contacto" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border: 1px solid #111111; background: #FFFFFF; color: #111111; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase">Ingresar</a>
+<a class="nav-box" href="#detalle" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border: 1px solid #111111; background: {{accent}}; color: #FFFFFF; text-decoration: none; font-family: 'Archivo', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase">Bolsa ({{bag}})</a>
+</div>
+</header>
+
+<main id="detalle">
+
+<nav aria-label="Ruta de navegación" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 12px clamp(16px, 3vw, 32px); border-bottom: 1px solid #111111; font-size: 13px; color: #555555">
+<a href="Main.dc.html" style="color: #555555">Inicio</a>
+<span aria-hidden="true">/</span>
+<a href="Catalogo.dc.html" style="color: #555555">Catálogo</a>
+<span aria-hidden="true">/</span>
+<a href="Catalogo.dc.html" style="color: #555555">Vestidos</a>
+<span aria-hidden="true">/</span>
+<span aria-current="page" style="color: #111111">{{name}}</span>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; align-items: stretch; border-bottom: 1px solid #111111">
+
+<section aria-label="Galería de fotos" style="flex: 999 1 600px; min-width: 0; border-right: 1px solid #111111">
+<div class="main-img" style="position: relative; aspect-ratio: 4 / 5; background: {{mainBg}}; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; text-align: center; color: #555555; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase">
+<span aria-live="polite">{{mainLabel}}</span>
+<sc-if value="{{hasBadge}}" hint-placeholder-val="{{true}}"></sc-if>
+<span style="position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; background: #FFFFFF; border: 1px solid #111111; color: #111111; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">{{counter}}</span>
+<div style="position: absolute; right: 16px; bottom: 16px; display: flex">
+<button class="arrow" type="button" aria-label="Foto anterior" onClick="{{imgPrev}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; background: #FFFFFF; border: 1px solid #111111; color: #111111; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<button class="arrow" type="button" aria-label="Foto siguiente" onClick="{{imgNext}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; background: #FFFFFF; border: 1px solid #111111; border-left: 0; color: #111111; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+</div>
+</div>
+<div id="thumbs" class="thumbs" role="group" aria-label="Miniaturas (desliza para ver más)" style="display: flex; overflow-x: auto; border-top: 1px solid #111111">
+<sc-for list="{{thumbs}}" as="t" hint-placeholder-count="7">
+<button class="thumb" type="button" aria-label="{{t.aria}}" aria-current="{{t.current}}" onClick="{{t.pick}}" style="aspect-ratio: 4 / 5; padding: 0; border: 0; border-left: {{t.sep}}; background: {{t.bg}}; outline: {{t.outline}}; outline-offset: -4px; cursor: pointer"></button>
+</sc-for>
+</div>
+</section>
+
+<div class="info-col" style="flex: 1 1 480px; min-width: 0; box-sizing: border-box; padding: 40px clamp(20px, 3vw, 44px) 48px; display: flex; flex-direction: column">
+
+<h1 style="margin: 0; font-size: clamp(32px, 2.8vw, 42px); font-weight: 500; line-height: 1.1; letter-spacing: -0.01em; color: #111111">{{name}}</h1>
+<div style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 16px">
+<span>{{category}} · <a class="txt-link" href="Catalogo.dc.html" style="color: #111111; text-decoration: none">{{brand}}</a></span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><span role="img" aria-label="Calificación pendiente" style="display: inline-flex; gap: 2px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg></span><span>([N] reseñas)</span></span>
+</div>
+
+<div role="group" aria-label="Modalidad" style="margin-top: 36px; display: flex; max-width: 460px; border: 1px solid #111111">
+<sc-for list="{{modos}}" as="m" hint-placeholder-count="2">
+<button class="seg" type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="flex: 1 1 0; min-height: 44px; border: 0; border-left: {{m.sep}}; background: {{m.bg}}; color: {{m.fg}}; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer">{{m.label}}</button>
+</sc-for>
+</div>
+
+<div style="margin-top: 26px; display: flex; flex-direction: column; gap: 10px">
+<span id="color-label" style="font-size: 15px; font-weight: 500">Color: <span style="font-weight: 400; color: #555555">{{color}}</span></span>
+<div role="group" aria-labelledby="color-label" style="display: flex; flex-wrap: wrap; gap: 10px">
+<sc-for list="{{colores}}" as="c" hint-placeholder-count="3">
+<button class="sw" type="button" aria-label="{{c.aria}}" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="width: 40px; height: 40px; padding: 4px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #111111; outline: {{c.outline}}; outline-offset: 2px; cursor: pointer"><span aria-hidden="true" style="display: block; width: 100%; height: 100%; background: {{c.hex}}"></span></button>
+</sc-for>
+</div>
+</div>
+
+<sc-for list="{{variantes}}" as="g" hint-placeholder-count="3">
+<div style="margin-top: 22px; display: flex; flex-direction: column; gap: 10px">
+<span id="{{g.labelId}}" style="font-size: 15px; font-weight: 500">{{g.label}}: <span style="font-weight: 400; color: #555555">{{g.value}}</span></span>
+<div role="group" aria-labelledby="{{g.labelId}}" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{g.options}}" as="o" hint-placeholder-count="3">
+<button class="pill" type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="min-width: 52px; min-height: 42px; padding: 0 14px; border: 1px solid #111111; background: {{o.bg}}; color: {{o.fg}}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<div style="margin-top: 22px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; max-width: 460px">
+<span id="talla-label" style="font-size: 15px; font-weight: 500">Talla: <span style="font-weight: 400; color: #555555">{{sizeLabel}}</span></span>
+<a class="txt-link" href="#talla-ajuste" onClick="{{openFit}}" style="font-size: 14px; color: #111111">Guía de tallas</a>
+</div>
+<div role="group" aria-labelledby="talla-label" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{tallas}}" as="s" hint-placeholder-count="5">
+<button class="pill" type="button" aria-pressed="{{s.pressed}}" disabled="{{s.disabled}}" aria-label="{{s.aria}}" onClick="{{s.pick}}" style="min-width: 52px; min-height: 42px; padding: 0 12px; border: 1px solid {{s.border}}; background: {{s.bg}}; color: {{s.fg}}; text-decoration: {{s.deco}}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: {{s.cursor}}">{{s.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{isRent}}" hint-placeholder-val="{{false}}">
+<div style="margin-top: 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; max-width: 460px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="fecha-evento" style="font-size: 15px; font-weight: 500">Fecha de tu evento</label>
+<input id="fecha-evento" type="date" value="{{eventDate}}" onChange="{{setDate}}" style="min-height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #111111; border-radius: 0; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #111111">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span id="periodo-label" style="font-size: 15px; font-weight: 500">Periodo</span>
+<div role="group" aria-labelledby="periodo-label" style="display: flex; border: 1px solid #111111">
+<sc-for list="{{periodos}}" as="p" hint-placeholder-count="2">
+<button class="per" type="button" aria-pressed="{{p.pressed}}" onClick="{{p.pick}}" style="flex: 1 1 0; min-height: 42px; border: 0; border-left: {{p.sep}}; background: {{p.bg}}; color: {{p.fg}}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">{{p.label}}</button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<div style="margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch">
+<button class="cta" type="button" disabled="{{ctaDisabled}}" onClick="{{addToBag}}" style="display: inline-flex; align-items: center; gap: 28px; min-height: 52px; padding: 0 22px; background: {{ctaBg}}; color: {{ctaFg}}; border: 1px solid #111111; font-family: inherit; font-size: 17px; cursor: {{ctaCursor}}"><span>{{ctaLabel}}</span><span>{{ctaPrice}}</span></button>
+<button class="fav fav-green" type="button" aria-label="{{favLabel}}" aria-pressed="{{favPressed}}" onClick="{{toggleFav}}" style="flex: none; width: 52px; display: flex; align-items: center; justify-content: center; padding: 0; background: #FFFFFF; border: 1px solid #111111; color: #111111; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="{{favFill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg></button>
+</div>
+<p style="margin: 10px 0 0; font-size: 14px; color: #666666">Precio para: {{variantSummary}}</p>
+<div role="status" style="min-height: 22px; margin-top: 8px">
+<sc-if value="{{showWarn}}" hint-placeholder-val="{{false}}"><span style="font-size: 14px; font-weight: 500; color: #B3261E">{{warnMsg}}</span></sc-if>
+<sc-if value="{{added}}" hint-placeholder-val="{{false}}"><span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: {{accent2Text}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>{{addedMsg}}</span></sc-if>
+</div>
+
+<div style="margin-top: 26px; display: flex; flex-direction: column; gap: 12px; max-width: 520px">
+<p style="margin: 0; font-size: 17px; font-weight: 600">Satén que se mueve contigo.</p>
+<p style="margin: 0; font-size: 17px; line-height: 1.5; color: #222222">Vestido de satén con caída fluida y corte al bies que se adapta a la silueta sin marcar. Elige el escote, la manga y el largo que mejor van con tu evento.</p>
+<p style="margin: 0; font-size: 16px; color: #666666">{{variantLine}}</p>
+</div>
+
+<dl style="margin: 36px 0 0; padding: 18px 0; max-width: 520px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; border-top: 1px solid #111111; border-bottom: 1px solid #111111">
+<sc-for list="{{info}}" as="i" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<dt style="font-size: 13px; color: #666666">{{i.label}}</dt>
+<dd style="margin: 0; font-size: 22px; line-height: 1.3"><a class="txt-link" href="Catalogo.dc.html" style="color: #111111; text-decoration: none">{{i.value}}</a></dd>
+</div>
+</sc-for>
+<div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px">
+<dt style="font-size: 13px; color: #666666">Etiquetas</dt>
+<dd style="margin: 0; display: flex; flex-wrap: wrap; gap: 4px 20px">
+<sc-for list="{{etiquetas}}" as="e" hint-placeholder-count="3"><a class="txt-link" href="Catalogo.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; color: #111111; text-decoration: underline; text-underline-offset: 4px; font-size: 16px">{{e}}</a></sc-for>
+</dd>
+</div>
+</dl>
+<p style="margin: 14px 0 0; font-size: 15px; color: #666666">Disponible para compra y alquiler.</p>
+
+<div style="margin-top: 36px; max-width: 520px; border-top: 1px solid #111111">
+<div style="border-bottom: 1px solid #111111">
+<h2 style="margin: 0"><button class="acc-btn" type="button" aria-expanded="{{acc.care.expanded}}" onClick="{{acc.care.toggle}}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0; background: #FFFFFF; border: 0; color: #111111; font-family: inherit; font-size: 16px; font-weight: 500; text-align: left; cursor: pointer"><span>Detalles y cuidados</span><span aria-hidden="true" style="font-size: 20px; font-weight: 400">{{acc.care.sign}}</span></button></h2>
+<sc-if value="{{acc.care.open}}" hint-placeholder-val="{{false}}"><dl style="margin: 0; padding: 0 0 18px; display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; font-size: 15px; color: #333333">
+<dt style="font-weight: 600; color: #111111">Material</dt><dd style="margin: 0">{{material}}</dd>
+<dt style="font-weight: 600; color: #111111">Composición</dt><dd style="margin: 0">[COMPOSICIÓN]</dd>
+<dt style="font-weight: 600; color: #111111">Forro</dt><dd style="margin: 0">[FORRO]</dd>
+<dt style="font-weight: 600; color: #111111">Cuidado</dt><dd style="margin: 0">[INSTRUCCIONES DE LAVADO]</dd>
+<dt style="font-weight: 600; color: #111111">Código</dt><dd style="margin: 0">[SKU]</dd>
+</dl></sc-if>
+</div>
+<div id="talla-ajuste" style="border-bottom: 1px solid #111111">
+<h2 style="margin: 0"><button class="acc-btn" type="button" aria-expanded="{{acc.fit.expanded}}" onClick="{{acc.fit.toggle}}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0; background: #FFFFFF; border: 0; color: #111111; font-family: inherit; font-size: 16px; font-weight: 500; text-align: left; cursor: pointer"><span>Talla y ajuste</span><span aria-hidden="true" style="font-size: 20px; font-weight: 400">{{acc.fit.sign}}</span></button></h2>
+<sc-if value="{{acc.fit.open}}" hint-placeholder-val="{{false}}"><div style="padding: 0 0 18px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.6; color: #333333">
+<p style="margin: 0">Calce: [ENTALLADO / REGULAR / HOLGADO]. Largo total: [MEDIDA] en talla [TALLA].</p>
+<p style="margin: 0">La modelo mide [ALTURA] y usa talla [TALLA].</p>
+<a class="txt-link" href="#talla-ajuste" style="align-self: flex-start; color: #111111">Ver tabla de medidas completa</a>
+</div></sc-if>
+</div>
+<div style="border-bottom: 1px solid #111111">
+<h2 style="margin: 0"><button class="acc-btn" type="button" aria-expanded="{{acc.rent.expanded}}" onClick="{{acc.rent.toggle}}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0; background: #FFFFFF; border: 0; color: #111111; font-family: inherit; font-size: 16px; font-weight: 500; text-align: left; cursor: pointer"><span>Cómo funciona el alquiler</span><span aria-hidden="true" style="font-size: 20px; font-weight: 400">{{acc.rent.sign}}</span></button></h2>
+<sc-if value="{{acc.rent.open}}" hint-placeholder-val="{{false}}"><ol style="margin: 0; padding: 0 0 18px 20px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.55; color: #333333">
+<li>Elige tu talla, la fecha de tu evento y el periodo de alquiler.</li>
+<li>[Cómo y cuándo recibe o recoge el vestido.]</li>
+<li>[Cómo y cuándo lo devuelve.]</li>
+</ol></sc-if>
+</div>
+<div style="border-bottom: 1px solid #111111">
+<h2 style="margin: 0"><button class="acc-btn" type="button" aria-expanded="{{acc.ship.expanded}}" onClick="{{acc.ship.toggle}}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0; background: #FFFFFF; border: 0; color: #111111; font-family: inherit; font-size: 16px; font-weight: 500; text-align: left; cursor: pointer"><span>Envíos y devoluciones</span><span aria-hidden="true" style="font-size: 20px; font-weight: 400">{{acc.ship.sign}}</span></button></h2>
+<sc-if value="{{acc.ship.open}}" hint-placeholder-val="{{false}}"><div style="padding: 0 0 18px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.6; color: #333333">
+<p style="margin: 0">[Zonas y tiempos de envío.]</p>
+<p style="margin: 0">[Política de cambios y devoluciones.]</p>
+</div></sc-if>
+</div>
+</div>
+
+</div>
+</div>
+
+<section aria-labelledby="rel-title" style="display: flex; flex-direction: column">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px clamp(16px, 3vw, 32px); border-bottom: 1px solid #111111">
+<h2 id="rel-title" style="margin: 0; border: 1px solid #111111; padding: 3px 14px; background: {{accent}}; color: #FFFFFF; font-family: 'Archivo', sans-serif; font-weight: 800; font-stretch: 125%; font-size: 20px; letter-spacing: 0.02em; text-transform: uppercase">También te puede gustar</h2>
+<a class="txt-link" href="Catalogo.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; font-size: 14px; font-weight: 500; color: #111111">Ver catálogo <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); overflow-x: auto; scrollbar-width: thin">
+<sc-for list="{{relacionados}}" as="r" hint-placeholder-count="5">
+<article style="display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #111111; border-bottom: 1px solid #111111">
+<div style="position: relative; aspect-ratio: 3 / 4; background: #F3F3F3; display: flex; align-items: center; justify-content: center; color: #555555; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase">[Foto]<a href="Producto.dc.html" aria-label="{{r.aria}}" style="position: absolute; inset: 0"></a><button class="fav fav-green" type="button" aria-label="{{r.fav}}" style="position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; padding: 0; background: #FFFFFF; border: 1px solid #111111; color: #111111; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg></button></div>
+<div style="padding: 10px 12px 12px; border-top: 1px solid #111111; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #555555">{{r.brand}}</span>
+<h3 style="margin: 0; font-size: 14px; font-weight: 500"><a href="Producto.dc.html" style="color: inherit; text-decoration: none">{{r.name}}</a></h3>
+<span style="font-size: 12px; color: #555555">{{r.price}}</span>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+
+</main>
+
+<footer id="contacto" style="box-sizing: border-box; background: #D2D2D2; padding: 48px clamp(20px, 4vw, 48px) 28px; display: flex; flex-direction: column; gap: 56px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 32px 48px">
+<div style="flex: 1 1 360px; max-width: 600px; display: flex; flex-direction: column; align-items: flex-start; gap: 20px">
+<span style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; background: #F2F2F2; border: 1px solid #111111; box-shadow: 5px 5px 0 #111111; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: 0.14em; color: #111111">LOGO</span>
+<p style="margin: 0; font-size: 17px; line-height: 1.5; color: #111111">Hacemos moda pensada para la vida real: ropa para tu día a día y vestidos para cada ocasión especial. Creemos que vestirse debe ser divertido y que luces increíble estés donde estés.</p>
+</div>
+<div style="flex: 1 1 420px; max-width: 600px; display: flex; flex-direction: column; gap: 10px">
+<label for="nl-email-prod" style="font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #111111">Suscríbete a nuestras novedades</label>
+<div class="nl-box" style="display: flex; align-items: stretch; gap: 6px; padding: 5px; border: 2px solid {{accent}}; background: #F7F8FC">
+<input id="nl-email-prod" type="email" placeholder="Tu correo electrónico" style="flex: 1 1 auto; min-width: 0; min-height: 46px; box-sizing: border-box; padding: 0 14px; border: 0; background: transparent; font-family: inherit; font-size: 16px; color: #111111">
+<button class="nl-btn" type="button" style="flex: none; padding: 0 22px; background: {{accent}}; border: 0; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Suscribirme</button>
+</div>
+<p style="margin: 0; font-size: 13px; line-height: 1.5; color: #444444">Puedes darte de baja cuando quieras. Para más detalles, revisa nuestra <a class="ft-link" href="#contacto" style="color: #111111; text-decoration: underline; text-underline-offset: 2px">política de privacidad</a>.</p>
+</div>
+</div>
+<div class="ft-cols">
+<nav aria-label="Ayuda" style="display: flex; flex-direction: column; gap: 14px">
+<h3 style="margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #111111">¿Cómo te ayudamos?</h3>
+<a class="ft-link" href="#contacto" style="color: #222222; text-decoration: none; font-size: 15px">Contacto</a>
+<a class="ft-link" href="#contacto" style="color: #222222; text-decoration: none; font-size: 15px">Ayuda y preguntas frecuentes</a>
+<a class="ft-link" href="#contacto" style="color: #222222; text-decoration: none; font-size: 15px">Envíos</a>
+<a class="ft-link" href="#contacto" style="color: #222222; text-decoration: none; font-size: 15px">Términos y condiciones</a>
+<a class="ft-link" href="#contacto" style="color: #222222; text-decoration: none; font-size: 15px">Política de privacidad</a>
+</nav>
+<nav aria-label="Sobre nosotros" style="display: flex; flex-direction: column; gap: 14px">
+<h3 style="margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #111111">Sobre nosotros</h3>
+<a class="ft-link" href="Main.dc.html" style="color: #222222; text-decoration: none; font-size: 15px">Quiénes somos</a>
+<a class="ft-link" href="Main.dc.html" style="color: #222222; text-decoration: none; font-size: 15px">Artículos</a>
+<a class="ft-link" href="Main.dc.html" style="color: #222222; text-decoration: none; font-size: 15px">Colecciones</a>
+<a class="ft-link" href="#contacto" style="color: #222222; text-decoration: none; font-size: 15px">Eventos</a>
+<a class="ft-link" href="#talla-ajuste" style="color: #222222; text-decoration: none; font-size: 15px">Guía de tallas</a>
+</nav>
+<nav class="ft-social" aria-label="Redes sociales" style="display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #111111">Redes</h3>
+<a class="soc" href="#contacto" style="display: inline-flex; align-items: center; gap: 10px; color: #222222; text-decoration: none; font-size: 15px"><span class="soc-ico" style="flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #FFFFFF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor"></circle></svg></span>Instagram</a>
+<a class="soc" href="#contacto" style="display: inline-flex; align-items: center; gap: 10px; color: #222222; text-decoration: none; font-size: 15px"><span class="soc-ico" style="flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #FFFFFF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"></path><path d="M14 3c.6 2.6 2.4 4.4 5 4.6"></path></svg></span>TikTok</a>
+<a class="soc" href="#contacto" style="display: inline-flex; align-items: center; gap: 10px; color: #222222; text-decoration: none; font-size: 15px"><span class="soc-ico" style="flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #FFFFFF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M10.6 20.5l1.6-7.5"></path><path d="M9.6 14.2c-.7-2.9 1-5.7 3.4-5.7 2 0 3.2 1.4 3.2 3.2 0 2.3-1.3 4.2-3.2 4.2-1 0-1.6-.7-1.4-1.7"></path></svg></span>Pinterest</a>
+<a class="soc" href="#contacto" style="display: inline-flex; align-items: center; gap: 10px; color: #222222; text-decoration: none; font-size: 15px"><span class="soc-ico" style="flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #FFFFFF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h-2.5A3.5 3.5 0 0 0 9 6.5V10H6.5v3.5H9V21h3.5v-7.5H15.5l.5-3.5h-3.5V7a1 1 0 0 1 1-1H15z"></path></svg></span>Facebook</a>
+<a class="soc" href="#contacto" style="display: inline-flex; align-items: center; gap: 10px; color: #222222; text-decoration: none; font-size: 15px"><span class="soc-ico" style="flex: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: {{accent}}; color: #FFFFFF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"></rect><path d="M10.5 9.5l4 2.5-4 2.5z" fill="currentColor"></path></svg></span>YouTube</a>
+</nav>
+</div>
+<div style="padding-top: 18px; border-top: 1px solid #111111; font-size: 13px; color: #444444">© 2026. Todos los derechos reservados.</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#010081"},"accent2":{"editor":"color","default":"#04817F"},"rotationSeconds":{"editor":"range","default":4,"min":2,"max":10,"step":0.5,"unit":"s"},"$preview":{"width":1440,"height":2650}}'>
+var ANUNCIOS = [
+  { text: 'Lo nuevo de la temporada ya está disponible —', link: 'ver productos', href: 'Catalogo.dc.html' },
+  { text: 'Compra o alquila el vestido perfecto para tu próximo evento —', link: 'ver catálogo', href: 'Catalogo.dc.html' },
+  { text: 'Descubre nuestras colecciones de gala, bodas y diario —', link: 'ver colecciones', href: 'Main.dc.html' },
+  { text: 'Únete a la lista y entérate primero de cada colección —', link: 'suscribirme', href: '#contacto' }
+];
+
+/* Producto de ejemplo: reemplazar por los datos reales */
+var PRODUCTO = {
+  name: 'Vestido satinado',
+  brand: 'Marca A',
+  designer: 'Diseñador/a 1',
+  material: 'Satén',
+  ocasiones: 'Cóctel · Boda',
+  badge: 'Nuevo',
+  etiquetas: ['Nuevo', 'Tendencia', 'Corte al bies'],
+  /* Variantes: cada combinación tiene sus propias fotos y su propio precio */
+  variantes: [
+    { id: 'escote', label: 'Escote', options: ['En V', 'Redondo', 'Cuadrado', 'Strapless'], def: 'En V' },
+    { id: 'manga', label: 'Manga', options: ['Tirantes', 'Corta', 'Larga'], def: 'Tirantes' },
+    { id: 'largo', label: 'Largo', options: ['Corto', 'Midi', 'Largo'], def: 'Midi' }
+  ],
+  fotos: ['Frente', 'Espalda', 'Lateral', 'Detalle de la tela', 'Detalle del escote', 'Look completo', 'En movimiento'],
+  colores: [['Azul', '#1F3A93'], ['Verde', '#2E7D5B'], ['Negro', '#111111']],
+  tallas: [['XS', false], ['S', true], ['M', true], ['L', true], ['XL', false]],
+  periodos: [['4', '4 días'], ['8', '8 días']]
+};
+var RELACIONADOS = [
+  { name: 'Vestido largo satinado', brand: 'Marca D', price: '[PRECIO]' },
+  { name: 'Vestido corto de cóctel', brand: 'Marca A', price: '[PRECIO]' },
+  { name: 'Vestido drapeado de un hombro', brand: 'Marca D', price: 'Alquiler desde [PRECIO]' },
+  { name: 'Vestido midi de encaje', brand: 'Marca C', price: '[PRECIO]' },
+  { name: 'Blazer oversize', brand: 'Marca B', price: '[PRECIO]' }
+];
+
+class Component extends DCLogic {
+  st(key, fallback) {
+    return (this.state && this.state[key] !== undefined) ? this.state[key] : fallback;
+  }
+  shade(hex, t) {
+    var h = String(hex || '#04817F').replace('#', '');
+    if (h.length === 3) { h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2); }
+    var n = parseInt(h.slice(0, 6), 16);
+    if (isNaN(n)) { n = 0x04817F; }
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function m(c) { return Math.round(c * (1 - t)); }
+    return 'rgb(' + m(r) + ', ' + m(g) + ', ' + m(b) + ')';
+  }
+  annGo(d) {
+    var n = ANUNCIOS.length;
+    this.setState({ msg: (this.st('msg', 0) + d + n) % n });
+  }
+  tick() {
+    var self = this;
+    clearTimeout(this._t);
+    var secs = Number(this.props.rotationSeconds ?? 4);
+    if (!(secs > 0)) { secs = 4; }
+    this._t = setTimeout(function () {
+      if (!self.st('paused', false)) { self.annGo(1); }
+      self.tick();
+    }, secs * 1000);
+  }
+  componentDidMount() {
+    var self = this;
+    this.tick();
+    try {
+      var c = document.getElementById('thumbs');
+      if (!c) { return; }
+      this._th = c;
+      this._down = function (e) {
+        if (e.pointerType !== 'mouse' || e.button !== 0) { return; }
+        self._drag = { x: e.clientX, left: c.scrollLeft, moved: false };
+      };
+      this._move = function (e) {
+        var d = self._drag;
+        if (!d) { return; }
+        var dx = e.clientX - d.x;
+        if (!d.moved && Math.abs(dx) > 5) { d.moved = true; c.style.scrollSnapType = 'none'; c.classList.add('is-dragging'); }
+        if (d.moved) { c.scrollLeft = d.left - dx; e.preventDefault(); }
+      };
+      this._up = function () {
+        var d = self._drag;
+        if (!d) { return; }
+        self._drag = null;
+        if (!d.moved) { return; }
+        c.classList.remove('is-dragging');
+        var t = c.querySelector('.thumb');
+        var w = t ? t.getBoundingClientRect().width : 0;
+        if (w) { c.scrollTo({ left: Math.round(c.scrollLeft / w) * w, behavior: 'smooth' }); }
+        clearTimeout(self._snapT);
+        self._snapT = setTimeout(function () { c.style.scrollSnapType = ''; }, 450);
+        self._justDragged = true;
+        setTimeout(function () { self._justDragged = false; }, 0);
+      };
+      this._guard = function (e) { if (self._justDragged) { e.preventDefault(); e.stopPropagation(); } };
+      c.addEventListener('pointerdown', this._down);
+      window.addEventListener('pointermove', this._move);
+      window.addEventListener('pointerup', this._up);
+      window.addEventListener('pointercancel', this._up);
+      c.addEventListener('click', this._guard, true);
+    } catch (err) {}
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t);
+    clearTimeout(this._snapT);
+    if (this._th) { this._th.removeEventListener('pointerdown', this._down); this._th.removeEventListener('click', this._guard, true); }
+    window.removeEventListener('pointermove', this._move);
+    window.removeEventListener('pointerup', this._up);
+    window.removeEventListener('pointercancel', this._up);
+  }
+  set(patch) {
+    this.setState(Object.assign({ added: false }, patch));
+  }
+  renderVals() {
+    var self = this;
+    var accent = this.props.accent ?? '#010081';
+    var accent2 = this.props.accent2 ?? '#04817F';
+    var paused = this.st('paused', false);
+    var msg = this.st('msg', 0);
+    var nA = ANUNCIOS.length;
+    var prevMsg = (msg - 1 + nA) % nA;
+
+    var img = this.st('img', 0);
+    var color = this.st('color', PRODUCTO.colores[0][0]);
+    var size = this.st('size', '');
+    var modo = this.st('modo', 'compra');
+    var period = this.st('period', '4');
+    var eventDate = this.st('eventDate', '');
+    var added = this.st('added', false);
+    var bag = this.st('bag', 0);
+    var fav = this.st('fav', false);
+    var acc = this.st('acc', {});
+    var nF = PRODUCTO.fotos.length;
+    var v = {};
+    var vSel = this.st('v', {});
+    PRODUCTO.variantes.forEach(function (g) { v[g.id] = vSel[g.id] || g.def; });
+
+    var variantes = PRODUCTO.variantes.map(function (g) {
+      return {
+        label: g.label,
+        labelId: 'var-' + g.id,
+        value: v[g.id],
+        options: g.options.map(function (o) {
+          var on = o === v[g.id];
+          return {
+            label: o,
+            pressed: on ? 'true' : 'false',
+            bg: on ? '#111111' : '#FFFFFF',
+            fg: on ? '#FFFFFF' : '#111111',
+            pick: function () { var nv = Object.assign({}, v); nv[g.id] = o; self.set({ v: nv, img: 0 }); }
+          };
+        })
+      };
+    });
+    var escoteTxt = 'escote ' + (v.escote === 'En V' ? 'en V' : v.escote.toLowerCase());
+    var mangaTxt = v.manga === 'Tirantes' ? 'tirantes' : 'manga ' + v.manga.toLowerCase();
+    var largoTxt = 'largo ' + v.largo.toLowerCase();
+    var variantSummary = color + ' · ' + escoteTxt + ' · ' + mangaTxt + ' · ' + largoTxt;
+
+    var messages = ANUNCIOS.map(function (a, i) {
+      var on = i === msg;
+      var x = on ? 'translateX(0)' : (i === prevMsg ? 'translateX(45%)' : 'translateX(-45%)');
+      return { text: a.text, link: a.link, href: a.href, x: x, op: on ? 1 : 0, vis: on ? 'visible' : 'hidden', on: on ? 'true' : 'false', hidden: on ? 'false' : 'true' };
+    });
+
+    var thumbs = PRODUCTO.fotos.map(function (label, i) {
+      var on = i === img;
+      return {
+        aria: 'Ver foto ' + (i + 1) + ': ' + label,
+        current: on ? 'true' : 'false',
+        bg: on ? '#FFFFFF' : (i % 2 ? '#EBEBEB' : '#F3F3F3'),
+        outline: on ? '2px solid ' + accent : '0',
+        sep: i === 0 ? '0' : '1px solid #111111',
+        pick: function () { self.setState({ img: i }); }
+      };
+    });
+
+    var colores = PRODUCTO.colores.map(function (c) {
+      var on = c[0] === color;
+      return { hex: c[1], aria: 'Color ' + c[0], pressed: on ? 'true' : 'false', outline: on ? '2px solid #111111' : '0', pick: function () { self.set({ color: c[0], img: 0 }); } };
+    });
+
+    var tallas = PRODUCTO.tallas.map(function (t) {
+      var on = t[0] === size;
+      var ok = t[1];
+      return {
+        label: t[0],
+        aria: ok ? 'Talla ' + t[0] : 'Talla ' + t[0] + ', agotada',
+        pressed: on ? 'true' : 'false',
+        disabled: !ok,
+        bg: on ? '#111111' : (ok ? '#FFFFFF' : '#F5F5F5'),
+        fg: on ? '#FFFFFF' : (ok ? '#111111' : '#8A8A8A'),
+        border: ok ? '#111111' : '#BDBDBD',
+        deco: ok ? 'none' : 'line-through',
+        cursor: ok ? 'pointer' : 'not-allowed',
+        pick: function () { if (ok) { self.set({ size: t[0] }); } }
+      };
+    });
+
+    var modos = [['compra', 'Comprar'], ['alquiler', 'Alquilar']].map(function (m, i) {
+      var on = m[0] === modo;
+      return { label: m[1], pressed: on ? 'true' : 'false', bg: on ? '#111111' : '#FFFFFF', fg: on ? '#FFFFFF' : '#111111', sep: i === 0 ? '0' : '1px solid #111111', pick: function () { self.set({ modo: m[0] }); } };
+    });
+
+    var periodos = PRODUCTO.periodos.map(function (p, i) {
+      var on = p[0] === period;
+      return { label: p[1], pressed: on ? 'true' : 'false', bg: on ? '#111111' : '#FFFFFF', fg: on ? '#FFFFFF' : '#111111', sep: i === 0 ? '0' : '1px solid #111111', pick: function () { self.set({ period: p[0] }); } };
+    });
+
+    var isRent = modo === 'alquiler';
+    var periodLabel = isRent ? (PRODUCTO.periodos.filter(function (p) { return p[0] === period; })[0] || PRODUCTO.periodos[0])[1] : '';
+    var ctaLabel = isRent ? 'Reservar alquiler' : 'Agregar a la bolsa';
+    var ctaDisabled = false;
+    var falta = !size ? 'Selecciona una talla para continuar.' : (isRent && !eventDate ? 'Elige la fecha de tu evento para continuar.' : '');
+    var warn = this.st('warn', false);
+
+    function accItem(key) {
+      var on = !!acc[key];
+      return { open: on, expanded: on ? 'true' : 'false', sign: on ? '−' : '+', toggle: function () { var a = Object.assign({}, acc); a[key] = !on; self.setState({ acc: a }); } };
+    }
+
+    return {
+      accent: accent,
+      accent2: accent2,
+      accent2Text: this.shade(accent2, 0.15),
+      messages: messages,
+      live: paused ? 'polite' : 'off',
+      paused: paused,
+      playing: !paused,
+      pauseLabel: paused ? 'Reanudar anuncios' : 'Pausar anuncios',
+      annPrev: function () { self.annGo(-1); self.tick(); },
+      annNext: function () { self.annGo(1); self.tick(); },
+      togglePause: function () { self.setState({ paused: !self.st('paused', false) }); self.tick(); },
+
+      name: PRODUCTO.name,
+      category: 'Vestido ' + v.largo.toLowerCase(),
+      brand: PRODUCTO.brand,
+      material: PRODUCTO.material,
+      badge: PRODUCTO.badge,
+      hasBadge: !!PRODUCTO.badge,
+      etiquetas: PRODUCTO.etiquetas,
+      info: [
+        { label: 'Marca', value: PRODUCTO.brand },
+        { label: 'Diseñador', value: PRODUCTO.designer },
+        { label: 'Material', value: PRODUCTO.material },
+        { label: 'Ocasión', value: PRODUCTO.ocasiones }
+      ],
+      variantes: variantes,
+      variantSummary: variantSummary,
+      variantLine: v.largo === 'Midi' ? 'Largo midi · ' + escoteTxt.charAt(0).toUpperCase() + escoteTxt.slice(1) + ' · ' + mangaTxt.charAt(0).toUpperCase() + mangaTxt.slice(1) : 'Largo ' + v.largo.toLowerCase() + ' · ' + escoteTxt.charAt(0).toUpperCase() + escoteTxt.slice(1) + ' · ' + mangaTxt.charAt(0).toUpperCase() + mangaTxt.slice(1),
+
+      thumbs: thumbs,
+      mainBg: img % 2 ? '#EBEBEB' : '#F3F3F3',
+      mainLabel: '[Foto ' + (img + 1) + ' · ' + PRODUCTO.fotos[img] + ' · ' + variantSummary + ']',
+      counter: (img + 1) + ' / ' + nF,
+      imgPrev: function () { self.setState({ img: (img - 1 + nF) % nF }); },
+      imgNext: function () { self.setState({ img: (img + 1) % nF }); },
+
+      modos: modos,
+      isRent: isRent,
+      color: color,
+      colores: colores,
+      sizeLabel: size || 'Elige una',
+      tallas: tallas,
+      periodos: periodos,
+      eventDate: eventDate,
+      setDate: function (e) { self.set({ eventDate: e && e.target ? e.target.value : '' }); },
+      openFit: function () { var a = Object.assign({}, acc); a.fit = true; self.setState({ acc: a }); },
+
+      ctaLabel: ctaLabel,
+      ctaPrice: isRent ? 'desde [PRECIO]' : '[PRECIO]',
+      ctaDisabled: ctaDisabled,
+      ctaBg: '#EDEDED',
+      ctaFg: '#111111',
+      ctaCursor: 'pointer',
+      addToBag: function () {
+        if (falta) { self.setState({ warn: true, added: false }); return; }
+        self.setState({ added: true, warn: false, bag: bag + 1 });
+      },
+      showWarn: warn && !!falta,
+      warnMsg: falta,
+      added: added,
+      addedMsg: (isRent ? 'Alquiler agregado a tu bolsa: ' : 'Agregado a tu bolsa: ') + 'talla ' + size + ', ' + variantSummary + (isRent ? ', ' + periodLabel : '') + '.',
+      bag: bag,
+
+      favPressed: fav ? 'true' : 'false',
+      favFill: fav ? 'currentColor' : 'none',
+      favLabel: fav ? 'Quitar de favoritos' : 'Agregar a favoritos',
+      toggleFav: function () { self.setState({ fav: !fav }); },
+
+      acc: { care: accItem('care'), fit: accItem('fit'), rent: accItem('rent'), ship: accItem('ship') },
+
+      relacionados: RELACIONADOS.map(function (r) {
+        return { name: r.name, brand: r.brand, price: r.price, aria: 'Ver ' + r.name, fav: 'Agregar ' + r.name + ' a favoritos' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

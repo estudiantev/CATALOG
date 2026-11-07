@@ -156,6 +156,13 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
   };
 }
 
+// Los pasos del alquiler, para el detalle de cada producto. Son los de la sección "Alquiler en 3
+// pasos" del panel, aunque esa sección esté oculta en la página de inicio.
+export async function leerPasosAlquiler() {
+  const { pasos } = await leerContenido();
+  return pasos.datos.pasos;
+}
+
 // Las cuatro para /colecciones: "visible" solo oculta la sección de la página de inicio
 export async function leerOcasiones() {
   const { ocasiones } = await leerContenido();
