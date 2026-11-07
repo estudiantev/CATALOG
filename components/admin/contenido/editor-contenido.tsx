@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import { type OpcionProducto, cargarColecciones, cargarOpcionesProducto, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
 import type { Coleccion } from "@/lib/colecciones";
-import { type ContenidoInicio, OCASIONES, PAGINA_INICIO, armarContenido } from "@/lib/contenido";
+import { type ContenidoInicio, PAGINA_INICIO, armarContenido } from "@/lib/contenido";
 import { EnlacesSugeridos } from "./comun";
 import { EditorAnuncios } from "./editor-anuncios";
 import { EditorDestacados } from "./editor-destacados";
@@ -34,7 +34,7 @@ async function cargarContenido(): Promise<ContenidoInicio> {
 async function firmarVistasPrevias({ portada, ocasiones, nosotros, inspiracion }: ContenidoInicio) {
   const rutas = [
     ...portada.datos.diapositivas.flatMap((d) => [d.imagen, d.imagenMovil]),
-    ...OCASIONES.map(({ clave }) => ocasiones.datos[clave].imagen),
+    ...ocasiones.datos.tarjetas.map((t) => t.imagen),
     nosotros.datos.imagen,
     inspiracion.datos.imagen,
     inspiracion.datos.video,

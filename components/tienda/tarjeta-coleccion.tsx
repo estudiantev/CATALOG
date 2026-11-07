@@ -97,13 +97,25 @@ export function TarjetaColeccion({
   );
 }
 
-// De Gala, De XV, Cortos o Floreados
-export function TarjetaOcasion({ clave, ocasion, sizes, grande }: { clave: ClaveOcasion; ocasion: OcasionLista; sizes: string; grande?: boolean }) {
+// De Gala, De XV, Cortos o Floreados. En la página de inicio puede llevar otro título.
+export function TarjetaOcasion({
+  clave,
+  ocasion,
+  titulo,
+  sizes,
+  grande,
+}: {
+  clave: ClaveOcasion;
+  ocasion: OcasionLista;
+  titulo?: string;
+  sizes: string;
+  grande?: boolean;
+}) {
   const { coleccion, vestido } = FIJAS[clave];
   return (
     <TarjetaColeccion
       href={coleccion.href}
-      nombre={coleccion.nombre}
+      nombre={titulo || coleccion.nombre}
       modalidad={ocasion.modalidad}
       descripcion={ocasion.descripcion}
       foto={ocasion.foto}

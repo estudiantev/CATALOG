@@ -10,34 +10,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/admin/ui/input";
 import { type Coleccion, estadoColeccion } from "@/lib/colecciones";
 import {
-  type ClaveOcasion,
   type DatosSeccion,
   LARGO,
   MAXIMO_EN_INICIO,
   MINIMO_EN_INICIO,
   OCASIONES,
-  type Ocasion,
   type SeccionContenido,
+  type TarjetaInicio,
   eleccionDeColeccion,
+  esOcasion,
   slugDeEleccion,
 } from "@/lib/contenido";
 import { Buscador, type OpcionBuscador } from "./buscador";
 import { Campo, CasillaVisible, PieSeccion, useSeccion } from "./comun";
 import { CampoFoto, type FotoFormulario, aFormulario, aImagen, subirFoto, useFotosGuardadas } from "./foto";
 
-type OcasionFormulario = Omit<Ocasion, "imagen"> & { foto: FotoFormulario | null };
-type Formulario = Record<ClaveOcasion, OcasionFormulario>;
-
-const aDatos = (datos: Formulario, enInicio: string[]) =>
-  ({
-    ...Object.fromEntries(
-      OCASIONES.map(({ clave }) => {
-        const { foto, ...textos } = datos[clave];
-        return [clave, { ...textos, imagen: aImagen(foto) }];
-      }),
-    ),
-    enInicio,
-  }) as DatosSeccion["ocasiones"];
+type TarjetaFormulario = Omit<TarjetaInicio, "imagen"> & { foto: FotoFormulario | null };
+type CampoTexto = "titulo" | "modalidad" | "descripcion";
 
 // Por qué una colección elegida no se vería como se espera
 const AVISOS = {
@@ -64,45 +53,75 @@ export function EditorOcasiones({
   errorColecciones: string;
 }) {
   const s = useSeccion("ocasiones", inicial);
-  const [datos, setDatos] = useState<Formulario>(
-    () =>
-      Object.fromEntries(
-        OCASIONES.map(({ clave }) => {
-          const { imagen, ...textos } = inicial.datos[clave];
-          return [clave, { ...textos, foto: aFormulario(imagen, vistasPrevias) }];
-        }),
-      ) as Formulario,
+  const [tarjetas, setTarjetas] = useState<TarjetaFormulario[]>(() =>
+    inicial.datos.tarjetas.map(({ imagen, ...textos }) => ({ ...textos, foto: aFormulario(imagen, vistasPrevias) })),
   );
-  const [enInicio, setEnInicio] = useState(inicial.datos.enInicio);
-  const limpiarFotos = useFotosGuardadas(OCASIONES.map(({ clave }) => inicial.datos[clave].imagen));
+  const limpiarFotos = useFotosGuardadas(inicial.datos.tarjetas.map((t) => t.imagen));
 
-  const opciones: OpcionBuscador[] = [
-    ...OCASIONES.map(({ clave, nombre }) => ({ id: clave, nombre, aviso: datos[clave].foto ? undefined : "Sin foto" })),
-    ...(colecciones ?? []).map(aOpcion),
-  ];
-  const lleno = enInicio.length >= MAXIMO_EN_INICIO;
+  // El texto y la foto propios de las fijas (los de /colecciones) se guardan tal cual
+  const aDatos = (lista: TarjetaFormulario[]): DatosSeccion["ocasiones"] => ({
+    ...inicial.datos,
+    tarjetas: lista.map(({ foto, ...textos }) => ({ ...textos, imagen: aImagen(foto) })),
+  });
 
-  const cambiar = (clave: ClaveOcasion, cambios: Partial<OcasionFormulario>) => setDatos((actuales) => ({ ...actuales, [clave]: { ...actuales[clave], ...cambios } }));
-  const cambiarEnInicio = (lista: string[]) => {
-    setEnInicio(lista);
-    s.editado("enInicio");
+  const opciones: OpcionBuscador[] = [...OCASIONES.map(({ clave, nombre }) => ({ id: clave, nombre })), ...(colecciones ?? []).map(aOpcion)];
+  const elegidas = tarjetas.map((t) => t.eleccion);
+  const lleno = tarjetas.length >= MAXIMO_EN_INICIO;
+
+  // Lo que la tarjeta muestra si se deja vacía
+  function propia(eleccion: string) {
+    if (esOcasion(eleccion)) {
+      const fija = inicial.datos[eleccion];
+      return {
+        nombre: OCASIONES.find((o) => o.clave === eleccion)!.nombre,
+        descripcion: fija.descripcion,
+        sinFoto: fija.imagen ? "Sin foto se usa la de la colección." : "Sin foto se ve la ilustración del vestido.",
+        aviso: undefined,
+      };
+    }
+    const coleccion = colecciones?.find((c) => eleccionDeColeccion(c.slug) === eleccion);
+    if (!coleccion) {
+      return { nombre: colecciones ? "Colección eliminada" : (slugDeEleccion(eleccion) ?? eleccion), descripcion: "", sinFoto: "Sin foto se usa la de la colección.", aviso: undefined };
+    }
+    return {
+      nombre: coleccion.title,
+      descripcion: coleccion.description ?? "",
+      sinFoto: coleccion.imageKey ? "Sin foto se usa la de la colección." : "La colección no tiene foto: sin una aquí, la tarjeta va solo con su color.",
+      aviso: aOpcion(coleccion).aviso,
+    };
+  }
+
+  const cambiarLista = (lista: TarjetaFormulario[]) => {
+    setTarjetas(lista);
+    s.editado("tarjetas");
+  };
+  const agregar = (eleccion: string) =>
+    cambiarLista([...tarjetas, { eleccion, titulo: "", modalidad: esOcasion(eleccion) ? inicial.datos[eleccion].modalidad : "", descripcion: "", foto: null }]);
+  const quitar = (tarjeta: TarjetaFormulario) => {
+    if (tarjeta.foto?.archivo) URL.revokeObjectURL(tarjeta.foto.vistaPrevia);
+    cambiarLista(tarjetas.filter((t) => t !== tarjeta));
   };
   const mover = (indice: number, paso: -1 | 1) => {
-    const lista = [...enInicio];
+    const lista = [...tarjetas];
     [lista[indice], lista[indice + paso]] = [lista[indice + paso], lista[indice]];
-    cambiarEnInicio(lista);
+    cambiarLista(lista);
+  };
+  const cambiar = (eleccion: string, cambios: Partial<TarjetaFormulario>) =>
+    setTarjetas((actuales) => actuales.map((t) => (t.eleccion === eleccion ? { ...t, ...cambios } : t)));
+  const cambiarTexto = (eleccion: string, campo: CampoTexto, valor: string) => {
+    cambiar(eleccion, { [campo]: valor });
+    s.editado(`tarjetas.${eleccion}.${campo}`);
   };
 
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    let subidos = datos;
-    const guardado = await s.guardar(aDatos(datos, enInicio), async () => {
-      const lista = await Promise.all(OCASIONES.map(async ({ clave }) => [clave, { ...datos[clave], foto: await subirFoto(datos[clave].foto) }] as const));
-      subidos = Object.fromEntries(lista) as Formulario;
-      setDatos(subidos); // si el guardado falla, al reintentar no se vuelven a subir
-      return aDatos(subidos, enInicio);
+    let subidas = tarjetas;
+    const guardado = await s.guardar(aDatos(tarjetas), async () => {
+      subidas = await Promise.all(tarjetas.map(async (t) => ({ ...t, foto: await subirFoto(t.foto) })));
+      setTarjetas(subidas); // si el guardado falla, al reintentar no se vuelven a subir
+      return aDatos(subidas);
     });
-    if (guardado) await limpiarFotos(OCASIONES.map(({ clave }) => subidos[clave].foto));
+    if (guardado) await limpiarFotos(subidas.map((t) => t.foto));
   }
 
   return (
@@ -113,118 +132,115 @@ export function EditorOcasiones({
             <h2>Colecciones</h2>
           </CardTitle>
           <CardDescription>
-            Elige de {MINIMO_EN_INICIO} a {MAXIMO_EN_INICIO} colecciones para la página de inicio, en el orden en que quieres verlas. En la página Colecciones se ven todas las publicadas.
+            Elige de {MINIMO_EN_INICIO} a {MAXIMO_EN_INICIO} colecciones para la página de inicio, en el orden en que quieres verlas. El título, la modalidad, la descripción y la foto de cada
+            tarjeta son solo de la página de inicio: no cambian la colección. Lo que dejes vacío se toma de la colección.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <CasillaVisible id="ocasiones-visible" visible={s.visible} onChange={s.cambiarVisible} />
 
-          <div className="grid gap-x-8 gap-y-5 xl:grid-cols-2">
-            <div className="min-w-0 space-y-3">
-              <Campo {...s.campo("enInicio")} etiqueta="Agregar una colección">
-                <Buscador
-                  {...s.entrada("enInicio")}
-                  opciones={opciones.filter((o) => !enInicio.includes(o.id))}
-                  onElegir={(id) => cambiarEnInicio([...enInicio, id])}
-                  placeholder={lleno ? `Ya elegiste ${MAXIMO_EN_INICIO}: quita una para cambiarla` : "Busca por nombre"}
-                  disabled={lleno}
-                  sinResultados="No hay más colecciones con ese nombre."
-                />
-              </Campo>
-              {errorColecciones && (
-                <Alert variant="destructive">
-                  <AlertDescription>{errorColecciones}</AlertDescription>
-                </Alert>
-              )}
-              <p className="text-sm text-muted-foreground">
-                El texto y la foto de De Gala, De XV, Cortos y Floreados se cambian aquí abajo. Los de las demás, en{" "}
-                <Link href="/admin/colecciones" className="underline underline-offset-2 hover:text-foreground">
-                  Colecciones
-                </Link>
-                . Si una elegida deja de estar publicada, la página de inicio sigue sin ella.
-              </p>
-            </div>
+          <div className="max-w-xl space-y-3">
+            <Campo {...s.campo("tarjetas")} etiqueta="Agregar una colección">
+              <Buscador
+                {...s.entrada("tarjetas")}
+                opciones={opciones.filter((o) => !elegidas.includes(o.id))}
+                onElegir={agregar}
+                placeholder={lleno ? `Ya elegiste ${MAXIMO_EN_INICIO}: quita una para cambiarla` : "Busca por nombre"}
+                disabled={lleno}
+                sinResultados="No hay más colecciones con ese nombre."
+              />
+            </Campo>
+            {errorColecciones && (
+              <Alert variant="destructive">
+                <AlertDescription>{errorColecciones}</AlertDescription>
+              </Alert>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Las colecciones se crean y se publican en{" "}
+              <Link href="/admin/colecciones" className="underline underline-offset-2 hover:text-foreground">
+                Colecciones
+              </Link>
+              . Si una elegida deja de estar publicada, la página de inicio sigue sin ella.
+            </p>
+          </div>
 
-            <div className="min-w-0 space-y-2">
-              <h3 className="text-sm font-medium">
-                En la página de inicio ({enInicio.length} de {MAXIMO_EN_INICIO})
-              </h3>
-              <ol aria-label="Colecciones en la página de inicio" className="divide-y rounded-md border">
-                {enInicio.map((id, i) => {
-                  const opcion = opciones.find((o) => o.id === id);
-                  const nombre = opcion?.nombre ?? (colecciones ? "Colección eliminada" : (slugDeEleccion(id) ?? id));
+          <div className="space-y-3 border-t pt-5">
+            <h3 className="font-medium">
+              En la página de inicio ({tarjetas.length} de {MAXIMO_EN_INICIO})
+            </h3>
+            {tarjetas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Todavía no elegiste ninguna.</p>
+            ) : (
+              <ol aria-label="Colecciones en la página de inicio" className="grid gap-4 xl:grid-cols-2">
+                {tarjetas.map((tarjeta, i) => {
+                  const { eleccion } = tarjeta;
+                  const datos = propia(eleccion);
+                  const ruta = (campo: string) => `tarjetas.${eleccion}.${campo}`;
                   return (
-                    <li key={id} className="flex items-center gap-3 px-3 py-2">
-                      <span className="w-5 text-sm text-muted-foreground tabular-nums">{i + 1}</span>
-                      <span className="min-w-0 flex-1 truncate">{nombre}</span>
-                      {opcion?.aviso && <Badge variant="secondary">{opcion.aviso}</Badge>}
-                      <div className="flex flex-none">
-                        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Subir ${nombre}`} disabled={i === 0} onClick={() => mover(i, -1)}>
-                          <ChevronUp />
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Bajar ${nombre}`} disabled={i === enInicio.length - 1} onClick={() => mover(i, 1)}>
-                          <ChevronDown />
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Quitar ${nombre}`} onClick={() => cambiarEnInicio(enInicio.filter((x) => x !== id))}>
-                          <X />
-                        </Button>
-                      </div>
+                    <li key={eleccion} className="min-w-0">
+                      <fieldset className="min-w-0 space-y-4 rounded-lg border p-4">
+                        <legend className="sr-only">{datos.nombre}</legend>
+                        <div className="flex items-center gap-3">
+                          <span className="w-5 text-sm text-muted-foreground tabular-nums">{i + 1}</span>
+                          <p aria-hidden="true" className="min-w-0 flex-1 truncate font-medium">
+                            {datos.nombre}
+                          </p>
+                          {datos.aviso && <Badge variant="secondary">{datos.aviso}</Badge>}
+                          <div className="flex flex-none">
+                            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Subir ${datos.nombre}`} disabled={i === 0} onClick={() => mover(i, -1)}>
+                              <ChevronUp />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Bajar ${datos.nombre}`} disabled={i === tarjetas.length - 1} onClick={() => mover(i, 1)}>
+                              <ChevronDown />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon-sm" aria-label={`Quitar ${datos.nombre}`} onClick={() => quitar(tarjeta)}>
+                              <X />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,10rem)]">
+                          <Campo {...s.campo(ruta("titulo"))} etiqueta="Título (opcional)">
+                            <Input
+                              {...s.entrada(ruta("titulo"))}
+                              maxLength={LARGO.titulo}
+                              placeholder={datos.nombre}
+                              value={tarjeta.titulo}
+                              onChange={(e) => cambiarTexto(eleccion, "titulo", e.target.value)}
+                            />
+                          </Campo>
+                          <Campo {...s.campo(ruta("modalidad"))} etiqueta="Modalidad (opcional)">
+                            <Input
+                              {...s.entrada(ruta("modalidad"))}
+                              maxLength={LARGO.modalidad}
+                              placeholder="Venta y alquiler"
+                              value={tarjeta.modalidad}
+                              onChange={(e) => cambiarTexto(eleccion, "modalidad", e.target.value)}
+                            />
+                          </Campo>
+                        </div>
+                        <Campo {...s.campo(ruta("descripcion"))} etiqueta="Descripción (opcional)">
+                          <Input
+                            {...s.entrada(ruta("descripcion"))}
+                            maxLength={LARGO.descripcion}
+                            placeholder={datos.descripcion}
+                            value={tarjeta.descripcion}
+                            onChange={(e) => cambiarTexto(eleccion, "descripcion", e.target.value)}
+                          />
+                        </Campo>
+                        <CampoFoto
+                          s={s}
+                          ruta={ruta("imagen")}
+                          nombre={`foto-${eleccion}`}
+                          sinFoto={datos.sinFoto}
+                          foto={tarjeta.foto}
+                          onChange={(foto) => cambiar(eleccion, { foto })}
+                        />
+                      </fieldset>
                     </li>
                   );
                 })}
-                {enInicio.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">Todavía no elegiste ninguna.</li>}
               </ol>
-            </div>
-          </div>
-
-          <div className="space-y-4 border-t pt-5">
-            <div className="space-y-1">
-              <h3 className="font-medium">De Gala, De XV, Cortos y Floreados</h3>
-              <p className="text-sm text-muted-foreground">Sus nombres y enlaces son los del menú de la tienda; aquí cambias su texto y su foto.</p>
-            </div>
-            <div className="grid gap-4 xl:grid-cols-2">
-              {OCASIONES.map(({ clave, nombre }) => (
-                <fieldset key={clave} className="min-w-0 space-y-4 rounded-lg border p-4">
-                  <legend className="sr-only">{nombre}</legend>
-                  <p aria-hidden="true" className="font-medium">
-                    {nombre}
-                  </p>
-                  <div className="grid gap-4 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]">
-                    <Campo {...s.campo(`${clave}.modalidad`)} etiqueta="Modalidad">
-                      <Input
-                        {...s.entrada(`${clave}.modalidad`)}
-                        maxLength={LARGO.modalidad}
-                        placeholder="Venta y alquiler"
-                        value={datos[clave].modalidad}
-                        onChange={(e) => {
-                          cambiar(clave, { modalidad: e.target.value });
-                          s.editado(`${clave}.modalidad`);
-                        }}
-                      />
-                    </Campo>
-                    <Campo {...s.campo(`${clave}.descripcion`)} etiqueta="Descripción">
-                      <Input
-                        {...s.entrada(`${clave}.descripcion`)}
-                        maxLength={LARGO.descripcion}
-                        value={datos[clave].descripcion}
-                        onChange={(e) => {
-                          cambiar(clave, { descripcion: e.target.value });
-                          s.editado(`${clave}.descripcion`);
-                        }}
-                      />
-                    </Campo>
-                  </div>
-                  <CampoFoto
-                    s={s}
-                    ruta={`${clave}.imagen`}
-                    nombre={`foto-${clave}`}
-                    sinFoto="Sin foto se ve la ilustración del vestido."
-                    foto={datos[clave].foto}
-                    onChange={(foto) => cambiar(clave, { foto })}
-                  />
-                </fieldset>
-              ))}
-            </div>
+            )}
           </div>
         </CardContent>
         <PieSeccion estado={s.estado} texto="Guardar colecciones" />

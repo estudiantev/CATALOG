@@ -28,7 +28,7 @@ export const SECCIONES = [
 export type Seccion = (typeof SECCIONES)[number]["id"];
 
 // En el orden de COLECCIONES (components/tienda/datos.ts). Sus nombres y enlaces arman también
-// el menú y los filtros del catálogo, por eso aquí solo se editan sus textos.
+// el menú y los filtros del catálogo. Su texto y su foto propios son los de /colecciones.
 export const OCASIONES = [
   { clave: "gala", nombre: "De Gala" },
   { clave: "xv", nombre: "De XV" },
@@ -40,6 +40,7 @@ export type ClaveOcasion = (typeof OCASIONES)[number]["clave"];
 // La página de inicio muestra de 2 a 4 colecciones, en el orden elegido en el panel. Cada elección
 // es la clave de una de OCASIONES ("gala") o el enlace de una de /admin/colecciones con este
 // prefijo ("coleccion:novias-2027"), que no choca con las claves aunque el enlace sea "gala".
+// Cada una lleva su tarjeta con textos y foto solo para la página de inicio.
 export const MINIMO_EN_INICIO = 2;
 export const MAXIMO_EN_INICIO = 4;
 const PREFIJO_COLECCION = "coleccion:";
@@ -49,14 +50,17 @@ export const eleccionDeColeccion = (slug: string) => `${PREFIJO_COLECCION}${slug
 export const slugDeEleccion = (eleccion: string) => (eleccion.startsWith(PREFIJO_COLECCION) ? eleccion.slice(PREFIJO_COLECCION.length) : null);
 export const esOcasion = (eleccion: string): eleccion is ClaveOcasion => OCASIONES.some(({ clave }) => clave === eleccion);
 
+// Una tarjeta sin textos ni foto propios: muestra los de la colección
+export const tarjetaVacia = (eleccion: string, modalidad = ""): TarjetaInicio => ({ eleccion, titulo: "", modalidad, descripcion: "", imagen: null });
+
 // Lo que se ve de verdad: se saltan las colecciones despublicadas o borradas y, si quedan menos
 // de dos, entran De Gala y De XV
-export function eleccionesVigentes(enInicio: string[], estaVisible: (slug: string) => boolean) {
-  const vigentes = enInicio.filter((eleccion) => {
+export function tarjetasVigentes(datos: DatosSeccion["ocasiones"], estaVisible: (slug: string) => boolean) {
+  const vigentes = datos.tarjetas.filter(({ eleccion }) => {
     const slug = slugDeEleccion(eleccion);
     return slug === null || estaVisible(slug);
   });
-  const relleno = OCASIONES_BASE.filter((clave) => !vigentes.includes(clave));
+  const relleno = OCASIONES_BASE.filter((clave) => !vigentes.some((t) => t.eleccion === clave)).map((clave) => tarjetaVacia(clave, datos[clave].modalidad));
   return [...vigentes, ...relleno.slice(0, Math.max(0, MINIMO_EN_INICIO - vigentes.length))];
 }
 
@@ -113,6 +117,9 @@ export type Diapositiva = {
 };
 export type Anuncio = { texto: string; boton: Boton }; // sin texto en el botón, va sin enlace
 export type Ocasion = { modalidad: string; descripcion: string; imagen: Imagen | null }; // sin foto, la ilustración
+// Una colección en la página de inicio. Sus textos y su foto son solo de la página de inicio: no
+// cambian la colección. Lo que quede vacío sale de la colección (la modalidad, vacía, no se muestra).
+export type TarjetaInicio = { eleccion: string; titulo: string; modalidad: string; descripcion: string; imagen: Imagen | null };
 export type Paso = { titulo: string; texto: string };
 
 export type DatosSeccion = {
@@ -124,7 +131,9 @@ export type DatosSeccion = {
     productos: string[]; // productIds, en orden
     etiquetas: Record<string, string>; // productId → "Nuevo"; sin etiqueta, no se muestra
   };
-  ocasiones: Record<ClaveOcasion, Ocasion> & { enInicio: string[] };
+  // tarjetas: las de la página de inicio, en orden. Las cuatro fijas guardan aparte su texto y su
+  // foto propios, los de /colecciones; el panel ya no los cambia.
+  ocasiones: Record<ClaveOcasion, Ocasion> & { tarjetas: TarjetaInicio[] };
   pasos: { titulo: string; subtitulo: string; pasos: Paso[]; boton: string };
   nosotros: { titulo: string; lema: string; texto: string; imagen: Imagen | null };
   // Una foto o un video: el panel guarda uno de los dos. Sin ninguno, las ilustraciones
@@ -172,7 +181,7 @@ export const POR_DEFECTO: DatosSeccion = {
     xv: { modalidad: "Venta y alquiler", descripcion: "Para tu fiesta de quince años.", imagen: null },
     cortos: { modalidad: "Venta", descripcion: "Para cócteles, cumpleaños y celebraciones.", imagen: null },
     floreados: { modalidad: "Venta", descripcion: "Estampados en flor para eventos de día.", imagen: null },
-    enInicio: [...OCASIONES_BASE],
+    tarjetas: [tarjetaVacia("gala", "Venta y alquiler"), tarjetaVacia("xv", "Venta y alquiler")],
   },
   pasos: {
     titulo: "Alquiler en 3 pasos",
@@ -272,6 +281,17 @@ function eleccionValida(v: unknown): v is string {
   return slug === null ? esOcasion(v) : slugValido(slug);
 }
 
+function tarjeta(v: unknown): TarjetaInicio {
+  const o = objeto(v);
+  return {
+    eleccion: typeof o.eleccion === "string" ? o.eleccion : "",
+    titulo: texto(o.titulo, "", LARGO.titulo, true),
+    modalidad: texto(o.modalidad, "", LARGO.modalidad, true),
+    descripcion: texto(o.descripcion, "", LARGO.descripcion, true),
+    imagen: imagen(o.imagen),
+  };
+}
+
 function anuncio(v: unknown): Anuncio {
   const o = objeto(v);
   return { texto: texto(o.texto, "", LARGO.anuncio, true), boton: boton(o.boton, BOTON_VACIO, true) };
@@ -293,7 +313,7 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
     return { diapositivas: diapositivas.length ? diapositivas : structuredClone(POR_DEFECTO.portada.diapositivas) };
   },
   ocasiones: (d) => {
-    const tarjetas = Object.fromEntries(
+    const fijas = Object.fromEntries(
       OCASIONES.map(({ clave }) => {
         const o = objeto(d[clave]);
         const porDefecto = POR_DEFECTO.ocasiones[clave];
@@ -307,11 +327,22 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
         ];
       }),
     ) as Record<ClaveOcasion, Ocasion>;
-    const elegidas = Array.from(new Set(lista(d.enInicio).filter(eleccionValida))).slice(0, MAXIMO_EN_INICIO);
+    // Lo guardado antes de las tarjetas trae solo la lista de elegidas. Con la modalidad de las
+    // fijas copiada y lo demás vacío, la página de inicio se ve igual que antes.
+    const desdeLista = (eleccion: string) => tarjetaVacia(eleccion, esOcasion(eleccion) ? fijas[eleccion].modalidad : "");
+    const leidas = Array.isArray(d.tarjetas) ? lista(d.tarjetas).map(tarjeta) : lista(d.enInicio).filter(eleccionValida).map(desdeLista);
+    const tarjetas = leidas
+      .filter((t, i) => eleccionValida(t.eleccion) && leidas.findIndex((otra) => otra.eleccion === t.eleccion) === i)
+      .slice(0, MAXIMO_EN_INICIO);
     return {
-      ...tarjetas,
+      ...fijas,
       // Lo guardado antes de poder elegir no trae la lista: De Gala, De XV y las demás con foto
-      enInicio: elegidas.length >= MINIMO_EN_INICIO ? elegidas : OCASIONES.map(({ clave }) => clave).filter((clave) => OCASIONES_BASE.includes(clave) || tarjetas[clave].imagen),
+      tarjetas:
+        tarjetas.length >= MINIMO_EN_INICIO
+          ? tarjetas
+          : OCASIONES.map(({ clave }) => clave)
+              .filter((clave) => OCASIONES_BASE.includes(clave) || fijas[clave].imagen)
+              .map(desdeLista),
     };
   },
   destacados: (d) => {
@@ -449,10 +480,11 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
     });
   },
   ocasiones: (d, r) => {
-    r.minimo("enInicio", d.enInicio.length, MINIMO_EN_INICIO, `Elige al menos ${MINIMO_EN_INICIO} colecciones.`);
-    for (const { clave } of OCASIONES) {
-      r.texto(`${clave}.modalidad`, d[clave].modalidad, LARGO.modalidad, "Escribe la modalidad, por ejemplo «Venta y alquiler».");
-      r.texto(`${clave}.descripcion`, d[clave].descripcion, LARGO.descripcion, "Escribe la descripción.");
+    r.minimo("tarjetas", d.tarjetas.length, MINIMO_EN_INICIO, `Elige al menos ${MINIMO_EN_INICIO} colecciones.`);
+    for (const t of d.tarjetas) {
+      r.texto(`tarjetas.${t.eleccion}.titulo`, t.titulo, LARGO.titulo);
+      r.texto(`tarjetas.${t.eleccion}.modalidad`, t.modalidad, LARGO.modalidad);
+      r.texto(`tarjetas.${t.eleccion}.descripcion`, t.descripcion, LARGO.descripcion);
     }
   },
   destacados: (d, r) => {

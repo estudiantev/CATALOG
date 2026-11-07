@@ -17,9 +17,9 @@ import {
   type Ocasion,
   PAGINA_INICIO,
   armarContenido,
-  eleccionesVigentes,
   esOcasion,
   slugDeEleccion,
+  tarjetasVigentes,
 } from "@/lib/contenido";
 import { type FotoAmbiente, firmarFoto } from "@/lib/foto-servidor";
 
@@ -82,21 +82,32 @@ async function firmarInspiracion({ video, ...datos }: DatosSeccion["inspiracion"
   return { ...lista, video: videoFirmado };
 }
 
-type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista };
-type TarjetaInicio = TarjetaOcasionLista | Awaited<ReturnType<typeof leerColeccionesPublicadas>>[number];
+type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista; titulo?: string };
+type TarjetaColeccionLista = Awaited<ReturnType<typeof leerColeccionesPublicadas>>[number] & { modalidad?: string };
+type TarjetaInicioLista = TarjetaOcasionLista | TarjetaColeccionLista;
 
 function firmarOcasiones(datos: DatosSeccion["ocasiones"], claves: ClaveOcasion[]): Promise<TarjetaOcasionLista[]> {
   return Promise.all(claves.map(async (clave) => ({ clave, ocasion: await conFoto(datos[clave]) })));
 }
 
-// Las elegidas en el panel, en su orden
-async function leerTarjetasInicio(datos: DatosSeccion["ocasiones"]): Promise<TarjetaInicio[]> {
+// Las elegidas en el panel, en su orden. Lo que su tarjeta deja vacío sale de la colección.
+async function leerTarjetasInicio(datos: DatosSeccion["ocasiones"]): Promise<TarjetaInicioLista[]> {
   const publicadas = new Map((await leerColeccionesPublicadas()).map((coleccion) => [coleccion.href, coleccion]));
-  const elecciones = eleccionesVigentes(datos.enInicio, (slug) => publicadas.has(rutaColeccion(slug)));
+  const tarjetas = tarjetasVigentes(datos, (slug) => publicadas.has(rutaColeccion(slug)));
   return Promise.all(
-    elecciones.map(async (eleccion) => {
-      if (esOcasion(eleccion)) return { clave: eleccion, ocasion: await conFoto(datos[eleccion]) };
-      return publicadas.get(rutaColeccion(slugDeEleccion(eleccion) ?? ""))!;
+    tarjetas.map(async ({ eleccion, titulo, modalidad, descripcion, imagen }): Promise<TarjetaInicioLista> => {
+      if (esOcasion(eleccion)) {
+        const propia = datos[eleccion];
+        return { clave: eleccion, titulo, ocasion: { modalidad, descripcion: descripcion || propia.descripcion, foto: await firmarFoto(imagen ?? propia.imagen) } };
+      }
+      const coleccion = publicadas.get(rutaColeccion(slugDeEleccion(eleccion) ?? ""))!;
+      return {
+        ...coleccion,
+        nombre: titulo || coleccion.nombre,
+        modalidad,
+        descripcion: descripcion || coleccion.descripcion,
+        foto: imagen ? await firmarFoto(imagen) : coleccion.foto,
+      };
     }),
   );
 }
@@ -105,7 +116,7 @@ async function leerTarjetasInicio(datos: DatosSeccion["ocasiones"]): Promise<Tar
 export type ContenidoPortada = {
   diapositivas: DiapositivaLista[];
   destacados: (Omit<DatosSeccion["destacados"], "productos"> & { productos: ProductoCatalogo[] }) | null;
-  ocasiones: TarjetaInicio[] | null;
+  ocasiones: TarjetaInicioLista[] | null;
   pasos: DatosSeccion["pasos"] | null;
   nosotros: ConFoto<DatosSeccion["nosotros"]> | null;
   inspiracion: InspiracionLista | null;
