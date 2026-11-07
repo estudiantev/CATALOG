@@ -1,55 +1,53 @@
 import Link from "next/link";
 import { BotonCerrarSesion } from "./boton-cerrar-sesion";
 import { margenCuenta } from "./estilos-cuenta";
+import { RutaNavegacion } from "./ruta-navegacion";
 
 const SECCIONES = [
   { id: "resumen", nombre: "Resumen", href: "/cuenta" },
   { id: "perfil", nombre: "Mi perfil", href: "/cuenta/perfil" },
 ] as const;
 
-const enlace = "relative py-3.5 text-[15px] leading-[20px] font-medium";
+// Como Comprar / Alquilar en el detalle del producto: la actual en negro; las demás, azules al pasar
+const pestana = (actual: boolean, primera: boolean) =>
+  `inline-flex min-h-11 items-center px-5 text-[15px] font-medium ${primera ? "" : "border-l border-tinta"} ${
+    actual ? "bg-tinta text-white" : "bg-white text-tinta transition-colors duration-150 hover:bg-acento hover:text-white"
+  }`;
 
-// Franja superior del área de la clienta: el título de la página y las pestañas.
-// El rosa es el de la portada; la pestaña activa se apoya sobre el borde inferior.
+// Parte de arriba del área de la clienta: la ruta, el título y las pestañas
 export function CabeceraCuenta({
   titulo,
   descripcion,
   seccion,
-  staff = false,
 }: {
   titulo: string;
   descripcion: string;
   seccion: (typeof SECCIONES)[number]["id"];
-  staff?: boolean;
 }) {
   return (
-    <header className="border-b-2 border-tinta bg-[#e8cdc3]">
-      {/* A todo el ancho: Cerrar sesión queda bajo los íconos del encabezado */}
-      <div className={`${margenCuenta} pt-[clamp(36px,5vw,72px)]`}>
-        <h1 className="text-[clamp(40px,5vw,72px)] leading-none font-light tracking-[-0.02em] break-words">{titulo}</h1>
-        <p className="mt-3 max-w-[52ch] text-[17px] leading-[26px] text-grafito">{descripcion}</p>
-
-        <nav aria-label="Mi cuenta" className="mt-[clamp(28px,3.6vw,48px)] flex flex-wrap items-center gap-x-7">
-          {SECCIONES.map((s) => (
-            <Link
-              key={s.id}
-              href={s.href}
-              aria-current={s.id === seccion ? "page" : undefined}
-              className={`${enlace} after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] after:bg-tinta after:opacity-0 hover:after:opacity-30 aria-[current=page]:after:opacity-100`}
-            >
-              {s.nombre}
-            </Link>
-          ))}
-          <span className="ml-auto flex flex-wrap items-center gap-x-6">
-            {staff && (
-              <Link href="/admin" className={`${enlace} font-normal underline-offset-4 hover:underline`}>
-                Panel de administración
+    <>
+      <RutaNavegacion
+        pasos={[
+          { nombre: "Inicio", href: "/" },
+          ...(seccion === "resumen" ? [{ nombre: "Mi cuenta" }] : [{ nombre: "Mi cuenta", href: "/cuenta" }, { nombre: "Mi perfil" }]),
+        ]}
+      />
+      <header className={`flex flex-wrap items-end justify-between gap-x-8 gap-y-6 border-b border-tinta pt-10 pb-8 ${margenCuenta}`}>
+        <div className="min-w-0">
+          <h1 className="text-[clamp(32px,2.8vw,42px)] leading-[1.1] font-medium tracking-[-0.01em] [overflow-wrap:anywhere]">{titulo}</h1>
+          <p className="mt-3 max-w-[52ch] text-[16px] text-[#555555]">{descripcion}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <nav aria-label="Mi cuenta" className="flex border border-tinta">
+            {SECCIONES.map((s, i) => (
+              <Link key={s.id} href={s.href} aria-current={s.id === seccion ? "page" : undefined} className={pestana(s.id === seccion, i === 0)}>
+                {s.nombre}
               </Link>
-            )}
-            <BotonCerrarSesion />
-          </span>
-        </nav>
-      </div>
-    </header>
+            ))}
+          </nav>
+          <BotonCerrarSesion />
+        </div>
+      </header>
+    </>
   );
 }

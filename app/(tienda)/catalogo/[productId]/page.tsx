@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DetalleProducto } from "@/components/tienda/detalle-producto";
 import { ProductosRelacionados } from "@/components/tienda/productos-relacionados";
+import { RutaNavegacion } from "@/components/tienda/ruta-navegacion";
 import { type ProductoDetalle, leerRelacionados, obtenerProducto } from "@/lib/catalogo";
 import { leerPasosAlquiler } from "@/lib/contenido-servidor";
 import { CATEGORIAS } from "@/lib/productos";
@@ -12,8 +12,6 @@ export const dynamic = "force-dynamic";
 
 // Los que caben en una fila de "También te puede gustar"
 const RELACIONADOS = 5;
-
-const enlaceRuta = "text-[#555555] underline underline-offset-2 transition-colors duration-150 hover:text-acento";
 
 type Props = {
   params: Promise<{ productId: string }>;
@@ -57,33 +55,14 @@ export default async function ProductoPage({ params, searchParams }: Props) {
 
   return (
     <article className="bg-white font-cuerpo text-[15px] text-tinta">
-      <nav aria-label="Ruta de navegación" className="border-b border-tinta px-[clamp(16px,3vw,32px)] py-3 text-[13px] text-[#555555]">
-        <ol className="flex flex-wrap gap-2">
-          <li className="flex gap-2">
-            <Link href="/" className={enlaceRuta}>
-              Inicio
-            </Link>
-            <span aria-hidden="true">/</span>
-          </li>
-          <li className="flex gap-2">
-            <Link href="/catalogo" className={enlaceRuta}>
-              Catálogo
-            </Link>
-            <span aria-hidden="true">/</span>
-          </li>
-          {categoria && (
-            <li className="flex gap-2">
-              <Link href={catalogoCategoria} className={enlaceRuta}>
-                {categoria.plural}
-              </Link>
-              <span aria-hidden="true">/</span>
-            </li>
-          )}
-          <li aria-current="page" className="text-tinta">
-            {producto.nombre}
-          </li>
-        </ol>
-      </nav>
+      <RutaNavegacion
+        pasos={[
+          { nombre: "Inicio", href: "/" },
+          { nombre: "Catálogo", href: "/catalogo" },
+          ...(categoria ? [{ nombre: categoria.plural, href: catalogoCategoria }] : []),
+          { nombre: producto.nombre },
+        ]}
+      />
 
       <DetalleProducto producto={producto} variantIdInicial={Array.isArray(v) ? v[0] : v} pasos={pasos} />
 

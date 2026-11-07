@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { CabeceraCuenta } from "@/components/tienda/cabecera-cuenta";
 import { ResumenCuenta } from "@/components/tienda/resumen-cuenta";
 import { leerPerfil, perfilDesdeSesion } from "@/lib/cuenta";
-import { esStaff } from "@/lib/permisos";
 import { obtenerSesion } from "@/lib/sesion-servidor";
 
 export const metadata: Metadata = {
@@ -31,7 +30,6 @@ export default async function CuentaPage({
         titulo={perfil.nombre ? `Hola, ${perfil.nombre}` : "Hola"}
         descripcion="Aquí están tus datos y tus medidas."
         seccion="resumen"
-        staff={esStaff(sesion.grupos)}
       />
       <ResumenCuenta perfil={perfil} guardado={Boolean(guardado)} />
     </>

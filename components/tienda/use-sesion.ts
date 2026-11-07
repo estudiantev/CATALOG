@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
 
-export type SesionTienda = { nombre: string; correo: string };
+// grupos: los de Cognito (ADMIN, INVENTORY, MARKETING); la clienta no tiene ninguno
+export type SesionTienda = { nombre: string; correo: string; grupos: string[] };
 
 const texto = (valor: unknown) => (typeof valor === "string" ? valor : "");
 
@@ -14,7 +15,8 @@ async function leerSesion(): Promise<SesionTienda | null> {
     await getCurrentUser();
     const { tokens } = await fetchAuthSession();
     const datos = tokens?.idToken?.payload;
-    return datos ? { nombre: texto(datos.given_name), correo: texto(datos.email) } : null;
+    const grupos = tokens?.accessToken.payload["cognito:groups"];
+    return datos ? { nombre: texto(datos.given_name), correo: texto(datos.email), grupos: Array.isArray(grupos) ? grupos.map(String) : [] } : null;
   } catch {
     return null;
   }

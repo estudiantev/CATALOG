@@ -7,16 +7,17 @@ import { fetchAuthSession, updateUserAttributes } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 import {
-  alineadoConPanel,
-  botonPrincipal,
   campo as estiloCampo,
-  rellenoPanel,
   etiquetaCampo,
   etiquetaDato,
+  margenCuenta,
+  panelCuenta,
+  panelesCuenta,
   textoAyuda,
   textoError,
-  tituloBloque,
+  valorDato,
 } from "@/components/tienda/estilos-cuenta";
+import { botonAzul, botonBlanco, tituloCaja, tituloCajaAzul } from "@/components/tienda/estilos-inicio";
 import { FichaMedidas } from "@/components/tienda/ficha-medidas";
 import {
   type CampoMedida,
@@ -161,77 +162,79 @@ export function FormularioPerfil({
   }
 
   return (
-    <form onSubmit={guardar} noValidate className="grid items-start gap-x-[clamp(32px,5vw,80px)] gap-y-12 lg:grid-cols-2">
-      {/* El relleno va en un div: en un <fieldset> quedaría debajo del <legend> */}
-      <div className={`min-w-0 ${alineadoConPanel}`}>
-        <fieldset className="min-w-0">
-          <legend className={tituloBloque}>Tus datos</legend>
-          <div className="mt-6 grid gap-x-4 gap-y-6 sm:grid-cols-2">
-            <Campo id="nombre" etiqueta="Nombre" error={errores.nombre}>
-              <input {...campo("nombre")} autoComplete="given-name" maxLength={LARGO_NOMBRE} required />
-            </Campo>
-            <Campo id="apellido" etiqueta="Apellido" error={errores.apellido}>
-              <input {...campo("apellido")} autoComplete="family-name" maxLength={LARGO_NOMBRE} />
-            </Campo>
-            <div className="min-w-0 border-y border-arena py-4 sm:col-span-2">
-              <p className={etiquetaDato}>Correo</p>
-              <p className="mt-0.5 text-[17px] leading-[24px] break-words">{perfil.correo || "—"}</p>
-              <p className={`${textoAyuda} mt-1`}>Es tu usuario para iniciar sesión, por eso no se cambia aquí.</p>
-            </div>
-            <Campo id="telefono" etiqueta="Celular" ayuda="9 dígitos. De otro país, con su código (+…)." error={errores.telefono}>
-              <input {...campo("telefono", true)} type="tel" inputMode="tel" autoComplete="tel" placeholder="987 654 321" />
-            </Campo>
-            <Campo id="nacimiento" etiqueta="Fecha de nacimiento" error={errores.nacimiento}>
-              <input {...campo("nacimiento")} type="date" min="1900-01-01" max={hoy} autoComplete="bday" />
-            </Campo>
-          </div>
-        </fieldset>
-      </div>
-
-      {/* El fondo va en un div: un <fieldset> con fondo y relleno descoloca su <legend> */}
-      <div id="medidas" className={`min-w-0 scroll-mt-6 bg-lino ${rellenoPanel}`}>
-        <fieldset className="min-w-0">
-          <legend className={tituloBloque}>Tus medidas</legend>
-          <p className={`${textoAyuda} mt-1.5 max-w-[46ch]`}>Todas son opcionales y van en centímetros.</p>
-          <div className="mt-6">
-            <FichaMedidas medidas={medidasEnVivo} copa={valores.copa || null} resaltar={enfocada} decorativa />
-          </div>
-          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-6">
-            {MEDIDAS.map((m) => (
-              <Campo key={m.campo} id={m.campo} etiqueta={m.etiqueta} error={errores[m.campo]}>
-                <input
-                  {...campo(m.campo)}
-                  inputMode="decimal"
-                  autoComplete="off"
-                  placeholder="cm"
-                  onFocus={() => setEnfocada(m.campo)}
-                  onBlur={() => setEnfocada(null)}
-                />
+    <form onSubmit={guardar} noValidate>
+      <div className={panelesCuenta}>
+        {/* El relleno va en un div: en un <fieldset> quedaría debajo del <legend> */}
+        <div className={`${panelCuenta} bg-white`}>
+          <fieldset className="w-full min-w-0">
+            <legend className={tituloCaja}>Tus datos</legend>
+            <div className="mt-7 grid gap-x-4 gap-y-6 sm:grid-cols-2">
+              <Campo id="nombre" etiqueta="Nombre" error={errores.nombre}>
+                <input {...campo("nombre")} autoComplete="given-name" maxLength={LARGO_NOMBRE} required />
               </Campo>
-            ))}
-            <Campo id="copa" etiqueta="Copa" error={errores.copa}>
-              <select {...campo("copa")} onFocus={() => setEnfocada("copa")} onBlur={() => setEnfocada(null)}>
-                <option value="">Sin indicar</option>
-                {TALLAS_COPA.map((talla) => (
-                  <option key={talla} value={talla}>
-                    {talla}
-                  </option>
-                ))}
-              </select>
-            </Campo>
-          </div>
-        </fieldset>
+              <Campo id="apellido" etiqueta="Apellido" error={errores.apellido}>
+                <input {...campo("apellido")} autoComplete="family-name" maxLength={LARGO_NOMBRE} />
+              </Campo>
+              <div className="flex min-w-0 flex-col gap-0.5 border-y border-tinta py-[18px] sm:col-span-2">
+                <p className={etiquetaDato}>Correo</p>
+                <p className={valorDato}>{perfil.correo || "—"}</p>
+                <p className={`${textoAyuda} mt-1`}>Es tu usuario para iniciar sesión, por eso no se cambia aquí.</p>
+              </div>
+              <Campo id="telefono" etiqueta="Celular" ayuda="9 dígitos. De otro país, con su código (+…)." error={errores.telefono}>
+                <input {...campo("telefono", true)} type="tel" inputMode="tel" autoComplete="tel" placeholder="987 654 321" />
+              </Campo>
+              <Campo id="nacimiento" etiqueta="Fecha de nacimiento" error={errores.nacimiento}>
+                <input {...campo("nacimiento")} type="date" min="1900-01-01" max={hoy} autoComplete="bday" />
+              </Campo>
+            </div>
+          </fieldset>
+        </div>
+
+        {/* El fondo va en un div: un <fieldset> con fondo y relleno descoloca su <legend> */}
+        <div id="medidas" className={`${panelCuenta} scroll-mt-6 bg-tinte-azul`}>
+          <fieldset className="w-full min-w-0">
+            <legend className={tituloCajaAzul}>Tus medidas</legend>
+            <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.5] text-[#444444]">Todas son opcionales y van en centímetros.</p>
+            <div className="mt-6 border border-tinta bg-white p-[clamp(16px,2vw,24px)]">
+              <FichaMedidas medidas={medidasEnVivo} copa={valores.copa || null} resaltar={enfocada} decorativa />
+            </div>
+            <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-6">
+              {MEDIDAS.map((m) => (
+                <Campo key={m.campo} id={m.campo} etiqueta={m.etiqueta} error={errores[m.campo]}>
+                  <input
+                    {...campo(m.campo)}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="cm"
+                    onFocus={() => setEnfocada(m.campo)}
+                    onBlur={() => setEnfocada(null)}
+                  />
+                </Campo>
+              ))}
+              <Campo id="copa" etiqueta="Copa" error={errores.copa}>
+                <select {...campo("copa")} onFocus={() => setEnfocada("copa")} onBlur={() => setEnfocada(null)}>
+                  <option value="">Sin indicar</option>
+                  {TALLAS_COPA.map((talla) => (
+                    <option key={talla} value={talla}>
+                      {talla}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+            </div>
+          </fieldset>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-tinta pt-8 lg:col-span-2">
-        <button type="submit" disabled={enviando} className={botonPrincipal}>
+      <div className={`flex flex-wrap items-center gap-2 border-b border-tinta py-6 ${margenCuenta}`}>
+        <button type="submit" disabled={enviando} className={`${botonAzul} cursor-pointer disabled:cursor-wait disabled:opacity-70`}>
           {enviando ? "Guardando…" : "Guardar cambios"}
         </button>
-        <Link href="/cuenta" className="text-[15px] leading-[20px] underline-offset-4 hover:underline">
+        <Link href="/cuenta" className={botonBlanco}>
           Cancelar
         </Link>
         {error && (
-          <p role="alert" className={`${textoError} basis-full`}>
+          <p role="alert" className={`${textoError} basis-full pt-2`}>
             {error}
           </p>
         )}

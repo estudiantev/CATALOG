@@ -1,14 +1,6 @@
 import Link from "next/link";
-import {
-  alineadoConPanel,
-  botonPrincipal,
-  botonSecundario,
-  contenedorCuenta,
-  etiquetaDato,
-  rellenoPanel,
-  textoAyuda,
-  tituloBloque,
-} from "@/components/tienda/estilos-cuenta";
+import { etiquetaDato, margenCuenta, panelCuenta, panelesCuenta, valorDato } from "@/components/tienda/estilos-cuenta";
+import { botonAzul, botonBlanco, tituloCaja, tituloCajaAzul } from "@/components/tienda/estilos-inicio";
 import { FichaMedidas } from "@/components/tienda/ficha-medidas";
 import { MEDIDAS, type Perfil, formatoFecha, formatoTelefono } from "@/lib/perfil";
 
@@ -19,55 +11,53 @@ export function ResumenCuenta({ perfil, guardado = false }: { perfil: Perfil; gu
 
   const datos = [
     { etiqueta: "Nombre", valor: [perfil.nombre, perfil.apellido].filter(Boolean).join(" ") },
-    { etiqueta: "Correo", valor: perfil.correo },
     { etiqueta: "Celular", valor: perfil.telefono && formatoTelefono(perfil.telefono) },
+    { etiqueta: "Correo", valor: perfil.correo, ancho: true },
     { etiqueta: "Fecha de nacimiento", valor: perfil.nacimiento && formatoFecha(perfil.nacimiento) },
   ];
 
   return (
-    <div className={`${contenedorCuenta} py-[clamp(36px,5vw,64px)]`}>
+    <>
       {guardado && (
-        <p role="status" className="mb-8 flex items-center gap-2.5 border border-tinta bg-white px-4 py-3 text-[15px] leading-[22px]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="flex-none">
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
+        <p role="status" className={`flex items-center gap-2.5 border-b border-tinta bg-tinte-verde py-3 text-[15px] font-medium text-acento2-oscuro ${margenCuenta}`}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="flex-none">
+            <path d="M5 12l5 5 9-10" />
           </svg>
           Cambios guardados.
         </p>
       )}
 
-      <div className="grid items-start gap-x-[clamp(32px,5vw,80px)] gap-y-12 lg:grid-cols-2">
-        <section aria-labelledby="titulo-datos" className={alineadoConPanel}>
-          <h2 id="titulo-datos" className={tituloBloque}>
+      <div className={panelesCuenta}>
+        <section aria-labelledby="titulo-datos" className={`${panelCuenta} bg-white`}>
+          <h2 id="titulo-datos" className={tituloCaja}>
             Tus datos
           </h2>
-          <dl className="mt-5 border-t border-tinta">
+          <dl className="mt-7 grid w-full grid-cols-1 gap-x-6 gap-y-[18px] border-y border-tinta py-[18px] sm:grid-cols-2">
             {datos.map((dato) => (
-              <div key={dato.etiqueta} className="grid gap-x-4 gap-y-0.5 border-b border-arena py-4 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
+              <div key={dato.etiqueta} className={`flex min-w-0 flex-col gap-0.5 ${dato.ancho ? "sm:col-span-2" : ""}`}>
                 <dt className={etiquetaDato}>{dato.etiqueta}</dt>
-                <dd className={`text-[17px] leading-[24px] break-words ${dato.valor ? "" : "text-topo"}`}>
-                  {dato.valor || "Sin registrar"}
-                </dd>
+                <dd className={`${valorDato} ${dato.valor ? "" : "text-[#8a8a8a]"}`}>{dato.valor || "Sin registrar"}</dd>
               </div>
             ))}
           </dl>
-          <Link href="/cuenta/perfil" className={`${botonPrincipal} mt-8`}>
+          <Link href="/cuenta/perfil" className={`${botonAzul} mt-8`}>
             Editar mis datos
           </Link>
         </section>
 
-        <section aria-labelledby="titulo-medidas" className={`bg-lino ${rellenoPanel}`}>
-          <h2 id="titulo-medidas" className={tituloBloque}>
+        <section aria-labelledby="titulo-medidas" className={`${panelCuenta} bg-tinte-azul`}>
+          <h2 id="titulo-medidas" className={tituloCajaAzul}>
             Tus medidas
           </h2>
-          <p className={`${textoAyuda} mt-1.5 max-w-[46ch]`}>Con ellas te recomendamos la talla y el largo de cada vestido.</p>
-          <div className="mt-6">
+          <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.5] text-[#444444]">Con ellas te recomendamos la talla y el largo de cada vestido.</p>
+          <div className="mt-6 w-full border border-tinta bg-white p-[clamp(16px,2vw,24px)]">
             <FichaMedidas medidas={medidas} copa={medidas.copa} />
           </div>
-          <Link href="/cuenta/perfil#medidas" className={`${botonSecundario} mt-8`}>
+          <Link href="/cuenta/perfil#medidas" className={`${botonBlanco} mt-8`}>
             {hayMedidas ? "Editar mis medidas" : "Agregar mis medidas"}
           </Link>
         </section>
       </div>
-    </div>
+    </>
   );
 }

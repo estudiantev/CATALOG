@@ -37,12 +37,12 @@ export function FichaMedidas({
   const activa = resaltar === "copa" ? "busto" : resaltar;
   const linea = (campo: CampoMedida) =>
     activa === campo
-      ? { stroke: "#111111", strokeWidth: 3, strokeDasharray: undefined, opacity: 1 }
+      ? { stroke: "#010081", strokeWidth: 3, strokeDasharray: undefined, opacity: 1 }
       : { stroke: "#111111", strokeWidth: 1.5, strokeDasharray: "5 5", opacity: 0.55 };
 
   const dato = (activo: boolean) => ({
-    dt: `text-[14px] leading-[20px] ${activo ? "text-tinta" : "text-topo"}`,
-    dd: `text-[20px] leading-[26px] ${activo ? "font-normal" : "font-light"}`,
+    dt: `text-[13px] leading-[20px] ${activo ? "font-medium text-acento" : "text-[#666666]"}`,
+    dd: `text-[20px] leading-[26px] ${activo ? "font-semibold text-acento" : "text-tinta"}`,
   });
 
   return (
@@ -52,7 +52,7 @@ export function FichaMedidas({
           {/* 136.36% = 300/220 y -18.18% = -40/220: el vestido queda alineado con el recorte */}
           <Vestido
             forma="sirena"
-            color="#c1ae9b"
+            color="#bcd3e6"
             pliegues={false}
             brillo={0.3}
             className="absolute top-0 left-[-18.18%] h-full w-[136.36%] max-w-none"
@@ -87,7 +87,7 @@ export function FichaMedidas({
               <dd className={dato(activa === l.campo).dd}>{texto(medidas[l.campo])}</dd>
             </div>
           ))}
-          <div className="absolute bottom-0 left-0 flex flex-col gap-1 border-l border-piedra pl-3 whitespace-nowrap">
+          <div className="absolute bottom-0 left-0 flex flex-col gap-1 border-l border-tinta pl-3 whitespace-nowrap">
             <div className="flex items-baseline gap-2">
               <dt className={dato(activa === "altura").dt}>Altura</dt>
               <dd className={dato(activa === "altura").dd}>{texto(medidas.altura)}</dd>

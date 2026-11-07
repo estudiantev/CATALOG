@@ -18,8 +18,11 @@ export const botonAzul = `${botonCaja} bg-acento text-white ${hoverAzul}`;
 // Los verdes no cambian de color: se levantan con una sombra
 export const botonVerde = `${botonCaja} bg-acento2 text-white transition-[box-shadow,transform] duration-150 hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111111] motion-reduce:transition-none`;
 
-export const tituloCaja =
-  "border border-tinta bg-acento2 px-3.5 py-[3px] font-archivo text-[clamp(17px,5.4vw,22px)] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-white uppercase";
+// Títulos de sección en una caja de color: verde o azul
+const tituloCajaBase =
+  "border border-tinta px-3.5 py-[3px] font-archivo text-[clamp(17px,5.4vw,22px)] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-white uppercase";
+export const tituloCaja = `${tituloCajaBase} bg-acento2`;
+export const tituloCajaAzul = `${tituloCajaBase} bg-acento`;
 
 export const barraSeccion = "flex flex-none flex-wrap items-center justify-between gap-2.5 border-b border-tinta px-3 py-2.5";
 

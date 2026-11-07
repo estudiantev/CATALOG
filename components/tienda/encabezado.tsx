@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { DatosSeccion } from "@/lib/contenido";
+import { esStaff } from "@/lib/permisos";
 import { enlaceCuenta } from "@/lib/redireccion";
 import { Anuncios } from "./anuncios";
 import { ALQUILER, COLECCIONES, COLORES } from "./datos";
@@ -41,6 +42,7 @@ export function Encabezado({
   const pathname = usePathname();
   // Mientras se revisa (undefined) el ícono lleva al login, que igual redirige si ya hay sesión
   const sesion = useSesion();
+  const staff = Boolean(sesion && esStaff(sesion.grupos));
 
   const cerrarMenus = () => {
     setCatalogoAbierto(false);
@@ -131,6 +133,21 @@ export function Encabezado({
               Favoritos
             </span>
           </a>
+          {/* Solo para el staff. Es un atajo: /admin igual revisa la sesión en el servidor. Hasta
+              1100 px va solo el ícono, para que entre junto al nombre sin tapar el menú. */}
+          {staff && (
+            <Link href="/admin" aria-label="Panel de administración" title="Panel de administración" onClick={cerrarMenus} className={cajaIconoBlanca}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="9" />
+                <rect x="14" y="3" width="7" height="5" />
+                <rect x="14" y="12" width="7" height="9" />
+                <rect x="3" y="16" width="7" height="5" />
+              </svg>
+              <span aria-hidden="true" className="hidden min-[1100px]:inline">
+                Panel
+              </span>
+            </Link>
+          )}
           {/* Con sesión lleva a Mi cuenta y lo marca: el nombre en escritorio, un punto en el celular.
               Sin sesión, el login recuerda esta página para volver aquí después de entrar. */}
           <Link
@@ -144,7 +161,7 @@ export function Encabezado({
               <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" />
             </svg>
             {sesion && <span aria-hidden="true" className="absolute top-1 right-1 size-2.5 rounded-full border-2 border-white bg-acento2 menu:hidden" />}
-            <span aria-hidden="true" className="hidden max-w-[14ch] truncate menu:block">
+            <span aria-hidden="true" className={`hidden truncate menu:block ${staff ? "max-w-[8ch] min-[1100px]:max-w-[14ch]" : "max-w-[14ch]"}`}>
               {sesion ? sesion.nombre || "Mi cuenta" : "Ingresar"}
             </span>
           </Link>
