@@ -29,12 +29,13 @@ export function Anuncios({ mensajes, segundos }: DatosSeccion["anuncios"]) {
       role="region"
       aria-label="Anuncios"
       aria-roledescription={varios ? "carrusel" : undefined}
-      className="flex h-[30px] flex-none items-center gap-2 bg-acento px-2 text-[12.5px] tracking-[0.01em] text-white"
+      className="flex min-h-[30px] flex-none items-center gap-2 bg-acento px-2 text-[12.5px] leading-[1.3] tracking-[0.01em] text-white"
     >
       {/* Mismo ancho que los controles, para que el anuncio quede centrado */}
       {varios && <div aria-hidden="true" className="hidden w-[84px] flex-none min-[701px]:block" />}
-      {/* Mientras rota no se anuncia cada cambio al lector de pantalla */}
-      <div aria-live={varios && !pausado ? "off" : "polite"} className="relative h-[30px] min-w-0 flex-auto overflow-hidden">
+      {/* Mientras rota no se anuncia cada cambio al lector de pantalla. Los anuncios comparten una
+          celda: si no entran en una línea, la barra mide lo que el más largo y no salta al rotar. */}
+      <div aria-live={varios && !pausado ? "off" : "polite"} className="grid min-w-0 flex-auto overflow-hidden py-1">
         {mensajes.map((mensaje, i) => {
           const activo = i === actual;
           const saliendo = i === (actual - 1 + total) % total;
@@ -42,15 +43,15 @@ export function Anuncios({ mensajes, segundos }: DatosSeccion["anuncios"]) {
             <p
               key={i}
               aria-hidden={!activo}
-              className={`absolute inset-0 flex items-center justify-center gap-1.5 whitespace-nowrap motion-reduce:transition-none ${
+              className={`[grid-area:1/1] self-center text-center text-balance motion-reduce:transition-none ${
                 activo
                   ? "visible translate-x-0 opacity-100 [transition:transform_.55s_cubic-bezier(.2,.7,.2,1),opacity_.45s_ease]"
                   : `invisible opacity-0 [transition:transform_.55s_cubic-bezier(.2,.7,.2,1),opacity_.45s_ease,visibility_0s_linear_.55s] ${saliendo ? "translate-x-[45%]" : "-translate-x-[45%]"}`
               }`}
             >
-              <span className="min-w-0 truncate">{mensaje.texto}</span>
+              {mensaje.texto}{" "}
               {mensaje.boton.texto && (
-                <EnlaceContenido boton={mensaje.boton} className="flex-none text-white underline underline-offset-3 focus-visible:outline-white focus-visible:-outline-offset-2" />
+                <EnlaceContenido boton={mensaje.boton} className="whitespace-nowrap text-white underline underline-offset-3 focus-visible:outline-white focus-visible:-outline-offset-2" />
               )}
             </p>
           );

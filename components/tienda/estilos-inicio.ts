@@ -18,7 +18,7 @@ export const botonAncho = `inline-flex min-h-[42px] w-[max(200px,20%)] items-cen
 export const chip = `flex min-h-9 flex-none items-center gap-1.5 bg-white px-3 text-[11px] font-semibold tracking-[0.12em] text-tinta uppercase focus-visible:-outline-offset-2 ${hoverCaja}`;
 
 export const tituloCaja =
-  "border border-tinta bg-acento2 px-3.5 py-[3px] font-archivo text-[22px] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-white uppercase";
+  "border border-tinta bg-acento2 px-3.5 py-[3px] font-archivo text-[clamp(17px,5.4vw,22px)] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-white uppercase";
 
 export const barraSeccion = "flex flex-none flex-wrap items-center justify-between gap-2.5 border-b border-tinta px-3 py-2.5";
 

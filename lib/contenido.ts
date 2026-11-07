@@ -128,7 +128,8 @@ export type DatosSeccion = {
   ocasiones: Record<ClaveOcasion, Ocasion> & { enInicio: string[] };
   pasos: { titulo: string; subtitulo: string; pasos: Paso[]; boton: string };
   nosotros: { titulo: string; lema: string; texto: string; imagen: Imagen | null };
-  inspiracion: { antetitulo: string; texto: string; boton: Boton; imagen: Imagen | null };
+  // Una foto o un video: el panel guarda uno de los dos. Sin ninguno, las ilustraciones
+  inspiracion: { antetitulo: string; texto: string; boton: Boton; imagen: Imagen | null; video: Imagen | null };
   pie: {
     descripcion: string;
     boletinTitulo: string; // sin título no se muestra el formulario
@@ -196,6 +197,7 @@ export const POR_DEFECTO: DatosSeccion = {
     texto: "Ideas, tendencias y consejos para encontrar tu look perfecto en cada ocasión.",
     boton: { texto: "Ver en Instagram", enlace: INSTAGRAM_FARA },
     imagen: null,
+    video: null,
   },
   pie: {
     descripcion: "Vestidos de alta costura en venta y alquiler, confeccionados en Tacna.",
@@ -358,6 +360,7 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
     texto: texto(d.texto, POR_DEFECTO.inspiracion.texto, LARGO.textoInspiracion),
     boton: boton(d.boton, POR_DEFECTO.inspiracion.boton, false),
     imagen: imagen(d.imagen),
+    video: imagen(d.video), // va en la misma carpeta que las fotos
   }),
   pie: (d) => {
     const redes = objeto(d.redes);

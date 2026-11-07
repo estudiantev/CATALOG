@@ -14,23 +14,31 @@ import type { Controles } from "./comun";
 const TAMANO_MAXIMO = 10 * 1024 * 1024;
 const ANCHO_FOTO = 2000;
 
+// El video no se puede reducir en el navegador: se sube tal cual, por eso se limita su peso.
+// MP4 y WebM son los que se reproducen en todos los navegadores (el MOV del iPhone no).
+const TIPOS_VIDEO = ["video/mp4", "video/webm"];
+const TAMANO_MAXIMO_VIDEO = 50 * 1024 * 1024;
+
 export type FotoFormulario = {
   key: string | null; // ruta en S3; null mientras no se haya subido
   archivo: File | null;
   vistaPrevia: string;
+  esVideo?: boolean; // solo en los campos con `conVideo`
 };
 
-export const aFormulario = (imagen: Imagen | null, vistasPrevias: Record<string, string>): FotoFormulario | null =>
-  imagen && { key: imagen.key, archivo: null, vistaPrevia: vistasPrevias[imagen.key] ?? "" };
+export const aFormulario = (imagen: Imagen | null, vistasPrevias: Record<string, string>, esVideo = false): FotoFormulario | null =>
+  imagen && { key: imagen.key, archivo: null, vistaPrevia: vistasPrevias[imagen.key] ?? "", esVideo };
 
 // La ruta se conoce al subirla: hasta entonces va vacía
 export const aImagen = (foto: FotoFormulario | null): Imagen | null => foto && { key: foto.key ?? "" };
 
-// Sube la foto si es nueva y la devuelve con su ruta
+// Sube la foto o el video si es nuevo y lo devuelve con su ruta
 export async function subirFoto(foto: FotoFormulario | null, carpeta = CARPETA_IMAGENES): Promise<FotoFormulario | null> {
   if (!foto?.archivo) return foto;
   try {
-    const { blob, extension } = await reducirImagen(foto.archivo, ANCHO_FOTO);
+    const { blob, extension } = foto.esVideo
+      ? { blob: foto.archivo, extension: foto.archivo.type === "video/webm" ? "webm" : "mp4" }
+      : await reducirImagen(foto.archivo, ANCHO_FOTO);
     const { path } = await uploadData({
       path: `${carpeta}${crypto.randomUUID()}.${extension}`,
       data: blob,
@@ -38,8 +46,8 @@ export async function subirFoto(foto: FotoFormulario | null, carpeta = CARPETA_I
     }).result;
     return { ...foto, key: path, archivo: null };
   } catch (error) {
-    console.error("No se pudo subir la foto:", error);
-    throw new Error("No se pudieron subir las fotos. Revisa tu conexión e inténtalo de nuevo.");
+    console.error("No se pudo subir el archivo:", error);
+    throw new Error(`${foto.esVideo ? "No se pudo subir el video" : "No se pudieron subir las fotos"}. Revisa tu conexión e inténtalo de nuevo.`);
   }
 }
 
@@ -58,7 +66,7 @@ export function useFotosGuardadas(iniciales: (Imagen | null)[]) {
 }
 
 // Vista previa y botones para subir y quitar la foto. `ruta` es la del campo
-// imagen en la sección, por ejemplo "gala.imagen".
+// imagen en la sección, por ejemplo "gala.imagen". Con `conVideo` acepta también un video.
 export function CampoFoto({
   s,
   ruta,
@@ -69,6 +77,7 @@ export function CampoFoto({
   recomendacion,
   etiqueta = "Foto (opcional)",
   vertical = false,
+  conVideo = false,
 }: {
   s: Controles;
   ruta: string;
@@ -79,20 +88,23 @@ export function CampoFoto({
   recomendacion?: string; // aviso que no bloquea, como la medida ideal
   etiqueta?: string;
   vertical?: boolean; // la vista previa con la forma de una foto para celular
+  conVideo?: boolean;
 }) {
   const selector = useRef<HTMLInputElement>(null);
   const error = s.errores[ruta];
+  const queSube = conVideo ? "foto o video" : "foto";
 
   function elegir(archivo: File | undefined) {
     if (!archivo) return;
-    if (!TIPOS_IMAGEN.includes(archivo.type)) {
-      return s.setErrores((e) => ({ ...e, [ruta]: `«${archivo.name}» no es JPG, PNG ni WebP.` }));
+    const esVideo = conVideo && TIPOS_VIDEO.includes(archivo.type);
+    if (!esVideo && !TIPOS_IMAGEN.includes(archivo.type)) {
+      return s.setErrores((e) => ({ ...e, [ruta]: `«${archivo.name}» no es JPG, PNG ni WebP${conVideo ? ", ni un video MP4 o WebM" : ""}.` }));
     }
-    if (archivo.size > TAMANO_MAXIMO) {
-      return s.setErrores((e) => ({ ...e, [ruta]: `«${archivo.name}» pesa más de 10 MB.` }));
+    if (archivo.size > (esVideo ? TAMANO_MAXIMO_VIDEO : TAMANO_MAXIMO)) {
+      return s.setErrores((e) => ({ ...e, [ruta]: `«${archivo.name}» pesa más de ${esVideo ? 50 : 10} MB.` }));
     }
     if (foto?.archivo) URL.revokeObjectURL(foto.vistaPrevia);
-    onChange({ key: null, archivo, vistaPrevia: URL.createObjectURL(archivo) });
+    onChange({ key: null, archivo, vistaPrevia: URL.createObjectURL(archivo), esVideo });
     s.editado(ruta);
   }
 
@@ -108,15 +120,19 @@ export function CampoFoto({
       <div className="flex flex-wrap items-start gap-4">
         <div className={`relative shrink-0 overflow-hidden rounded-md border bg-muted ${vertical ? "aspect-[4/5] w-36" : "aspect-[4/3] w-44"}`}>
           {foto?.vistaPrevia ? (
-            <Image src={foto.vistaPrevia} alt="" fill unoptimized sizes="176px" className="object-cover" />
+            foto.esVideo ? (
+              <video src={foto.vistaPrevia} muted playsInline controls preload="metadata" className="absolute inset-0 size-full object-cover" />
+            ) : (
+              <Image src={foto.vistaPrevia} alt="" fill unoptimized sizes="176px" className="object-cover" />
+            )
           ) : (
             <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center text-xs text-muted-foreground">
               <ImageIcon className="size-6" />
-              {foto ? "Vista previa no disponible" : "Sin foto"}
+              {foto ? "Vista previa no disponible" : conVideo ? "Sin foto ni video" : "Sin foto"}
             </span>
           )}
           {foto && !foto.key && (
-            <Badge variant="secondary" className="absolute bottom-2 left-2">
+            <Badge variant="secondary" className={`absolute left-2 ${foto.esVideo ? "top-2" : "bottom-2"}`}>
               Se sube al guardar
             </Badge>
           )}
@@ -125,12 +141,12 @@ export function CampoFoto({
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={() => selector.current?.click()}>
               <Upload />
-              {foto ? "Cambiar foto" : "Subir foto"}
+              {foto ? `Cambiar ${queSube}` : `Subir ${queSube}`}
             </Button>
             {foto && (
               <Button type="button" variant="ghost" onClick={quitar}>
                 <X />
-                Quitar foto
+                {foto.esVideo ? "Quitar video" : "Quitar foto"}
               </Button>
             )}
           </div>
@@ -138,7 +154,7 @@ export function CampoFoto({
             ref={selector}
             name={nombre}
             type="file"
-            accept={TIPOS_IMAGEN.join(",")}
+            accept={(conVideo ? [...TIPOS_IMAGEN, ...TIPOS_VIDEO] : TIPOS_IMAGEN).join(",")}
             hidden
             onChange={(e) => {
               elegir(e.target.files?.[0]);
@@ -150,7 +166,9 @@ export function CampoFoto({
               {error}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">{sinFoto} JPG, PNG o WebP de hasta 10 MB.</p>
+            <p className="text-sm text-muted-foreground">
+              {sinFoto} JPG, PNG o WebP de hasta 10 MB{conVideo && "; video MP4 o WebM de hasta 50 MB"}.
+            </p>
           )}
           {recomendacion && <p className="text-sm text-muted-foreground">{recomendacion}</p>}
         </div>

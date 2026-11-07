@@ -30,13 +30,14 @@ async function cargarContenido(): Promise<ContenidoInicio> {
   return armarContenido(data);
 }
 
-// Vista previa de las fotos ya guardadas
+// Vista previa de las fotos y el video ya guardados
 async function firmarVistasPrevias({ portada, ocasiones, nosotros, inspiracion }: ContenidoInicio) {
   const rutas = [
     ...portada.datos.diapositivas.flatMap((d) => [d.imagen, d.imagenMovil]),
     ...OCASIONES.map(({ clave }) => ocasiones.datos[clave].imagen),
     nosotros.datos.imagen,
     inspiracion.datos.imagen,
+    inspiracion.datos.video,
   ].flatMap((imagen) => (imagen ? [imagen.key] : []));
   const firmadas = await Promise.all(
     rutas.map((path) =>

@@ -27,7 +27,8 @@ export function TarjetaDestacado({
 }) {
   return (
     <Link href={href} className="group flex h-full min-w-0 flex-col border-r border-tinta">
-      <div className="relative min-h-[150px] flex-auto overflow-hidden bg-[#f3f3f3]">
+      {/* Desde 1000 px llena el alto de la sección; más abajo, la forma vertical de un vestido */}
+      <div className="relative aspect-[2/3] max-h-[640px] min-h-[150px] flex-auto overflow-hidden bg-[#f3f3f3] min-[1000px]:aspect-auto min-[1000px]:max-h-none">
         <FotosProducto portada={portada} hover={hover} sizes={sizes} />
         {etiqueta && (
           <span className={`absolute top-2.5 left-2.5 px-1.5 py-1 text-[10px] leading-none font-semibold tracking-[0.08em] text-white uppercase ${etiqueta.toLowerCase() === "nuevo" ? "bg-acento" : "bg-acento2"}`}>

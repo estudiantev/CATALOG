@@ -116,7 +116,7 @@ export function useSeccion<S extends Seccion>(seccion: S, inicial: SeccionConten
     try {
       let listos = datos;
       if (preparar) {
-        setEstado({ tipo: "guardando", mensaje: "Subiendo fotos…" });
+        setEstado({ tipo: "guardando", mensaje: "Subiendo archivos…" });
         listos = await preparar();
       }
       setEstado({ tipo: "guardando", mensaje: "Guardando…" });

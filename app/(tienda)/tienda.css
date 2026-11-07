@@ -60,7 +60,10 @@
   }
 }
 
-/* Alto del marco: el encabezado más la barra de anuncios, si está visible */
+/*
+ * Alto del marco: el encabezado más la barra de anuncios, si está visible. Es el valor inicial:
+ * un anuncio largo ocupa más de una línea en el celular y Encabezado lo cambia por el alto real.
+ */
 :root {
   --alto-marco: 56px;
 }
@@ -68,9 +71,14 @@
   --alto-marco: 86px;
 }
 
-/* Una sección de la página de inicio: llena la pantalla debajo del marco */
+/*
+ * Llena la pantalla debajo del marco. La portada lo usa siempre; las demás secciones, solo desde
+ * 1000 px (min-[1000px]:pantalla), donde el scroll salta de una a otra. Más abajo miden lo que su
+ * contenido, para que no queden zonas vacías. Con svh el alto no cambia cuando el celular
+ * esconde la barra del navegador.
+ */
 @utility pantalla {
-  min-height: max(var(--alto-minimo, 0px), calc(100dvh - var(--alto-marco)));
+  min-height: max(var(--alto-minimo, 0px), calc(100svh - var(--alto-marco)));
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }

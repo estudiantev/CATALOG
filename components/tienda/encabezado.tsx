@@ -63,6 +63,17 @@ export function Encabezado({
     };
   }, [catalogoAbierto, menuMovilAbierto]);
 
+  // Un anuncio largo hace crecer el marco: la página y el menú móvil se calculan con su alto real
+  useEffect(() => {
+    const marco = contenedor.current;
+    if (!marco) return;
+    const observador = new ResizeObserver(() => {
+      document.documentElement.style.setProperty("--alto-marco", `${marco.offsetHeight}px`);
+    });
+    observador.observe(marco);
+    return () => observador.disconnect();
+  }, []);
+
   return (
     <div ref={contenedor} id="marco" className="relative z-30 bg-white font-cuerpo">
       <a href="#contenido" className="absolute left-4 -top-30 z-20 bg-tinta px-4.5 py-3 font-semibold text-white focus:top-3">
@@ -209,9 +220,10 @@ export function Encabezado({
         </div>
       )}
 
-      {/* Menú móvil */}
+      {/* Menú móvil. Tiene su propio scroll: en el inicio el marco queda fijo y, con el celular en
+          horizontal, lo de abajo no se alcanzaría moviendo la página. */}
       {menuMovilAbierto && (
-        <nav id="menu-movil" aria-label="Menú principal" className="absolute inset-x-0 top-full min-h-svh border-b border-tinta bg-white pt-3 pb-6 menu:hidden">
+        <nav id="menu-movil" aria-label="Menú principal" className="absolute inset-x-0 top-full h-[calc(100dvh-var(--alto-marco))] overflow-y-auto overscroll-contain border-b border-tinta bg-white pt-3 pb-6 menu:hidden">
           <ul>
             <li>
               <button

@@ -8,6 +8,7 @@ import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
 import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
+import { VideoInspiracion } from "@/components/tienda/video-inspiracion";
 import { PRODUCTOS_POR_FILA } from "@/lib/contenido";
 import { leerContenidoInicio } from "@/lib/contenido-servidor";
 import { resolverTarjeta } from "@/lib/variantes";
@@ -34,10 +35,12 @@ export default async function InicioPage() {
   });
   const filas = [tarjetas.slice(0, PRODUCTOS_POR_FILA), tarjetas.slice(PRODUCTOS_POR_FILA)].filter((fila) => fila.length > 0);
 
+  // Desde 1000 px, siempre 5 columnas. Más abajo, una por producto: las que faltan no dejan hueco
+  // y, si no entran todas, la fila se desliza de lado.
   const filaDeProductos = (fila: typeof tarjetas, conBorde: boolean) => (
     <ul
       aria-label="Productos destacados"
-      className={`grid min-h-[250px] flex-[1_1_0] grid-cols-[repeat(5,minmax(180px,1fr))] overflow-x-auto [scrollbar-width:thin] ${conBorde ? "border-b border-tinta" : ""}`}
+      className={`grid flex-none auto-cols-[minmax(180px,1fr)] grid-flow-col overflow-x-auto [scrollbar-width:thin] min-[1000px]:min-h-[250px] min-[1000px]:flex-[1_1_0] min-[1000px]:grid-flow-row min-[1000px]:grid-cols-[repeat(5,minmax(180px,1fr))] ${conBorde ? "border-b border-tinta" : ""}`}
     >
       {fila.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
         <li key={producto.productId} className="min-w-0">
@@ -62,7 +65,7 @@ export default async function InicioPage() {
       <PortadaInicio diapositivas={diapositivas} />
 
       {destacados && filas.length > 0 && (
-        <section id="catalogo" aria-labelledby="titulo-catalogo" className="pantalla flex flex-col border-t border-tinta bg-white">
+        <section id="catalogo" aria-labelledby="titulo-catalogo" className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla">
           <div className={barraSeccion}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <h2 id="titulo-catalogo" className={tituloCaja}>
@@ -90,7 +93,7 @@ export default async function InicioPage() {
       )}
 
       {ocasiones && (
-        <section id="colecciones" aria-label="Colecciones" className={`pantalla grid grid-cols-1 gap-px border-t border-tinta bg-tinta ${COLUMNAS_COLECCIONES[ocasiones.length]}`}>
+        <section id="colecciones" aria-label="Colecciones" className={`grid grid-cols-1 gap-px border-t border-tinta bg-tinta min-[1000px]:pantalla ${COLUMNAS_COLECCIONES[ocasiones.length]}`}>
           {ocasiones.map((tarjeta) =>
             "clave" in tarjeta ? (
               <TarjetaOcasion key={tarjeta.clave} {...tarjeta} sizes="(min-width: 640px) 50vw, 100vw" grande />
@@ -102,7 +105,7 @@ export default async function InicioPage() {
       )}
 
       {pasos && (
-        <section id="pasos" aria-labelledby="titulo-pasos" className="pantalla flex flex-col border-t border-tinta bg-white">
+        <section id="pasos" aria-labelledby="titulo-pasos" className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla">
           <div className={barraSeccion}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <h2 id="titulo-pasos" className={tituloCaja}>
@@ -122,8 +125,8 @@ export default async function InicioPage() {
           </div>
           <ol className="grid flex-auto grid-cols-1 gap-px bg-tinta md:grid-cols-3">
             {pasos.pasos.map((paso, i) => (
-              <li key={i} className="flex flex-col justify-between gap-8 bg-white p-8">
-                <span aria-hidden="true" className={`${letraContorno} text-[clamp(88px,12vw,176px)]`}>
+              <li key={i} className="flex flex-col justify-between gap-4 bg-white p-6 md:gap-8 md:p-8">
+                <span aria-hidden="true" className={`${letraContorno} text-[clamp(64px,12vw,176px)]`}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="flex flex-col gap-2">
@@ -137,7 +140,7 @@ export default async function InicioPage() {
       )}
 
       {nosotros && (
-        <section id="nosotros" aria-label="Quiénes somos" className="pantalla relative flex items-center justify-center border-t border-tinta bg-tinte-verde px-6 pt-[72px] pb-12">
+        <section id="nosotros" aria-label="Quiénes somos" className="relative flex items-center justify-center border-t border-tinta bg-tinte-verde px-6 py-12 min-[1000px]:pantalla min-[1000px]:pt-[72px]">
           {nosotros.foto && <Image src={nosotros.foto.url} alt="" fill unoptimized sizes="100vw" className="object-cover" />}
           <div className="relative flex w-[620px] max-w-full flex-col gap-[18px] border border-tinta bg-white p-6 sm:p-10">
             <h2 className={`${letraContorno} text-[clamp(32px,4.4vw,54px)]`}>{nosotros.titulo}</h2>
@@ -148,7 +151,7 @@ export default async function InicioPage() {
       )}
 
       {inspiracion && (
-        <section id="inspiracion" aria-label="Inspiración" className="pantalla flex flex-wrap border-t border-tinta bg-white">
+        <section id="inspiracion" aria-label="Inspiración" className="flex flex-wrap border-t border-tinta bg-white min-[1000px]:pantalla">
           <div className="flex flex-[2_1_360px] flex-col items-start gap-5 border-tinta px-8 py-10 max-[840px]:border-b min-[841px]:border-r">
             {inspiracion.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-acento2-oscuro uppercase">{inspiracion.antetitulo}</span>}
             <p className="max-w-[30ch] text-[24px] leading-[1.3] font-medium text-tinta">{inspiracion.texto}</p>
@@ -156,7 +159,9 @@ export default async function InicioPage() {
           </div>
           <div className="flex flex-[3_1_480px] p-6">
             <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden border border-tinta bg-tinte-azul">
-              {inspiracion.foto ? (
+              {inspiracion.video ? (
+                <VideoInspiracion url={inspiracion.video.url} />
+              ) : inspiracion.foto ? (
                 <Image src={inspiracion.foto.url} alt="" fill unoptimized sizes="(min-width: 841px) 60vw, 100vw" className="object-cover" />
               ) : (
                 <>

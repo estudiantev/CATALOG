@@ -6,31 +6,37 @@ import { Input } from "@/components/admin/ui/input";
 import { Textarea } from "@/components/admin/ui/textarea";
 import { LARGO, type SeccionContenido } from "@/lib/contenido";
 import { Campo, CamposEnlace, CasillaVisible, PieSeccion, useSeccion } from "./comun";
-import { CampoFoto, aFormulario, aImagen, subirFoto, useFotosGuardadas } from "./foto";
+import { CampoFoto, type FotoFormulario, aFormulario, aImagen, subirFoto, useFotosGuardadas } from "./foto";
+
+// Un solo archivo: según lo que sea va en `video` o en `imagen`
+const aDatos = (medio: FotoFormulario | null) => ({
+  imagen: medio?.esVideo ? null : aImagen(medio),
+  video: medio?.esVideo ? aImagen(medio) : null,
+});
 
 export function EditorInspiracion({
   inicial,
   vistasPrevias,
 }: {
   inicial: SeccionContenido<"inspiracion">;
-  vistasPrevias: Record<string, string>; // URL firmada de cada foto guardada
+  vistasPrevias: Record<string, string>; // URL firmada de cada foto o video guardado
 }) {
   const s = useSeccion("inspiracion", inicial);
   const [antetitulo, setAntetitulo] = useState(inicial.datos.antetitulo);
   const [texto, setTexto] = useState(inicial.datos.texto);
   const [boton, setBoton] = useState(inicial.datos.boton);
-  const [foto, setFoto] = useState(() => aFormulario(inicial.datos.imagen, vistasPrevias));
-  const limpiarFotos = useFotosGuardadas([inicial.datos.imagen]);
+  const [medio, setMedio] = useState(() => aFormulario(inicial.datos.video, vistasPrevias, true) ?? aFormulario(inicial.datos.imagen, vistasPrevias));
+  const limpiarFotos = useFotosGuardadas([inicial.datos.imagen, inicial.datos.video]);
 
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    let subida = foto;
-    const guardado = await s.guardar({ antetitulo, texto, boton, imagen: aImagen(foto) }, async () => {
-      subida = await subirFoto(foto);
-      setFoto(subida); // si el guardado falla, al reintentar no se vuelve a subir
-      return { antetitulo, texto, boton, imagen: aImagen(subida) };
+    let subido = medio;
+    const guardado = await s.guardar({ antetitulo, texto, boton, ...aDatos(medio) }, async () => {
+      subido = await subirFoto(medio);
+      setMedio(subido); // si el guardado falla, al reintentar no se vuelve a subir
+      return { antetitulo, texto, boton, ...aDatos(subido) };
     });
-    if (guardado) await limpiarFotos([subida]);
+    if (guardado) await limpiarFotos([subido]);
   }
 
   return (
@@ -40,7 +46,7 @@ export function EditorInspiracion({
           <CardTitle>
             <h2>Inspiración</h2>
           </CardTitle>
-          <CardDescription>Un texto con un botón al lado de una foto grande.</CardDescription>
+          <CardDescription>Un texto con un botón al lado de una foto o un video.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <CasillaVisible id="inspiracion-visible" visible={s.visible} onChange={s.cambiarVisible} />
@@ -83,7 +89,17 @@ export function EditorInspiracion({
               </div>
             </div>
             <div className="min-w-0 border-t pt-5 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-8">
-              <CampoFoto s={s} ruta="imagen" nombre="foto-inspiracion" sinFoto="Sin foto se ven las ilustraciones de vestidos." foto={foto} onChange={setFoto} />
+              <CampoFoto
+                s={s}
+                ruta="imagen"
+                nombre="foto-inspiracion"
+                etiqueta="Foto o video (opcional)"
+                sinFoto="Sin foto ni video se ven las ilustraciones de vestidos."
+                recomendacion="El espacio es casi cuadrado: lo que quede fuera se recorta por los lados o por arriba y abajo. El video se reproduce solo, en bucle y sin sonido."
+                foto={medio}
+                onChange={setMedio}
+                conVideo
+              />
             </div>
           </div>
         </CardContent>

@@ -75,6 +75,13 @@ async function firmarDiapositiva({ imagenMovil, ...diapositiva }: Diapositiva): 
   return { ...lista, fotoMovil };
 }
 
+type InspiracionLista = ConFoto<Omit<DatosSeccion["inspiracion"], "video">> & { video: FotoAmbiente | null };
+
+async function firmarInspiracion({ video, ...datos }: DatosSeccion["inspiracion"]): Promise<InspiracionLista> {
+  const [lista, videoFirmado] = await Promise.all([conFoto(datos), firmarFoto(video)]);
+  return { ...lista, video: videoFirmado };
+}
+
 type TarjetaOcasionLista = { clave: ClaveOcasion; ocasion: OcasionLista };
 type TarjetaInicio = TarjetaOcasionLista | Awaited<ReturnType<typeof leerColeccionesPublicadas>>[number];
 
@@ -101,7 +108,7 @@ export type ContenidoPortada = {
   ocasiones: TarjetaInicio[] | null;
   pasos: DatosSeccion["pasos"] | null;
   nosotros: ConFoto<DatosSeccion["nosotros"]> | null;
-  inspiracion: ConFoto<DatosSeccion["inspiracion"]> | null;
+  inspiracion: InspiracionLista | null;
 };
 
 // El marco de todas las páginas de la tienda: no lleva fotos, así que sale directo de la caché
@@ -124,7 +131,7 @@ export async function leerContenidoInicio(): Promise<ContenidoPortada> {
       : Promise.resolve([]),
     ocasiones.visible ? leerTarjetasInicio(ocasiones.datos) : null,
     nosotros.visible ? conFoto(nosotros.datos) : null,
-    inspiracion.visible ? conFoto(inspiracion.datos) : null,
+    inspiracion.visible ? firmarInspiracion(inspiracion.datos) : null,
   ]);
 
   return {
