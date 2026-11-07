@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { enlaceWhatsApp } from "@/components/tienda/datos";
-import { barraSeccion, botonCaja, cajaNav, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
+import { barraSeccion, botonVerde, cajaNav, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { GaleriaProducto } from "@/components/tienda/galeria-producto";
 import { Flecha, IconoWhatsApp } from "@/components/tienda/iconos";
 import type { ProductoDetalle, VarianteDetalle } from "@/lib/catalogo";
@@ -171,7 +171,7 @@ export function DetalleProducto({ producto, variantIdInicial }: { producto: Prod
               href={enlaceWhatsapp(producto.nombre, actual)}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${botonCaja} w-full gap-2.5 bg-acento2 py-3.5 text-white`}
+              className={`${botonVerde} w-full gap-2.5 py-3.5`}
             >
               <IconoWhatsApp />
               Contactar por WhatsApp

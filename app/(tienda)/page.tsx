@@ -1,15 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { COLORES, enlaceWhatsApp } from "@/components/tienda/datos";
+import { CarruselDestacados } from "@/components/tienda/carrusel-destacados";
+import { enlaceWhatsApp } from "@/components/tienda/datos";
 import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
-import { barraSeccion, botonAncho, botonCaja, chip, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
-import { Flecha, IconoWhatsApp } from "@/components/tienda/iconos";
+import { barraSeccion, botonVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
+import { IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
 import { TarjetaDestacado } from "@/components/tienda/tarjeta-destacado";
 import { Vestido } from "@/components/tienda/vestido";
 import { VideoInspiracion } from "@/components/tienda/video-inspiracion";
-import { PRODUCTOS_POR_FILA } from "@/lib/contenido";
 import { leerContenidoInicio } from "@/lib/contenido-servidor";
 import { resolverTarjeta } from "@/lib/variantes";
 
@@ -33,62 +33,54 @@ export default async function InicioPage() {
     const datos = resolverTarjeta(producto, {});
     return datos ? [{ producto, ...datos }] : [];
   });
-  const filas = [tarjetas.slice(0, PRODUCTOS_POR_FILA), tarjetas.slice(PRODUCTOS_POR_FILA)].filter((fila) => fila.length > 0);
-
-  // Desde 1000 px, siempre 5 columnas. Más abajo, una por producto: las que faltan no dejan hueco
-  // y, si no entran todas, la fila se desliza de lado.
-  const filaDeProductos = (fila: typeof tarjetas, conBorde: boolean) => (
-    <ul
-      aria-label="Productos destacados"
-      className={`grid flex-none auto-cols-[minmax(180px,1fr)] grid-flow-col overflow-x-auto [scrollbar-width:thin] min-[1000px]:min-h-[250px] min-[1000px]:flex-[1_1_0] min-[1000px]:grid-flow-row min-[1000px]:grid-cols-[repeat(5,minmax(180px,1fr))] ${conBorde ? "border-b border-tinta" : ""}`}
-    >
-      {fila.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
-        <li key={producto.productId} className="min-w-0">
-          <TarjetaDestacado
-            href={`/catalogo/${producto.productId}?v=${variantId}`}
-            nombre={producto.nombre}
-            precioVenta={precioVenta}
-            precioAlquiler={precioAlquiler}
-            desde={desde}
-            portada={portada}
-            hover={hover}
-            etiqueta={destacados?.etiquetas[producto.productId]}
-            sizes="(min-width: 1024px) 20vw, 180px"
-          />
-        </li>
-      ))}
-    </ul>
-  );
 
   return (
     <div className="bg-white font-cuerpo text-[15px] text-tinta">
       <PortadaInicio diapositivas={diapositivas} />
 
-      {destacados && filas.length > 0 && (
-        <section id="catalogo" aria-labelledby="titulo-catalogo" className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla">
-          <div className={barraSeccion}>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <h2 id="titulo-catalogo" className={tituloCaja}>
-                {destacados.titulo}
-              </h2>
-              {destacados.subtitulo && <p className="text-[13px] text-[#444444]">{destacados.subtitulo}</p>}
-            </div>
-            <nav aria-label="Comprar por color" className="flex max-w-full items-stretch overflow-x-auto border border-tinta [scrollbar-width:none]">
-              {COLORES.map((color, i) => (
-                <Link key={color.nombre} href={color.href} className={`${chip} ${i > 0 ? "border-l border-tinta" : ""}`}>
-                  <span aria-hidden="true" className="size-2.5 flex-none border border-tinta" style={{ background: color.hex }} />
-                  {color.nombre}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          {filaDeProductos(filas[0], true)}
-          <div className={`flex flex-none justify-center py-2.5 ${filas[1] ? "border-b border-tinta" : ""}`}>
-            <Link href="/catalogo" className={botonAncho}>
-              Ver todo <Flecha tamano={14} />
+      {destacados && tarjetas.length > 0 && (
+        <section
+          id="catalogo"
+          aria-labelledby={destacados.titulo ? "titulo-catalogo" : undefined}
+          aria-label={destacados.titulo ? undefined : "Catálogo"}
+          className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla"
+        >
+          <div className="flex min-h-[72px] flex-none flex-wrap items-center justify-between gap-x-6 gap-y-1 px-[clamp(16px,3vw,32px)] py-3">
+            {/* El título es opcional: sin caja ni color, solo en negro */}
+            {(destacados.titulo || destacados.subtitulo) && (
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
+                {destacados.titulo && (
+                  <h2 id="titulo-catalogo" className="font-archivo text-[clamp(17px,5.4vw,22px)] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-tinta uppercase">
+                    {destacados.titulo}
+                  </h2>
+                )}
+                {destacados.subtitulo && <p className="text-[13px] text-[#444444]">{destacados.subtitulo}</p>}
+              </div>
+            )}
+            <Link
+              href="/catalogo"
+              className="ml-auto inline-flex min-h-11 items-center text-[15px] font-medium tracking-[0.06em] text-tinta uppercase transition-colors duration-150 hover:text-acento hover:underline hover:underline-offset-4"
+            >
+              Ver todo el catálogo
             </Link>
           </div>
-          {filas[1] && filaDeProductos(filas[1], false)}
+          <CarruselDestacados etiqueta="Productos destacados">
+            {tarjetas.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
+              <li key={producto.productId} className="flex flex-none basis-[80%] snap-start min-[700px]:basis-1/2 min-[1000px]:basis-1/4">
+                <TarjetaDestacado
+                  href={`/catalogo/${producto.productId}?v=${variantId}`}
+                  nombre={producto.nombre}
+                  precioVenta={precioVenta}
+                  precioAlquiler={precioAlquiler}
+                  desde={desde}
+                  portada={portada}
+                  hover={hover}
+                  etiqueta={destacados.etiquetas[producto.productId]}
+                  sizes="(min-width: 1000px) 25vw, (min-width: 700px) 50vw, 80vw"
+                />
+              </li>
+            ))}
+          </CarruselDestacados>
         </section>
       )}
 
@@ -117,7 +109,7 @@ export default async function InicioPage() {
               href={enlaceWhatsApp("Hola, quisiera reservar un vestido en Fara Collection.")}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${botonCaja} gap-2.5 bg-acento2 text-white`}
+              className={`${botonVerde} gap-2.5`}
             >
               <IconoWhatsApp />
               <span>{pasos.boton}</span>
@@ -155,7 +147,7 @@ export default async function InicioPage() {
           <div className="flex flex-[2_1_360px] flex-col items-start gap-5 border-tinta px-8 py-10 max-[840px]:border-b min-[841px]:border-r">
             {inspiracion.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-acento2-oscuro uppercase">{inspiracion.antetitulo}</span>}
             <p className="max-w-[30ch] text-[24px] leading-[1.3] font-medium text-tinta">{inspiracion.texto}</p>
-            <EnlaceContenido boton={inspiracion.boton} className={`${botonCaja} bg-acento2 text-white`} />
+            <EnlaceContenido boton={inspiracion.boton} className={botonVerde} />
           </div>
           <div className="flex flex-[3_1_480px] p-6">
             <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden border border-tinta bg-tinte-azul">

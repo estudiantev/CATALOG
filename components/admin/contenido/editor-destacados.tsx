@@ -11,7 +11,7 @@ import { Label } from "@/components/admin/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/admin/ui/select";
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import type { OpcionProducto } from "@/components/admin/datos";
-import { LARGO, MAXIMO_DESTACADOS, PRODUCTOS_POR_FILA, type SeccionContenido } from "@/lib/contenido";
+import { LARGO, MAXIMO_DESTACADOS, type SeccionContenido } from "@/lib/contenido";
 import { Campo, CasillaVisible, PieSeccion, useSeccion } from "./comun";
 
 export function EditorDestacados({
@@ -61,13 +61,13 @@ export function EditorDestacados({
             <h2>Catálogo</h2>
           </CardTitle>
           <CardDescription>
-            Los productos que se destacan en la página de inicio, en dos filas de {PRODUCTOS_POR_FILA}. El precio y la foto salen del producto, así que siempre están al día.
+            Los productos que se destacan en la página de inicio, en un carrusel que se desliza de lado. El precio y la foto salen del producto, así que siempre están al día.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <CasillaVisible id="destacados-visible" visible={s.visible} onChange={s.cambiarVisible} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Campo {...s.campo("titulo")} etiqueta="Título">
+            <Campo {...s.campo("titulo")} etiqueta="Título (opcional)">
               <Input {...s.entrada("titulo")} maxLength={LARGO.tituloSeccion} value={datos.titulo} onChange={(e) => cambiarTexto("titulo", e.target.value)} />
             </Campo>
             <Campo {...s.campo("subtitulo")} etiqueta="Subtítulo (opcional)">

@@ -4,13 +4,13 @@ import Image from "next/image";
 import { useState } from "react";
 import type { DiapositivaLista } from "@/lib/contenido-servidor";
 import { EnlaceContenido } from "./enlace-contenido";
-import { botonCaja } from "./estilos-inicio";
+import { botonAzul, botonBlanco } from "./estilos-inicio";
 import { Vestido } from "./vestido";
 
 // La misma condición de la variante `movil` de tienda.css
 const MEDIA_MOVIL = "(max-width: 999px) and (orientation: portrait)";
 
-const botonPortada = `${botonCaja} movil:min-h-12 movil:flex-1 movil:px-3 movil:text-center`;
+const botonPortada = "movil:min-h-12 movil:flex-1 movil:px-3 movil:text-center";
 
 // Con <picture> cada pantalla baja solo su foto. Por eso no lleva `priority`: precargaría la de
 // computadora también en el celular. Si solo hay foto para celular, en computadora siguen las
@@ -64,8 +64,8 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
           <h1 className="text-[26px] leading-[1.2] font-medium break-words text-tinta movil:text-[clamp(26px,7.4vw,34px)] movil:leading-[1.15]">{d.titulo}</h1>
           {d.texto && <p className="max-w-[36ch] text-[15px] leading-[1.55] text-[#444444]">{d.texto}</p>}
           <div className="mt-1 flex flex-wrap justify-center gap-2 movil:w-full movil:max-w-[420px]">
-            <EnlaceContenido boton={d.botonPrincipal} className={`${botonPortada} bg-acento text-white`} />
-            {d.botonSecundario.texto && <EnlaceContenido boton={d.botonSecundario} className={`${botonPortada} bg-white text-tinta`} />}
+            <EnlaceContenido boton={d.botonPrincipal} className={`${botonAzul} ${botonPortada}`} />
+            {d.botonSecundario.texto && <EnlaceContenido boton={d.botonSecundario} className={`${botonBlanco} ${botonPortada}`} />}
           </div>
         </div>
         {varias && (

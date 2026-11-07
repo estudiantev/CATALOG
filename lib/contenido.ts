@@ -72,9 +72,8 @@ export type ClaveRed = (typeof REDES)[number]["clave"];
 
 export const MAXIMO_ANUNCIOS = 4;
 export const MAXIMO_DIAPOSITIVAS = 3;
-// Dos filas de 5 en la página de inicio
-export const PRODUCTOS_POR_FILA = 5;
-export const MAXIMO_DESTACADOS = PRODUCTOS_POR_FILA * 2;
+// Los que caben en el carrusel de la página de inicio
+export const MAXIMO_DESTACADOS = 10;
 
 // Cada cuántos segundos cambia el anuncio
 export const SEGUNDOS_ANUNCIO = [3, 4, 5, 6, 8, 10] as const;
@@ -120,7 +119,7 @@ export type DatosSeccion = {
   anuncios: { mensajes: Anuncio[]; segundos: number };
   portada: { diapositivas: Diapositiva[] };
   destacados: {
-    titulo: string;
+    titulo: string; // sin título, la sección va sin él
     subtitulo: string;
     productos: string[]; // productIds, en orden
     etiquetas: Record<string, string>; // productId → "Nuevo"; sin etiqueta, no se muestra
@@ -167,7 +166,7 @@ export const POR_DEFECTO: DatosSeccion = {
       },
     ],
   },
-  destacados: { titulo: "Catálogo", subtitulo: "", productos: [], etiquetas: {} },
+  destacados: { titulo: "", subtitulo: "", productos: [], etiquetas: {} },
   ocasiones: {
     gala: { modalidad: "Venta y alquiler", descripcion: "Para matrimonios, graduaciones y noches de gala.", imagen: null },
     xv: { modalidad: "Venta y alquiler", descripcion: "Para tu fiesta de quince años.", imagen: null },
@@ -321,7 +320,7 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
     ).slice(0, MAXIMO_DESTACADOS);
     const etiquetas = objeto(d.etiquetas);
     return {
-      titulo: texto(d.titulo, POR_DEFECTO.destacados.titulo, LARGO.tituloSeccion),
+      titulo: texto(d.titulo, POR_DEFECTO.destacados.titulo, LARGO.tituloSeccion, true),
       subtitulo: texto(d.subtitulo, POR_DEFECTO.destacados.subtitulo, LARGO.subtitulo, true),
       productos,
       // Solo las de los productos elegidos: al quitar uno, su etiqueta se va con él
@@ -457,7 +456,7 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
     }
   },
   destacados: (d, r) => {
-    r.texto("titulo", d.titulo, LARGO.tituloSeccion, "Escribe el título de la sección.");
+    r.texto("titulo", d.titulo, LARGO.tituloSeccion);
     r.texto("subtitulo", d.subtitulo, LARGO.subtitulo);
   },
   pasos: (d, r) => {

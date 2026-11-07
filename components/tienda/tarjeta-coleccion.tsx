@@ -89,7 +89,7 @@ export function TarjetaColeccion({
       {/* La de una colección del panel puede ser larga: aquí va solo el comienzo */}
       {descripcion && <span className={`relative mt-2 line-clamp-3 leading-[1.4] ${estilo.descripcion}`}>{descripcion}</span>}
       <span
-        className={`relative mt-3.5 inline-flex items-center gap-2 border border-white bg-white px-3 py-2 font-archivo font-bold tracking-[0.14em] text-tinta uppercase transition-[background-color,color,gap] duration-200 group-hover:gap-3 group-hover:bg-transparent group-hover:text-white ${estilo.boton}`}
+        className={`relative mt-3.5 inline-flex items-center gap-2 border border-white bg-white px-3 py-2 font-archivo font-bold tracking-[0.14em] text-tinta uppercase transition-[background-color,border-color,color,gap] duration-200 group-hover:gap-3 group-hover:border-acento group-hover:bg-acento group-hover:text-white ${estilo.boton}`}
       >
         Ver colección <Flecha tamano={estilo.flecha} />
       </span>

@@ -8,12 +8,11 @@ import type { DatosSeccion } from "@/lib/contenido";
 import { enlaceCuenta } from "@/lib/redireccion";
 import { Anuncios } from "./anuncios";
 import { ALQUILER, COLECCIONES, COLORES } from "./datos";
-import { cajaIcono, cajaNav } from "./estilos-inicio";
+import { cajaIconoAzul, cajaIconoBlanca, cajaNav } from "./estilos-inicio";
 import { useSesion } from "./use-sesion";
 
 const enlaceMega =
   "inline-flex items-center gap-2.5 min-h-8 text-[14px] leading-[20px] tracking-[0.08em] uppercase hover:underline hover:decoration-2 hover:underline-offset-[6px]";
-const icono = `${cajaIcono} bg-white text-tinta`;
 const tituloMega = "font-archivo text-[13px] leading-[18px] font-semibold tracking-[0.16em] uppercase";
 const filaMovil =
   "group flex w-full items-center active:bg-durazno focus-visible:outline-offset-[-6px]";
@@ -93,7 +92,7 @@ export function Encabezado({
                 aria-expanded={catalogoAbierto}
                 aria-controls="menu-catalogo"
                 onClick={() => setCatalogoAbierto((abierto) => !abierto)}
-                className={`${cajaNav} cursor-pointer gap-2 aria-expanded:border-acento2 aria-expanded:bg-acento2 aria-expanded:text-white`}
+                className={`${cajaNav} cursor-pointer gap-2 aria-expanded:border-acento aria-expanded:bg-acento aria-expanded:text-white`}
               >
                 Catálogo
                 <Chevron arriba={catalogoAbierto} />
@@ -118,13 +117,13 @@ export function Encabezado({
         </nav>
 
         <div className="ml-auto flex flex-none items-center gap-1.5 menu:gap-2">
-          <button type="button" aria-label="Buscar" className={`${icono} cursor-pointer`}>
+          <button type="button" aria-label="Buscar" className={`${cajaIconoBlanca} cursor-pointer`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="6.5" />
               <path d="M20 20l-4.2-4.2" />
             </svg>
           </button>
-          <a href="#" aria-label="Favoritos" className={icono}>
+          <a href="#" aria-label="Favoritos" className={cajaIconoBlanca}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
             </svg>
@@ -138,7 +137,7 @@ export function Encabezado({
             href={sesion ? "/cuenta" : enlaceCuenta("/login", pathname)}
             aria-label={sesion ? (sesion.nombre ? `Mi cuenta, ${sesion.nombre}` : "Mi cuenta") : "Ingresar"}
             onClick={cerrarMenus}
-            className={`${cajaIcono} relative bg-acento text-white`}
+            className={`${cajaIconoAzul} relative`}
           >
             <svg className="menu:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
@@ -155,7 +154,7 @@ export function Encabezado({
             aria-expanded={menuMovilAbierto}
             aria-controls="menu-movil"
             onClick={() => setMenuMovilAbierto((abierto) => !abierto)}
-            className={`${icono} cursor-pointer menu:hidden`}
+            className={`${cajaIconoBlanca} cursor-pointer menu:hidden`}
           >
             {menuMovilAbierto ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
