@@ -23,7 +23,6 @@ import {
   type Coleccion,
   type FormularioColeccion as Formulario,
   LARGO_COLECCION,
-  MAXIMO_COLECCIONES_MENU,
   ORDENES,
   type OrdenColeccion,
   aFechaIso,
@@ -389,7 +388,7 @@ function Campos({ id, inicial }: { id?: string; inicial: { form: Formulario; fot
             <Campo {...s.campo("endsAt")} etiqueta="Fin (opcional)" ayuda="Desaparece sola a esta hora. Vacío, sigue visible.">
               <Input {...s.entrada("endsAt", true)} type="datetime-local" value={form.endsAt} onChange={(e) => cambiar("endsAt", e.target.value)} />
             </Campo>
-            <Campo {...s.campo("position")} etiqueta="Posición en el menú (opcional)" ayuda={`La 1 va primero. Sin posición van al final, y en el menú entran ${MAXIMO_COLECCIONES_MENU}.`}>
+            <Campo {...s.campo("position")} etiqueta="Posición en la página Colecciones (opcional)" ayuda="La 1 va primero. Sin posición van al final, por nombre.">
               <Input {...s.entrada("position", true)} type="number" min={0} max={9999} step={1} inputMode="numeric" value={form.position} onChange={(e) => cambiar("position", e.target.value)} />
             </Campo>
           </div>

@@ -6,7 +6,6 @@ import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
 import { leerProductosColeccion } from "@/lib/catalogo";
 import {
-  MAXIMO_COLECCIONES_MENU,
   coleccionVisible,
   idsDeColeccion,
   ordenarColecciones,
@@ -60,12 +59,7 @@ async function leerVisibles() {
   return ordenarColecciones(filas.filter((c) => coleccionVisible(c)));
 }
 
-export async function leerColeccionesMenu() {
-  const visibles = await leerVisibles();
-  return visibles.slice(0, MAXIMO_COLECCIONES_MENU).map((c) => ({ nombre: c.title, href: rutaColeccion(c.slug) }));
-}
-
-// Para /colecciones: todas las publicadas, sin el tope del menú
+// Para /colecciones: todas las publicadas
 export async function leerColeccionesPublicadas() {
   const visibles = await leerVisibles();
   return Promise.all(

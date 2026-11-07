@@ -10,7 +10,8 @@ import { RutaNavegacion } from "./ruta-navegacion";
 import { FotosProducto } from "./tarjeta-producto";
 
 export type Modo = "todo" | "compra" | "alquiler";
-export type FiltrosIniciales = { variante: Filtros; texto: string; modo: Modo };
+// generales: los filtros que no son de variante, como la ocasión (?ocasion= del menú)
+export type FiltrosIniciales = { variante: Filtros; generales?: Partial<Record<"ocasion", string[]>>; texto: string; modo: Modo };
 
 const MODOS: { valor: Modo; nombre: string }[] = [
   { valor: "todo", nombre: "Todo" },
@@ -202,15 +203,15 @@ export function Catalogo({
   const actual = CATEGORIAS.find((c) => c.valor === categoria);
   const [modo, setModo] = useState<Modo>(filtrosIniciales.modo);
   const [texto, setTexto] = useState(filtrosIniciales.texto);
-  const [elegidos, setElegidos] = useState<Elegidos>(() => ({ ...filtrosIniciales.variante }));
+  const [elegidos, setElegidos] = useState<Elegidos>(() => ({ ...filtrosIniciales.variante, ...filtrosIniciales.generales }));
   const [orden, setOrden] = useState<Orden>("novedades");
   const [limite, setLimite] = useState(POR_PAGINA);
   const [colorDe, setColorDe] = useState<Record<string, string>>({}); // productId → color elegido en su tarjeta
   const [panelAbierto, setPanelAbierto] = useState(false); // en el celular
   const [abiertos, setAbiertos] = useState<Record<string, boolean>>(() => ({
     ...ABIERTOS,
-    // Si se llega con un filtro (?color=), su grupo se ve abierto
-    ...Object.fromEntries(Object.keys(filtrosIniciales.variante).map((clave) => [clave, true])),
+    // Si se llega con un filtro (?color=, ?talla=, ?ocasion=), su grupo se ve abierto
+    ...Object.fromEntries([...Object.keys(filtrosIniciales.variante), ...Object.keys(filtrosIniciales.generales ?? {})].map((clave) => [clave, true])),
   }));
 
   // Lo que queda con la modalidad y la búsqueda: de aquí salen las cantidades del panel

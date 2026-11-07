@@ -9,9 +9,6 @@ export type OrdenColeccion = Schema["CollectionSortOrder"]["type"];
 // Debe estar dentro de "collections/*", la ruta que autoriza amplify/storage/resource.ts
 export const CARPETA_COLECCIONES = "collections/";
 
-// El resto de las colecciones publicadas no entra en el menú, pero su página sigue abierta
-export const MAXIMO_COLECCIONES_MENU = 6;
-
 export const ORDENES = [
   { valor: "MANUAL", nombre: "Manual: el orden de la lista" },
   { valor: "NEWEST", nombre: "Los más nuevos primero" },

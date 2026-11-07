@@ -4,7 +4,7 @@ import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
 import { RetornoGoogle } from "@/components/tienda/retorno-google";
-import { leerColeccionesMenu } from "@/lib/colecciones-servidor";
+import { leerOpcionesMenu } from "@/lib/catalogo";
 import { leerContenidoMarco } from "@/lib/contenido-servidor";
 import "./tienda.css";
 
@@ -53,7 +53,7 @@ export default async function TiendaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [{ anuncios, pie }, colecciones] = await Promise.all([leerContenidoMarco(), leerColeccionesMenu()]);
+  const [{ anuncios, pie }, { ocasiones, tallas }] = await Promise.all([leerContenidoMarco(), leerOpcionesMenu()]);
 
   return (
     <html
@@ -64,7 +64,7 @@ export default async function TiendaLayout({
       <body className="antialiased">
         <ConfigurarAmplify />
         <RetornoGoogle />
-        <Encabezado anuncios={anuncios} colecciones={colecciones} />
+        <Encabezado anuncios={anuncios} ocasiones={ocasiones} tallas={tallas} />
         <main id="contenido">{children}</main>
         <Pie contenido={pie} />
       </body>

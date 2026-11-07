@@ -12,6 +12,7 @@ import {
   type Categoria,
   type FamiliaColor,
   type Opciones,
+  TALLAS,
   type Talla,
   leerJson,
   opcionesDeVariante,
@@ -192,6 +193,20 @@ export async function leerRelacionados(productId: string, categoria: string, can
   if (!valida) return [];
   const productos = (await leerProductosDeCategoria(valida)).filter((p) => p.productId !== productId && tieneStock(p));
   return aCatalogo(productos.slice(0, cantidad));
+}
+
+// Ocasiones y tallas del menú "Catálogo" del encabezado: las de los vestidos con stock, que es el
+// catálogo que abre /catalogo. Sale de la caché y no firma fotos, así no pesa en cada página.
+export async function leerOpcionesMenu(): Promise<{ ocasiones: string[]; tallas: Talla[] }> {
+  try {
+    const vestidos = (await leerProductosDeCategoria("DRESS")).filter(tieneStock);
+    const ocasiones = Array.from(new Set(vestidos.flatMap((p) => (p.occasion?.trim() ? [p.occasion] : [])))).sort((a, b) => a.localeCompare(b, "es"));
+    const tallas = TALLAS.map((t) => t.valor).filter((talla) => vestidos.some((p) => (p.availableSizes ?? []).includes(talla)));
+    return { ocasiones, tallas };
+  } catch (error) {
+    console.error("No se pudieron leer las opciones del menú:", error);
+    return { ocasiones: [], tallas: [] };
+  }
 }
 
 // Firma las fotos y arma las tarjetas del catálogo

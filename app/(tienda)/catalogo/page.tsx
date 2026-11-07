@@ -3,7 +3,7 @@ import { Catalogo, type FiltrosIniciales } from "@/components/tienda/catalogo";
 import { COLORES } from "@/components/tienda/datos";
 import { RutaNavegacion } from "@/components/tienda/ruta-navegacion";
 import { type ProductoCatalogo, leerCatalogo } from "@/lib/catalogo";
-import { CATEGORIAS } from "@/lib/productos";
+import { CATEGORIAS, TALLAS } from "@/lib/productos";
 
 export const metadata: Metadata = {
   title: "Catálogo",
@@ -28,12 +28,15 @@ const leer = (parametros: Parametros, nombre: string) => {
   return Array.isArray(v) ? v[0] : v;
 };
 
-// Los enlaces del menú (?coleccion=, ?color=, ?modalidad=) llegan como filtros iniciales
+// Los enlaces del menú (?ocasion=, ?talla=, ?color=, ?coleccion=, ?modalidad=) llegan como filtros iniciales
 function filtrosDesdeUrl(parametros: Parametros): FiltrosIniciales {
   const familia = COLORES.find((c) => c.href === `/catalogo?color=${leer(parametros, "color")}`)?.familia;
+  const talla = TALLAS.find((t) => t.valor === leer(parametros, "talla"))?.valor;
+  const ocasion = leer(parametros, "ocasion")?.trim();
   const modalidad = leer(parametros, "modalidad");
   return {
-    variante: familia ? { color: [familia] } : {},
+    variante: { ...(familia ? { color: [familia] } : {}), ...(talla ? { talla: [talla] } : {}) },
+    generales: ocasion ? { ocasion: [ocasion] } : {},
     texto: COLECCIONES_URL[leer(parametros, "coleccion") ?? ""] ?? "",
     modo: modalidad === "compra" || modalidad === "alquiler" ? modalidad : "todo",
   };

@@ -6,15 +6,19 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { DatosSeccion } from "@/lib/contenido";
 import { esStaff } from "@/lib/permisos";
+import { nombreOpcion } from "@/lib/productos";
 import { enlaceCuenta } from "@/lib/redireccion";
 import { Anuncios } from "./anuncios";
-import { ALQUILER, COLECCIONES, COLORES } from "./datos";
+import { COLORES } from "./datos";
 import { cajaIconoAzul, cajaIconoBlanca, cajaNav } from "./estilos-inicio";
 import { useSesion } from "./use-sesion";
 
 const enlaceMega =
   "inline-flex items-center gap-2.5 min-h-8 text-[14px] leading-[20px] tracking-[0.08em] uppercase hover:underline hover:decoration-2 hover:underline-offset-[6px]";
 const tituloMega = "font-archivo text-[13px] leading-[18px] font-semibold tracking-[0.16em] uppercase";
+const tituloMovil = "pt-1 pb-1 pl-9 font-archivo text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#666666] uppercase";
+// El catálogo de vestidos con esa ocasión ya elegida en los filtros
+const enlaceOcasion = (ocasion: string) => `/catalogo?ocasion=${encodeURIComponent(ocasion)}`;
 const filaMovil =
   "group flex w-full items-center active:bg-durazno focus-visible:outline-offset-[-6px]";
 const etiquetaMovil =
@@ -30,10 +34,13 @@ function Chevron({ arriba }: { arriba: boolean }) {
 
 export function Encabezado({
   anuncios,
-  colecciones,
+  ocasiones,
+  tallas,
 }: {
   anuncios: DatosSeccion["anuncios"] | null;
-  colecciones: { nombre: string; href: string }[]; // las publicadas en /admin/colecciones
+  // Las de los vestidos con stock (lib/catalogo.ts): el menú solo ofrece lo que hay
+  ocasiones: string[];
+  tallas: string[];
 }) {
   const [catalogoAbierto, setCatalogoAbierto] = useState(false);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
@@ -189,38 +196,41 @@ export function Encabezado({
         </div>
       </header>
 
-      {/* Menú desplegable de Catálogo (escritorio) */}
+      {/* Menú desplegable de Catálogo (escritorio): ocasiones, tallas y colores */}
       {catalogoAbierto && (
         <div id="menu-catalogo" className="absolute inset-x-0 top-full hidden border-b border-tinta bg-white px-[clamp(16px,3.6vw,54px)] pt-12 pb-14 menu:block">
           <div className="flex flex-wrap items-start gap-x-[clamp(56px,8vw,120px)] gap-y-10">
-            <section aria-labelledby="col-colecciones" className="flex flex-none flex-col gap-5">
-              <h2 id="col-colecciones" className={tituloMega}>Colecciones</h2>
-              <ul className="flex flex-col gap-0.5">
-                {[...COLECCIONES, ...colecciones].map((coleccion) => (
-                  <li key={coleccion.href}>
-                    <Link href={coleccion.href} onClick={cerrarMenus} className={enlaceMega}>{coleccion.nombre}</Link>
+            {ocasiones.length > 0 && (
+              <section aria-labelledby="col-ocasiones" className="flex flex-none flex-col gap-5">
+                <h2 id="col-ocasiones" className={tituloMega}>Ocasiones</h2>
+                <ul className="flex flex-col gap-0.5">
+                  {ocasiones.map((ocasion) => (
+                    <li key={ocasion}>
+                      <Link href={enlaceOcasion(ocasion)} onClick={cerrarMenus} className={enlaceMega}>{ocasion}</Link>
+                    </li>
+                  ))}
+                  <li>
+                    <Link href="/catalogo" onClick={cerrarMenus} className={enlaceMega}>Ver todo el catálogo</Link>
                   </li>
-                ))}
-                <li>
-                  <Link href="/catalogo" onClick={cerrarMenus} className={enlaceMega}>Ver todo</Link>
-                </li>
-              </ul>
-            </section>
-            <section aria-labelledby="col-alquiler" className="flex flex-none flex-col gap-5">
-              <h2 id="col-alquiler" className={tituloMega}>En alquiler</h2>
-              <ul className="flex flex-col gap-0.5">
-                {ALQUILER.map((opcion) => (
-                  <li key={opcion.href}>
-                    <Link href={opcion.href} onClick={cerrarMenus} className={enlaceMega}>{opcion.nombre}</Link>
-                  </li>
-                ))}
-                <li>
-                  <Link href="/catalogo?modalidad=alquiler" onClick={cerrarMenus} className={enlaceMega}>Ver todo</Link>
-                </li>
-              </ul>
-            </section>
+                </ul>
+              </section>
+            )}
+            {tallas.length > 0 && (
+              <section aria-labelledby="col-tallas" className="flex flex-none flex-col gap-5">
+                <h2 id="col-tallas" className={tituloMega}>Tallas</h2>
+                <ul className="flex max-w-[15rem] flex-wrap gap-1.5">
+                  {tallas.map((talla) => (
+                    <li key={talla}>
+                      <Link href={`/catalogo?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
+                        {nombreOpcion("talla", talla)}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <section aria-labelledby="col-color" className="flex flex-none flex-col gap-5">
-              <h2 id="col-color" className={tituloMega}>Por color</h2>
+              <h2 id="col-color" className={tituloMega}>Colores</h2>
               <ul className="grid grid-flow-col grid-rows-[repeat(5,auto)] auto-cols-max gap-x-12 gap-y-0.5">
                 {COLORES.map((color) => (
                   <li key={color.href}>
@@ -255,15 +265,52 @@ export function Encabezado({
                 </svg>
               </button>
               {submenuMovilAbierto && (
-                <ul id="sub-catalogo" className="pb-2">
-                  {[...COLECCIONES, ...colecciones, { nombre: "Ver todo", href: "/catalogo" }].map((coleccion) => (
-                    <li key={coleccion.href}>
-                      <Link href={coleccion.href} onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] tracking-[0.08em] uppercase`}>
-                        <span className={`${etiquetaMovil} py-1`}>{coleccion.nombre}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <div id="sub-catalogo" className="flex flex-col gap-4 pb-3">
+                  {ocasiones.length > 0 && (
+                    <section aria-labelledby="movil-ocasiones">
+                      <h2 id="movil-ocasiones" className={tituloMovil}>Ocasiones</h2>
+                      <ul>
+                        {ocasiones.map((ocasion) => (
+                          <li key={ocasion}>
+                            <Link href={enlaceOcasion(ocasion)} onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] tracking-[0.08em] uppercase`}>
+                              <span className={`${etiquetaMovil} py-1`}>{ocasion}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {tallas.length > 0 && (
+                    <section aria-labelledby="movil-tallas">
+                      <h2 id="movil-tallas" className={tituloMovil}>Tallas</h2>
+                      <ul className="flex flex-wrap gap-1.5 pt-1.5 pr-5 pl-9">
+                        {tallas.map((talla) => (
+                          <li key={talla}>
+                            <Link href={`/catalogo?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
+                              {nombreOpcion("talla", talla)}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  <section aria-labelledby="movil-colores">
+                    <h2 id="movil-colores" className={tituloMovil}>Colores</h2>
+                    <ul>
+                      {COLORES.map((color) => (
+                        <li key={color.href}>
+                          <Link href={color.href} onClick={cerrarMenus} className={`${filaMovil} min-h-11 gap-2.5 pr-5 pl-9 text-[14px] leading-[20px] tracking-[0.08em] uppercase`}>
+                            <span aria-hidden="true" className="size-3 flex-none border border-tinta" style={{ background: color.hex }} />
+                            <span className={`${etiquetaMovil} py-1`}>{color.nombre}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <Link href="/catalogo" onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] font-medium tracking-[0.08em] uppercase`}>
+                    <span className={`${etiquetaMovil} py-1`}>Ver todo el catálogo</span>
+                  </Link>
+                </div>
               )}
             </li>
             <li>
