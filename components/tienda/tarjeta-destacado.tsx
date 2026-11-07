@@ -29,7 +29,7 @@ export function TarjetaDestacado({
   return (
     <Link href={href} className="group flex min-w-0 flex-auto flex-col border-r border-tinta">
       {/* Desde 1000 px llena el alto de la sección; más abajo, la forma vertical de un vestido */}
-      <div className="relative aspect-[2/3] max-h-[640px] overflow-hidden bg-[#f0f0f0] transition-colors duration-200 group-hover:bg-[#e8e8e8] min-[1000px]:aspect-auto min-[1000px]:max-h-none min-[1000px]:min-h-[300px] min-[1000px]:flex-auto">
+      <div className="relative aspect-[3/5] max-h-[680px] overflow-hidden bg-[#f0f0f0] transition-colors duration-200 group-hover:bg-[#e8e8e8] min-[1000px]:aspect-auto min-[1000px]:max-h-none min-[1000px]:min-h-[300px] min-[1000px]:flex-auto">
         <FotosProducto portada={portada} hover={hover} sizes={sizes} />
         {etiqueta && (
           <span className="absolute top-3 left-3 bg-[#fbd1da] px-2 py-[5px] text-[11px] leading-none font-semibold tracking-[0.08em] text-tinta uppercase">
@@ -43,17 +43,18 @@ export function TarjetaDestacado({
           </svg>
         </span>
       </div>
-      <div className="flex flex-none flex-col gap-1.5 px-[22px] pt-[18px] pb-[22px]">
-        <h3 className="truncate text-[15px] text-tinta group-hover:underline group-hover:underline-offset-3">{nombre}</h3>
-        {/* RF-06: el menor precio entre las variantes */}
-        <span className="text-[15px] text-tinta">
-          {desde && "Desde "}
-          {formatoSoles.format(precioVenta)}
-        </span>
-        <span className="text-[14px] text-[#555555]">
+      <div className="flex flex-none flex-col gap-1 px-3.5 pt-2.5 pb-3">
+        <h3 className="truncate text-[13px] text-tinta group-hover:underline group-hover:underline-offset-3">{nombre}</h3>
+        {/* RF-06: el menor precio entre las variantes. Venta y alquiler en una sola línea */}
+        <p className="text-[11px] whitespace-nowrap text-[#555555] min-[700px]:text-[12px]">
+          <span className="text-tinta">
+            {desde && "Desde "}
+            {formatoSoles.format(precioVenta)}
+          </span>
+          {" · "}
           Alquiler {desde && "desde "}
-          {formatoSoles.format(precioAlquiler)} por día
-        </span>
+          {formatoSoles.format(precioAlquiler)}/día
+        </p>
       </div>
     </Link>
   );

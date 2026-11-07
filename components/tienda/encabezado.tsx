@@ -89,8 +89,8 @@ export function Encabezado({
       </a>
       {anuncios && <Anuncios {...anuncios} />}
       <header className="flex h-14 items-center gap-2 border-b border-tinta bg-white px-4">
-        <Link href="/" aria-label="FARA collections, inicio" onClick={cerrarMenus} className={`${cajaNav} group flex-none py-1 hover:[&_img]:brightness-0 hover:[&_img]:invert`}>
-          <Image src="/logo-fara.svg" alt="" width={722} height={341} priority className="h-6 w-auto" />
+        <Link href="/" aria-label="FARA collections, inicio" onClick={cerrarMenus} className="flex flex-none items-center transition-opacity duration-150 hover:opacity-70">
+          <Image src="/logo-fara.svg" alt="" width={722} height={341} priority className="h-12 w-auto" />
         </Link>
 
         <nav aria-label="Principal" className="ml-[clamp(0px,4vw,56px)] hidden min-w-0 flex-auto menu:flex">

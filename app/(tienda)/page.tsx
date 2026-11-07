@@ -46,11 +46,11 @@ export default async function InicioPage() {
           className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla"
         >
           <div className="flex min-h-[72px] flex-none flex-wrap items-center justify-between gap-x-6 gap-y-1 px-[clamp(16px,3vw,32px)] py-3">
-            {/* El título es opcional: sin caja ni color, solo en negro */}
+            {/* El título es opcional: sin caja ni color, con la misma letra que "Ver todo el catálogo" */}
             {(destacados.titulo || destacados.subtitulo) && (
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
                 {destacados.titulo && (
-                  <h2 id="titulo-catalogo" className="font-archivo text-[clamp(17px,5.4vw,22px)] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-tinta uppercase">
+                  <h2 id="titulo-catalogo" className="text-[15px] font-medium tracking-[0.06em] text-tinta uppercase">
                     {destacados.titulo}
                   </h2>
                 )}
