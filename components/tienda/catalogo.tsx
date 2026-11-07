@@ -48,9 +48,6 @@ type Elegidos = Partial<Record<IdGrupo, string[]>>;
 type TipoGrupo = "lista" | "botones" | "colores";
 type Grupo = { id: IdGrupo; nombre: string; tipo: TipoGrupo; opciones: { valor: string; nombre: string; cantidad: number }[] };
 
-// Abiertos al entrar, como en el diseño
-const ABIERTOS = { categoria: true, ocasion: true, marca: true, talla: true };
-
 // Minúsculas y sin tildes, para que "Floreado" encuentre "floreados"
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const unicos = (valores: (string | null | undefined)[]) => Array.from(new Set(valores.filter((v): v is string => Boolean(v))));
@@ -67,52 +64,6 @@ const caja = "border border-tinta";
 const boton = (elegido: boolean) =>
   `${caja} ${elegido ? "bg-tinta text-white" : `cursor-pointer bg-white text-tinta ${hoverBlanca}`}`;
 
-function GrupoFiltro({
-  id,
-  nombre,
-  abierto,
-  elegidos = 0,
-  onAlternar,
-  children,
-}: {
-  id: string;
-  nombre: string;
-  abierto: boolean;
-  elegidos?: number;
-  onAlternar: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="border-b border-tinta">
-      <h2>
-        <button
-          type="button"
-          aria-expanded={abierto}
-          aria-controls={`grupo-${id}`}
-          onClick={onAlternar}
-          className="flex min-h-[52px] w-full cursor-pointer items-center justify-between gap-2 px-[18px] text-left font-archivo text-[12px] font-bold tracking-[0.12em] uppercase transition-colors duration-150 hover:bg-[#f5f5f5]"
-        >
-          <span>{nombre}</span>
-          <span className="flex items-center gap-2.5">
-            {elegidos > 0 && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center bg-acento px-1.5 text-[11px] tracking-normal text-white">
-                {elegidos}
-                <span className="sr-only"> elegidos</span>
-              </span>
-            )}
-            <span aria-hidden="true" className="w-3.5 text-center text-[18px] leading-none font-normal">
-              {abierto ? "−" : "+"}
-            </span>
-          </span>
-        </button>
-      </h2>
-      <div id={`grupo-${id}`} hidden={!abierto} className="px-[18px] pb-[18px]">
-        {children}
-      </div>
-    </div>
-  );
-}
-
 type Tarjeta = NonNullable<ReturnType<typeof resolverTarjeta<Foto>>> & {
   producto: ProductoCatalogo;
   colores: string[];
@@ -127,7 +78,7 @@ function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (pro
     <li className="group/tarjeta flex min-w-0 flex-col border-r border-b border-tinta">
       {/* La foto lleva al mismo lugar que el nombre: para el lector de pantalla basta con uno */}
       <Link href={href} tabIndex={-1} aria-hidden="true" className="group relative block aspect-[3/4] overflow-hidden bg-[#f3f3f3]">
-        <FotosProducto portada={portada} hover={hover} sizes="(min-width: 760px) 25vw, 50vw" />
+        <FotosProducto portada={portada} hover={hover} sizes="(min-width: 1200px) 25vw, (min-width: 900px) 33vw, 50vw" />
         {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}
         <span className={`absolute top-2 right-2 flex size-[30px] items-center justify-center border border-tinta bg-white text-tinta ${hoverBlanca}`}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -185,8 +136,8 @@ function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (pro
 }
 
 // El catálogo de una categoría (/catalogo) o los productos de una colección (/coleccion/…).
-// Con `categoria` lleva su título y el grupo para cambiar de categoría; `encabezado` va entre la
-// ruta y los filtros (la portada de la colección).
+// Los filtros van arriba de los productos, así la lista usa todo el ancho. Con `categoria` lleva
+// su título; `encabezado` va entre la ruta y los filtros (la portada de la colección).
 export function Catalogo({
   productos,
   ruta,
@@ -207,12 +158,8 @@ export function Catalogo({
   const [orden, setOrden] = useState<Orden>("novedades");
   const [limite, setLimite] = useState(POR_PAGINA);
   const [colorDe, setColorDe] = useState<Record<string, string>>({}); // productId → color elegido en su tarjeta
-  const [panelAbierto, setPanelAbierto] = useState(false); // en el celular
-  const [abiertos, setAbiertos] = useState<Record<string, boolean>>(() => ({
-    ...ABIERTOS,
-    // Si se llega con un filtro (?color=, ?talla=, ?ocasion=), su grupo se ve abierto
-    ...Object.fromEntries([...Object.keys(filtrosIniciales.variante), ...Object.keys(filtrosIniciales.generales ?? {})].map((clave) => [clave, true])),
-  }));
+  // El grupo cuyas opciones se ven debajo de la fila de filtros (uno a la vez)
+  const [abierto, setAbierto] = useState<IdGrupo | null>(null);
 
   // Lo que queda con la modalidad y la búsqueda: de aquí salen las cantidades del panel
   const base = useMemo(() => {
@@ -305,12 +252,13 @@ export function Catalogo({
     ),
   ];
   const visibles = tarjetas.slice(0, limite);
+  const grupoAbierto = grupos.find((g) => g.id === abierto);
   const productosTexto = (n: number) => (n === 1 ? "1 producto" : `${n} productos`);
 
   return (
     <div className="bg-white font-cuerpo text-[15px] text-tinta">
       {actual && <h1 className="sr-only">Catálogo de {actual.plural.toLowerCase()}</h1>}
-      <RutaNavegacion pasos={ruta}>
+      <RutaNavegacion sinLinea pasos={ruta}>
         <div role="group" aria-label="Modalidad" className="flex border border-tinta">
           {MODOS.map((m, i) => (
             <button
@@ -332,50 +280,51 @@ export function Catalogo({
       </RutaNavegacion>
       {encabezado}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-tinta px-[clamp(16px,3vw,32px)] py-3">
-        <div className="flex min-h-8 min-w-0 flex-wrap items-center gap-2">
-          {/* En el celular el panel de filtros se abre con este botón */}
-          <button
-            type="button"
-            aria-expanded={panelAbierto}
-            aria-controls="panel-filtros"
-            onClick={() => setPanelAbierto((a) => !a)}
-            className={`inline-flex min-h-[30px] items-center gap-1.5 px-2.5 text-[13px] font-medium min-[760px]:hidden ${boton(panelAbierto)}`}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-              <path d="M4 6h16M7 12h10M10 18h4" />
-            </svg>
-            Filtros
-          </button>
-          <span className="mr-1 text-[11px] font-semibold tracking-[0.12em] uppercase">Filtros aplicados</span>
-          {chips.length === 0 ? (
-            <span className="text-[14px] text-[#555555]">Ninguno</span>
-          ) : (
-            <>
-              {chips.map((chip) => (
-                <button
-                  key={chip.clave}
-                  type="button"
-                  aria-label={`Quitar filtro ${chip.nombre}`}
-                  onClick={() => {
-                    chip.quitar();
-                    setLimite(POR_PAGINA);
-                  }}
-                  className={`inline-flex min-h-[30px] cursor-pointer items-center gap-1.5 border border-tinta bg-white px-2.5 text-[13px] text-tinta ${hoverBlanca}`}
-                >
-                  {chip.nombre}
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
-              ))}
-              <button type="button" onClick={limpiar} className="min-h-[30px] cursor-pointer px-1 text-[13px] underline underline-offset-3 transition-colors duration-150 hover:text-acento">
-                Limpiar todo
+      {/* Buscar, un botón por grupo de filtros y el orden. En el celular los botones se deslizan de lado. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 px-[clamp(16px,3vw,32px)] pt-1 pb-3">
+        <input
+          type="search"
+          aria-label="Buscar en el catálogo"
+          placeholder="Buscar: gala, sirena, floreado…"
+          value={texto}
+          onChange={(e) => {
+            setTexto(e.target.value);
+            setLimite(POR_PAGINA);
+          }}
+          className="min-h-9 w-full rounded-none border border-tinta bg-white px-3 text-[14px] text-tinta placeholder:text-[#8a8a8a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento min-[760px]:w-64"
+        />
+        <div
+          role="group"
+          aria-label="Filtros"
+          className="-mx-[clamp(16px,3vw,32px)] flex min-w-0 flex-[1_1_100%] gap-1.5 overflow-x-auto px-[clamp(16px,3vw,32px)] [scrollbar-width:none] min-[760px]:mx-0 min-[760px]:flex-[1_1_0] min-[760px]:flex-wrap min-[760px]:overflow-visible min-[760px]:px-0 [&::-webkit-scrollbar]:hidden"
+        >
+          {grupos.map((g) => {
+            const cantidad = elegidos[g.id]?.length ?? 0;
+            const esAbierto = abierto === g.id;
+            return (
+              <button
+                key={g.id}
+                type="button"
+                aria-expanded={esAbierto}
+                aria-controls="panel-filtro"
+                onClick={() => setAbierto((a) => (a === g.id ? null : g.id))}
+                className={`inline-flex min-h-9 flex-none items-center gap-2 px-3 font-archivo text-[12px] font-bold tracking-[0.1em] uppercase ${boton(esAbierto)}`}
+              >
+                {g.nombre}
+                {cantidad > 0 && (
+                  <span className={`inline-flex h-5 min-w-5 items-center justify-center px-1.5 text-[11px] tracking-normal ${esAbierto ? "bg-white text-tinta" : "bg-acento text-white"}`}>
+                    {cantidad}
+                    <span className="sr-only"> elegidos</span>
+                  </span>
+                )}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={esAbierto ? "rotate-180" : undefined}>
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
               </button>
-            </>
-          )}
+            );
+          })}
         </div>
-        <label className="flex items-center gap-2 text-[13px] font-medium">
+        <label className="ml-auto flex items-center gap-2 text-[13px] font-medium">
           Ordenar por
           <select
             value={orden}
@@ -394,65 +343,28 @@ export function Catalogo({
         </label>
       </div>
 
-      <div className="flex flex-wrap items-stretch">
-        <aside
-          id="panel-filtros"
-          aria-label="Filtros del catálogo"
-          className={`flex-[1_1_200px] border-tinta max-[759px]:border-b min-[760px]:border-r ${panelAbierto ? "" : "max-[759px]:hidden"}`}
-        >
-          <div className="border-b border-tinta p-[18px]">
-            <label htmlFor="buscar-catalogo" className="font-archivo text-[12px] font-bold tracking-[0.12em] uppercase">
-              Buscar
-            </label>
-            <input
-              id="buscar-catalogo"
-              type="search"
-              placeholder="Gala, sirena, floreado…"
-              value={texto}
-              onChange={(e) => {
-                setTexto(e.target.value);
-                setLimite(POR_PAGINA);
-              }}
-              className="mt-2.5 min-h-10 w-full rounded-none border border-tinta bg-white px-3 text-[14px] text-tinta placeholder:text-[#8a8a8a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
-            />
-          </div>
-
-          {actual && (
-            <GrupoFiltro id="categoria" nombre="Categoría" abierto={!!abiertos.categoria} onAlternar={() => setAbiertos((a) => ({ ...a, categoria: !a.categoria }))}>
-              <div className="flex flex-wrap gap-1.5">
-                {CATEGORIAS.map((c) => (
-                  <Link
-                    key={c.valor}
-                    href={`/catalogo?categoria=${c.slug}${modo === "todo" ? "" : `&modalidad=${modo}`}`}
-                    aria-current={c.valor === actual.valor ? "page" : undefined}
-                    className={`inline-flex min-h-9 items-center px-2.5 text-[13px] font-medium ${boton(c.valor === actual.valor)}`}
-                  >
-                    {c.plural}
-                  </Link>
-                ))}
-              </div>
-            </GrupoFiltro>
-          )}
-
-          {grupos.map((g) => (
-            <GrupoFiltro
-              key={g.id}
-              id={g.id}
-              nombre={g.nombre}
-              abierto={!!abiertos[g.id]}
-              elegidos={elegidos[g.id]?.length}
-              onAlternar={() => setAbiertos((a) => ({ ...a, [g.id]: !a[g.id] }))}
-            >
-              {g.tipo === "botones" ? (
+      {/* Las opciones del grupo abierto, a todo el ancho */}
+      <div
+        id="panel-filtro"
+        role="region"
+        aria-label={grupoAbierto ? `Filtro: ${grupoAbierto.nombre}` : "Filtro"}
+        hidden={!grupoAbierto}
+        onKeyDown={(e) => e.key === "Escape" && setAbierto(null)}
+        className="border-y border-tinta px-[clamp(16px,3vw,32px)] py-4"
+      >
+        {grupoAbierto && (
+          <div className="flex items-start gap-6">
+            <div className="min-w-0 flex-auto">
+              {grupoAbierto.tipo === "botones" ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {g.opciones.map((o) => {
-                    const elegido = elegidos[g.id]?.includes(o.valor) ?? false;
+                  {grupoAbierto.opciones.map((o) => {
+                    const elegido = elegidos[grupoAbierto.id]?.includes(o.valor) ?? false;
                     return (
                       <button
                         key={o.valor}
                         type="button"
                         aria-pressed={elegido}
-                        onClick={() => alternar(g.id, o.valor)}
+                        onClick={() => alternar(grupoAbierto.id, o.valor)}
                         className={`min-h-9 min-w-11 px-2.5 text-[13px] font-medium ${boton(elegido)}`}
                       >
                         {o.nombre}
@@ -461,17 +373,19 @@ export function Catalogo({
                   })}
                 </div>
               ) : (
-                <ul className="flex flex-col gap-2.5">
-                  {g.opciones.map((o) => (
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,180px),1fr))] gap-x-8 gap-y-2.5">
+                  {grupoAbierto.opciones.map((o) => (
                     <li key={o.valor}>
                       <label className="group/opcion flex cursor-pointer items-center gap-2.5 text-[14px]">
                         <input
                           type="checkbox"
-                          checked={elegidos[g.id]?.includes(o.valor) ?? false}
-                          onChange={() => alternar(g.id, o.valor)}
+                          checked={elegidos[grupoAbierto.id]?.includes(o.valor) ?? false}
+                          onChange={() => alternar(grupoAbierto.id, o.valor)}
                           className="size-4 flex-none cursor-pointer accent-acento"
                         />
-                        {g.tipo === "colores" && <span aria-hidden="true" className="size-3.5 flex-none border border-tinta" style={{ background: muestra(o.valor) }} />}
+                        {grupoAbierto.tipo === "colores" && (
+                          <span aria-hidden="true" className="size-3.5 flex-none border border-tinta" style={{ background: muestra(o.valor) }} />
+                        )}
                         <span className="min-w-0 flex-auto group-hover/opcion:underline group-hover/opcion:underline-offset-3">{o.nombre}</span>
                         <span className="text-[12px] text-[#666666]">{o.cantidad}</span>
                       </label>
@@ -479,50 +393,84 @@ export function Catalogo({
                   ))}
                 </ul>
               )}
-            </GrupoFiltro>
-          ))}
-
-          <div className="p-[18px]">
-            <button type="button" onClick={limpiar} className={`min-h-[42px] w-full text-[14px] font-medium ${boton(false)}`}>
-              Limpiar filtros
+            </div>
+            <button
+              type="button"
+              aria-label={`Cerrar ${grupoAbierto.nombre}`}
+              onClick={() => setAbierto(null)}
+              className={`flex size-9 flex-none items-center justify-center ${boton(false)}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
           </div>
-        </aside>
+        )}
+      </div>
 
-        <section aria-label="Productos" className="flex min-w-0 flex-[999_1_560px] flex-col">
-          {visibles.length > 0 ? (
-            <>
-              <ul className="grid grid-cols-2 min-[760px]:grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))]">
-                {visibles.map((t) => (
-                  <TarjetaCatalogo key={t.producto.productId} tarjeta={t} onColor={(id, c) => setColorDe((actuales) => ({ ...actuales, [id]: c }))} />
-                ))}
-              </ul>
-              <div className="flex flex-col items-center gap-3 border-b border-tinta px-4 py-8">
-                <span aria-live="polite" className="text-[13px] text-[#555555]">
-                  Mostrando {visibles.length < tarjetas.length ? `${visibles.length} de ${productosTexto(tarjetas.length)}` : productosTexto(tarjetas.length)}
-                </span>
-                {visibles.length < tarjetas.length && (
-                  <button type="button" onClick={() => setLimite((l) => l + POR_PAGINA)} className={`min-h-[42px] w-[max(200px,25%)] text-[14px] font-medium ${boton(false)}`}>
-                    Cargar más
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center gap-3.5 border-b border-tinta px-6 py-24 text-center">
-              <h2 className="text-[22px] font-medium">{productos.length ? "No encontramos productos con estos filtros" : "Todavía no hay productos en esta categoría"}</h2>
-              {productos.length > 0 && (
-                <>
-                  <p className="text-[15px] text-[#555555]">Prueba quitando algún filtro o cambiando la modalidad.</p>
-                  <button type="button" onClick={limpiar} className={`${botonAzul} cursor-pointer`}>
-                    Limpiar filtros
-                  </button>
-                </>
+      <div className="flex min-h-[52px] flex-wrap items-center gap-2 border-b border-tinta px-[clamp(16px,3vw,32px)] py-2.5">
+        <span className="mr-1 text-[11px] font-semibold tracking-[0.12em] uppercase">Filtros aplicados</span>
+        {chips.length === 0 ? (
+          <span className="text-[14px] text-[#555555]">Ninguno</span>
+        ) : (
+          <>
+            {chips.map((chip) => (
+              <button
+                key={chip.clave}
+                type="button"
+                aria-label={`Quitar filtro ${chip.nombre}`}
+                onClick={() => {
+                  chip.quitar();
+                  setLimite(POR_PAGINA);
+                }}
+                className={`inline-flex min-h-[30px] cursor-pointer items-center gap-1.5 border border-tinta bg-white px-2.5 text-[13px] text-tinta ${hoverBlanca}`}
+              >
+                {chip.nombre}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            ))}
+            <button type="button" onClick={limpiar} className="min-h-[30px] cursor-pointer px-1 text-[13px] underline underline-offset-3 transition-colors duration-150 hover:text-acento">
+              Limpiar todo
+            </button>
+          </>
+        )}
+      </div>
+
+      <section aria-label="Productos" className="flex flex-col">
+        {visibles.length > 0 ? (
+          <>
+            <ul className="grid grid-cols-2 min-[900px]:grid-cols-3 min-[1200px]:grid-cols-4">
+              {visibles.map((t) => (
+                <TarjetaCatalogo key={t.producto.productId} tarjeta={t} onColor={(id, c) => setColorDe((actuales) => ({ ...actuales, [id]: c }))} />
+              ))}
+            </ul>
+            <div className="flex flex-col items-center gap-3 border-b border-tinta px-4 py-8">
+              <span aria-live="polite" className="text-[13px] text-[#555555]">
+                Mostrando {visibles.length < tarjetas.length ? `${visibles.length} de ${productosTexto(tarjetas.length)}` : productosTexto(tarjetas.length)}
+              </span>
+              {visibles.length < tarjetas.length && (
+                <button type="button" onClick={() => setLimite((l) => l + POR_PAGINA)} className={`min-h-[42px] w-[max(200px,25%)] text-[14px] font-medium ${boton(false)}`}>
+                  Cargar más
+                </button>
               )}
             </div>
-          )}
-        </section>
-      </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-3.5 border-b border-tinta px-6 py-24 text-center">
+            <h2 className="text-[22px] font-medium">{productos.length ? "No encontramos productos con estos filtros" : "Todavía no hay productos en esta categoría"}</h2>
+            {productos.length > 0 && (
+              <>
+                <p className="text-[15px] text-[#555555]">Prueba quitando algún filtro o cambiando la modalidad.</p>
+                <button type="button" onClick={limpiar} className={`${botonAzul} cursor-pointer`}>
+                  Limpiar filtros
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
