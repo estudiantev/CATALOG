@@ -47,7 +47,7 @@ export function CarruselDestacados({ etiqueta, children }: { etiqueta: string; c
           {children}
         </ul>
       </div>
-      <div aria-hidden="true" className="flex h-[72px] flex-none items-center px-[clamp(16px,3vw,32px)]">
+      <div aria-hidden="true" className="flex h-14 flex-none items-center px-[clamp(16px,3vw,32px)]">
         <div className="relative h-0.5 w-[min(220px,40%)] bg-[#e0e0e0]">
           <span className="absolute inset-y-0 bg-acento2 transition-[left] duration-150 ease-linear" style={{ left: `${barra.izquierda}%`, width: `${barra.ancho}%` }} />
         </div>

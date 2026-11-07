@@ -45,7 +45,8 @@ export default async function InicioPage() {
           aria-label={destacados.titulo ? undefined : "Catálogo"}
           className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla"
         >
-          <div className="flex min-h-[72px] flex-none flex-wrap items-center justify-between gap-x-6 gap-y-1 px-[clamp(16px,3vw,32px)] py-3">
+          {/* Mide lo mismo que la barra de avance de abajo (56 px): las fotos se llevan el resto del alto */}
+          <div className="flex min-h-14 flex-none flex-wrap items-center justify-between gap-x-6 gap-y-1 px-[clamp(16px,3vw,32px)] py-1.5">
             {/* El título es opcional: sin caja ni color, con la misma letra que "Ver todo el catálogo" */}
             {(destacados.titulo || destacados.subtitulo) && (
               <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">

@@ -29,7 +29,7 @@ export function TarjetaDestacado({
   return (
     <Link href={href} className="group flex min-w-0 flex-auto flex-col border-r border-tinta">
       {/* Desde 1000 px llena el alto de la sección; más abajo, la forma vertical de un vestido */}
-      <div className="relative aspect-[3/5] max-h-[680px] overflow-hidden bg-[#f0f0f0] transition-colors duration-200 group-hover:bg-[#e8e8e8] min-[1000px]:aspect-auto min-[1000px]:max-h-none min-[1000px]:min-h-[300px] min-[1000px]:flex-auto">
+      <div className="relative aspect-[4/7] max-h-[720px] overflow-hidden bg-[#f0f0f0] transition-colors duration-200 group-hover:bg-[#e8e8e8] min-[1000px]:aspect-auto min-[1000px]:max-h-none min-[1000px]:min-h-[300px] min-[1000px]:flex-auto">
         <FotosProducto portada={portada} hover={hover} sizes={sizes} />
         {etiqueta && (
           <span className="absolute top-3 left-3 bg-[#fbd1da] px-2 py-[5px] text-[11px] leading-none font-semibold tracking-[0.08em] text-tinta uppercase">
