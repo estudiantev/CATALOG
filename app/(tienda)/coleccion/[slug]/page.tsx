@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Catalogo } from "@/components/tienda/catalogo";
+import { RutaNavegacion } from "@/components/tienda/ruta-navegacion";
 import { leerPaginaColeccion, obtenerColeccion } from "@/lib/colecciones-servidor";
 
 // Las fotos usan URLs firmadas de S3 que vencen: la página se genera en cada visita.
@@ -30,28 +31,38 @@ export default async function ColeccionPage({ params }: Props) {
     pagina = await leerPaginaColeccion(slug);
   } catch (error) {
     console.error("No se pudo cargar la colección:", error);
-    return <p className="px-4 py-24 text-center text-[18px]">No pudimos cargar esta colección. Inténtalo de nuevo en unos minutos.</p>;
+    return (
+      <p className="bg-white px-4 py-24 text-center font-cuerpo text-[18px] text-tinta">No pudimos cargar esta colección. Inténtalo de nuevo en unos minutos.</p>
+    );
   }
   if (!pagina) notFound();
 
   const { titulo, descripcion, foto, productos } = pagina;
-  return (
-    <section>
+  const ruta = [{ nombre: "Inicio", href: "/" }, { nombre: "Colecciones", href: "/colecciones" }, { nombre: titulo }];
+  // La foto de la colección, su nombre y su descripción, entre la ruta y los filtros
+  const portada = (
+    <>
       {foto && (
-        <div className="relative h-[clamp(200px,30vw,420px)] border-b-2 border-tinta bg-lino">
+        <div className="relative h-[clamp(200px,30vw,420px)] border-b border-tinta bg-[#f3f3f3]">
           <Image src={foto.url} alt="" fill unoptimized priority sizes="100vw" className="object-cover" />
         </div>
       )}
-      <div className="px-[clamp(16px,3.6vw,54px)] pt-[clamp(40px,4.4vw,64px)] pb-6">
-        <h1 className="text-[clamp(24px,2vw,30px)] leading-[1.2] font-medium tracking-[0.08em] uppercase">{titulo}</h1>
-        {descripcion && <p className="mt-1 max-w-[70ch] whitespace-pre-line text-topo">{descripcion}</p>}
+      <div className="border-b border-tinta px-[clamp(16px,3vw,32px)] pt-10 pb-8">
+        <h1 className="text-[clamp(32px,2.8vw,42px)] leading-[1.1] font-medium tracking-[-0.01em] [overflow-wrap:anywhere]">{titulo}</h1>
+        {descripcion && <p className="mt-3 max-w-[70ch] text-[16px] leading-[1.5] whitespace-pre-line text-[#555555]">{descripcion}</p>}
       </div>
-      {productos.length ? (
-        // key: al pasar a otra colección desde el menú, los filtros vuelven a empezar
-        <Catalogo key={slug} productos={productos} filtrosIniciales={{ variante: {}, texto: "" }} />
-      ) : (
-        <p className="border-t-2 border-tinta px-[clamp(16px,3.6vw,54px)] py-16 text-center text-[18px]">Por ahora no hay productos disponibles en esta colección.</p>
-      )}
-    </section>
+    </>
   );
+
+  if (!productos.length) {
+    return (
+      <div className="bg-white font-cuerpo text-[15px] text-tinta">
+        <RutaNavegacion pasos={ruta} />
+        {portada}
+        <p className="border-b border-tinta px-6 py-24 text-center text-[18px]">Por ahora no hay productos disponibles en esta colección.</p>
+      </div>
+    );
+  }
+  // key: al pasar a otra colección desde el menú, los filtros vuelven a empezar
+  return <Catalogo key={slug} productos={productos} ruta={ruta} encabezado={portada} />;
 }

@@ -41,6 +41,7 @@ export type ProductoCatalogo = {
   ocasion: string | null;
   marca: string | null;
   disenador: string | null;
+  material: string | null;
   caracteristicas: string[];
   precioVenta: number; // "desde" sin filtros
   precioAlquiler: number;
@@ -113,6 +114,7 @@ const CAMPOS_CATALOGO = [
   "brand",
   "designer",
   "occasion",
+  "material",
   "tags",
   "priceSale",
   "priceRent",
@@ -218,6 +220,7 @@ async function aCatalogo(productos: ProductoGuardado[]): Promise<ProductoCatalog
             ocasion: producto.occasion ?? null,
             marca: producto.brand ?? null,
             disenador: producto.designer ?? null,
+            material: producto.material ?? null,
             caracteristicas: sinNulos(producto.tags),
             precioVenta: producto.priceSale,
             precioAlquiler: producto.priceRent,

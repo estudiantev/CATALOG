@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Catalogo, type FiltrosIniciales } from "@/components/tienda/catalogo";
 import { COLORES } from "@/components/tienda/datos";
+import { RutaNavegacion } from "@/components/tienda/ruta-navegacion";
 import { type ProductoCatalogo, leerCatalogo } from "@/lib/catalogo";
 import { CATEGORIAS } from "@/lib/productos";
 
@@ -28,12 +28,14 @@ const leer = (parametros: Parametros, nombre: string) => {
   return Array.isArray(v) ? v[0] : v;
 };
 
-// Los enlaces del menú (?coleccion=, ?color=) llegan como filtros iniciales
+// Los enlaces del menú (?coleccion=, ?color=, ?modalidad=) llegan como filtros iniciales
 function filtrosDesdeUrl(parametros: Parametros): FiltrosIniciales {
   const familia = COLORES.find((c) => c.href === `/catalogo?color=${leer(parametros, "color")}`)?.familia;
+  const modalidad = leer(parametros, "modalidad");
   return {
     variante: familia ? { color: [familia] } : {},
     texto: COLECCIONES_URL[leer(parametros, "coleccion") ?? ""] ?? "",
+    modo: modalidad === "compra" || modalidad === "alquiler" ? modalidad : "todo",
   };
 }
 
@@ -54,36 +56,24 @@ export default async function CatalogoPage({
     console.error("No se pudo cargar el catálogo:", error);
   }
 
-  return (
-    <section className="pt-[clamp(40px,4.4vw,64px)]">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 px-[clamp(16px,3.6vw,54px)] pb-6">
-        <div>
-          <h1 className="text-[clamp(24px,2vw,30px)] leading-[1.2] font-medium tracking-[0.08em] uppercase">
-            {categoria.plural}
-          </h1>
-          <p className="mt-1 text-topo">En venta y alquiler, en Tacna.</p>
-        </div>
-        <nav aria-label="Categorías" className="flex gap-6">
-          {CATEGORIAS.map((c) => (
-            <Link
-              key={c.valor}
-              href={`/catalogo?categoria=${c.slug}`}
-              aria-current={c.valor === categoria.valor ? "page" : undefined}
-              className="text-[14px] font-medium tracking-[0.1em] uppercase underline-offset-[6px] hover:underline aria-[current=page]:underline aria-[current=page]:decoration-2"
-            >
-              {c.plural}
-            </Link>
-          ))}
-        </nav>
+  if (!productos) {
+    return (
+      <div className="bg-white font-cuerpo text-[15px] text-tinta">
+        <h1 className="sr-only">Catálogo de {categoria.plural.toLowerCase()}</h1>
+        <RutaNavegacion pasos={[{ nombre: "Inicio", href: "/" }, { nombre: "Catálogo", href: "/catalogo" }, { nombre: categoria.plural }]} />
+        <p className="border-b border-tinta px-6 py-24 text-center text-[18px]">No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.</p>
       </div>
-      {productos ? (
-        // key: al llegar desde otro enlace del menú, los filtros vuelven a empezar
-        <Catalogo key={`${categoria.valor}-${JSON.stringify(filtrosIniciales)}`} productos={productos} filtrosIniciales={filtrosIniciales} />
-      ) : (
-        <p className="border-t-2 border-tinta px-[clamp(16px,3.6vw,54px)] py-16 text-center text-[18px]">
-          No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.
-        </p>
-      )}
-    </section>
+    );
+  }
+
+  // key: al llegar desde otro enlace del menú, los filtros vuelven a empezar
+  return (
+    <Catalogo
+      key={`${categoria.valor}-${JSON.stringify(filtrosIniciales)}`}
+      productos={productos}
+      ruta={[{ nombre: "Inicio", href: "/" }, { nombre: "Catálogo", href: "/catalogo" }, { nombre: categoria.plural }]}
+      categoria={categoria.valor}
+      filtrosIniciales={filtrosIniciales}
+    />
   );
 }
