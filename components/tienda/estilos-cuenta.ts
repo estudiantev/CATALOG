@@ -1,5 +1,5 @@
 // Estilos del área de la clienta (/cuenta y /cuenta/perfil), con el lenguaje del resto de la
-// tienda: fondo blanco, líneas negras, títulos en caja de color y botones azul y blanco.
+// tienda: fondo blanco, líneas negras, títulos en caja negra y botones negro y blanco.
 
 // Mismo margen lateral que la ruta de navegación y el detalle del producto
 export const margenCuenta = "px-[clamp(16px,3vw,32px)]";

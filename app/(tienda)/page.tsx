@@ -159,7 +159,7 @@ export default async function InicioPage() {
               ) : (
                 <>
                   <Vestido forma="floreado" color="#bcd3e6" className="-mr-[4%] h-[72%] w-auto" />
-                  <Vestido forma="sirena" color="#010081" className="relative z-1 h-[92%] w-auto" />
+                  <Vestido forma="sirena" color="#111111"className="relative z-1 h-[92%] w-auto" />
                   <Vestido forma="corto" color="#e6b4b2" className="-ml-[4%] h-[62%] w-auto" />
                 </>
               )}

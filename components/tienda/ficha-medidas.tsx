@@ -37,7 +37,7 @@ export function FichaMedidas({
   const activa = resaltar === "copa" ? "busto" : resaltar;
   const linea = (campo: CampoMedida) =>
     activa === campo
-      ? { stroke: "#010081", strokeWidth: 3, strokeDasharray: undefined, opacity: 1 }
+      ? { stroke: "#000000", strokeWidth: 3, strokeDasharray: undefined, opacity: 1 }
       : { stroke: "#111111", strokeWidth: 1.5, strokeDasharray: "5 5", opacity: 0.55 };
 
   const dato = (activo: boolean) => ({
@@ -52,7 +52,7 @@ export function FichaMedidas({
           {/* 136.36% = 300/220 y -18.18% = -40/220: el vestido queda alineado con el recorte */}
           <Vestido
             forma="sirena"
-            color="#bcd3e6"
+            color="#d0d0d0"
             pliegues={false}
             brillo={0.3}
             className="absolute top-0 left-[-18.18%] h-full w-[136.36%] max-w-none"

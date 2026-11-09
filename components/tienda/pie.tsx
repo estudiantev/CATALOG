@@ -92,7 +92,7 @@ export function Pie({ contenido }: { contenido: DatosSeccion["pie"] }) {
             <h3 className={`${titulo} mb-2.5`}>Redes</h3>
             {redes.map(({ clave, nombre }) => (
               <a key={clave} href={contenido.redes[clave]} className="group inline-flex items-center gap-2.5 text-[15px] text-[#222222] hover:underline hover:underline-offset-3">
-                <span className="flex size-[30px] flex-none items-center justify-center bg-acento text-white transition-colors duration-150 group-hover:bg-acento2">
+                <span className="flex size-[30px] flex-none items-center justify-center border border-acento bg-acento text-white transition-colors duration-150 group-hover:bg-white group-hover:text-acento">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     {ICONOS[clave]}
                   </svg>

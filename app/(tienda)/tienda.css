@@ -24,12 +24,15 @@
   --color-crema: #fbf6f1;
   --color-vino: #9b1b3a;
 
-  /* Página de inicio, encabezado y pie */
-  --color-acento: #010081;
-  --color-acento2: #04817f;
-  --color-acento2-oscuro: #036e6c;
-  --color-tinte-verde: #e6f2f2;
-  --color-tinte-azul: #e1e0f0;
+  /*
+   * Página de inicio, encabezado y pie: solo negro y blanco. Los nombres vienen de cuando
+   * eran azul (acento) y verde (acento2); los tintes son ahora un gris casi blanco.
+   */
+  --color-acento: #000000;
+  --color-acento2: #000000;
+  --color-acento2-oscuro: #000000;
+  --color-tinte-verde: #f2f2f2;
+  --color-tinte-azul: #f2f2f2;
 
   /* Desde aquí se muestra el menú de escritorio: es lo que mide con un nombre de 14 letras en "Mi cuenta" */
   --breakpoint-menu: 62.375rem;
