@@ -10,7 +10,7 @@ import { Vestido } from "./vestido";
 // La misma condición de la variante `movil` de tienda.css
 const MEDIA_MOVIL = "(max-width: 999px) and (orientation: portrait)";
 
-const botonPortada = "movil:min-h-12 movil:flex-1 movil:px-3 movil:text-center";
+const botonPortada = "movil:min-h-11 movil:flex-1 movil:px-3 movil:text-center";
 
 // Con <picture> cada pantalla baja solo su foto. Por eso no lleva `priority`: precargaría la de
 // computadora también en el celular. Si solo hay foto para celular, en computadora siguen las
@@ -39,9 +39,9 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
       id="inicio"
       aria-label="Portada"
       aria-roledescription={varias ? "carrusel" : undefined}
-      className="pantalla relative flex items-center justify-center overflow-hidden bg-[#e5e5e5] p-6 [--alto-minimo:520px] movil:flex-col movil:items-stretch movil:justify-start movil:p-0"
+      className="pantalla relative flex items-center justify-center overflow-hidden bg-[#e5e5e5] p-6 [--alto-minimo:520px] movil:flex-col movil:items-stretch movil:justify-start movil:p-0 movil:[--alto-minimo:0px] bajo:py-3 bajo:[--alto-minimo:0px]"
     >
-      <div className="absolute inset-0 movil:relative movil:min-h-[260px] movil:flex-auto">
+      <div className="absolute inset-0 movil:relative movil:min-h-[200px] movil:flex-auto">
         <FotoPortada key={actual} foto={d.foto} fotoMovil={d.fotoMovil} />
         {!d.foto && (
           // A los lados de la caja de textos; si no hay espacio, solo uno detrás de ella
@@ -57,12 +57,12 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
           </div>
         )}
       </div>
-      <div className="relative z-2 mt-[14vh] flex w-[420px] max-w-full flex-col items-center border border-tinta bg-white px-7 py-6 text-center movil:mt-0 movil:w-full movil:items-stretch movil:border-x-0 movil:border-b-0 movil:px-5 movil:pt-5 movil:pb-6 movil:text-left">
+      <div className="relative z-2 mt-[14vh] flex w-[420px] max-w-full flex-col items-center border border-tinta bg-white px-7 py-6 text-center bajo:mt-0 bajo:py-4 movil:mt-0 movil:w-full movil:items-stretch movil:border-x-0 movil:border-b-0 movil:px-5 movil:pt-4 movil:pb-4 movil:text-left">
         {/* Al cambiar de portada, el lector de pantalla lee la nueva */}
-        <div aria-live={varias ? "polite" : undefined} className="flex w-full flex-col items-center gap-3 movil:items-start">
+        <div aria-live={varias ? "polite" : undefined} className="flex w-full flex-col items-center gap-3 movil:items-start movil:gap-2 bajo:gap-2">
           {d.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#555555] uppercase">{d.antetitulo}</span>}
-          <h1 className="text-[26px] leading-[1.2] font-medium break-words text-tinta movil:text-[clamp(26px,7.4vw,34px)] movil:leading-[1.15]">{d.titulo}</h1>
-          {d.texto && <p className="max-w-[36ch] text-[15px] leading-[1.55] text-[#444444]">{d.texto}</p>}
+          <h1 className="text-[26px] leading-[1.2] font-medium break-words text-tinta movil:text-[clamp(22px,6.4vw,28px)] movil:leading-[1.15]">{d.titulo}</h1>
+          {d.texto && <p className="max-w-[36ch] text-[15px] leading-[1.55] text-[#444444] movil:text-[14px] movil:leading-[1.45]">{d.texto}</p>}
           <div className="mt-1 flex flex-wrap justify-center gap-2 movil:w-full movil:max-w-[420px]">
             <EnlaceContenido boton={d.botonPrincipal} className={`${botonAzul} ${botonPortada}`} />
             {d.botonSecundario.texto && <EnlaceContenido boton={d.botonSecundario} className={`${botonBlanco} ${botonPortada}`} />}
@@ -77,7 +77,7 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
                 aria-label={`Ver portada ${i + 1}`}
                 aria-current={i === actual ? "true" : undefined}
                 onClick={() => setActual(i)}
-                className="flex size-11 cursor-pointer items-center justify-center"
+                className="flex size-11 cursor-pointer items-center justify-center movil:h-8"
               >
                 <span className={`block h-[3px] w-7.5 transition-colors ${i === actual ? "bg-acento" : "bg-[#bbbbbb]"}`} />
               </button>

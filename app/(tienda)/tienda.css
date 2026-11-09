@@ -37,6 +37,8 @@
 
 /* Celulares y tablets en vertical. La portada repite esta condición para elegir su foto. */
 @custom-variant movil (@media (max-width: 999px) and (orientation: portrait));
+/* Pantallas bajas en horizontal (el celular girado): la portada entra en lo que queda de alto */
+@custom-variant bajo (@media (max-height: 500px) and (orientation: landscape));
 
 /* Las fuentes las carga next/font en app/(tienda)/layout.tsx */
 @theme inline {
