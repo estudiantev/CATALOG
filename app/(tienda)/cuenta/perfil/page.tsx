@@ -34,7 +34,7 @@ export default async function PerfilPage() {
         <FormularioPerfil perfil={perfil} customerId={sesion.id} nombreEnToken={sesion.nombre} hoy={hoyEnPeru()} />
       ) : (
         // Sin los datos guardados no se muestra el formulario: guardaría encima campos vacíos
-        <div className={`flex flex-col items-start gap-4 border-b border-tinta py-10 ${margenCuenta}`}>
+        <div className={`flex flex-col items-start gap-4 py-10 ${margenCuenta}`}>
           <p role="alert" className={`${textoError} max-w-[52ch]`}>
             No se pudieron cargar tus datos. Recarga la página o vuelve a intentarlo en unos minutos.
           </p>

@@ -13,10 +13,10 @@ export const errorCuenta = "w-full text-center text-[14px] leading-[20px] text-v
 export function MarcoCuenta({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div className="px-4 py-10">
-      <div className="mx-auto flex max-w-260 items-stretch gap-8 border border-tinta bg-white p-4 sm:px-8 sm:py-8">
+      <div className="mx-auto flex max-w-260 items-stretch gap-16 bg-white p-4 sm:px-8 sm:py-8">
         <div className="flex flex-1 justify-center">
           <div className="flex w-full max-w-95 flex-col items-center gap-6">
-            <div className="w-full border border-tinta px-6 pt-10 pb-8">
+            <div className="w-full px-6 pt-10 pb-8">
               <h1 className="text-center font-display text-[44px] leading-[1.1] font-bold text-tinta">{titulo}</h1>
               {children}
             </div>
@@ -27,7 +27,6 @@ export function MarcoCuenta({ titulo, children }: { titulo: string; children: Re
             </p>
           </div>
         </div>
-        <div aria-hidden="true" className="hidden w-px bg-tinta md:block" />
         <div aria-hidden="true" className="hidden flex-1 bg-lino md:block" />
       </div>
     </div>

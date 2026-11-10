@@ -65,10 +65,10 @@ export function Pie({ contenido }: { contenido: DatosSeccion["pie"] }) {
   const redes = REDES.filter(({ clave }) => contenido.redes[clave]);
 
   return (
-    <footer id="contacto" className="flex flex-col gap-14 overflow-hidden border-t border-tinta bg-[#d2d2d2] px-[clamp(20px,4vw,48px)] pt-12 pb-7 font-cuerpo text-tinta">
+    <footer id="contacto" className="flex flex-col gap-14 overflow-hidden bg-[#d2d2d2] px-[clamp(20px,4vw,48px)] pt-12 pb-7 font-cuerpo text-tinta">
       <div className="flex flex-wrap items-start justify-between gap-x-12 gap-y-8">
         <div className="flex max-w-[600px] min-w-0 flex-[1_1_360px] flex-col items-start gap-5">
-          <Link href="/" aria-label="Fara Collection, inicio" className="inline-flex min-h-11 items-center border border-tinta bg-[#f2f2f2] px-5 py-1.5 shadow-[5px_5px_0_#111111]">
+          <Link href="/" aria-label="Fara Collection, inicio" className="inline-flex min-h-11 items-center bg-[#f2f2f2] px-5 py-1.5">
             <Image src="/logo-fara.svg" alt="" width={722} height={341} className="h-8 w-auto" />
           </Link>
           <p className="text-[17px] leading-normal text-tinta">{contenido.descripcion}</p>
@@ -92,7 +92,7 @@ export function Pie({ contenido }: { contenido: DatosSeccion["pie"] }) {
             <h3 className={`${titulo} mb-2.5`}>Redes</h3>
             {redes.map(({ clave, nombre }) => (
               <a key={clave} href={contenido.redes[clave]} className="group inline-flex items-center gap-2.5 text-[15px] text-[#222222] hover:underline hover:underline-offset-3">
-                <span className="flex size-[30px] flex-none items-center justify-center border border-acento bg-acento text-white transition-colors duration-150 group-hover:bg-white group-hover:text-acento">
+                <span className="flex size-[30px] flex-none items-center justify-center bg-acento text-white transition-colors duration-150 group-hover:bg-white group-hover:text-acento">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     {ICONOS[clave]}
                   </svg>
@@ -104,7 +104,7 @@ export function Pie({ contenido }: { contenido: DatosSeccion["pie"] }) {
         )}
       </div>
 
-      <div className="mt-auto flex flex-wrap justify-between gap-x-6 gap-y-2 border-t border-tinta pt-[18px] text-[13px] text-[#444444]">
+      <div className="mt-auto flex flex-wrap justify-between gap-x-6 gap-y-2 pt-[18px] text-[13px] text-[#444444]">
         <span>© 2026 Fara Collection. Todos los derechos reservados.</span>
         <span>Tacna, Perú</span>
       </div>

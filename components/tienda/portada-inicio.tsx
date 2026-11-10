@@ -57,7 +57,7 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
           </div>
         )}
       </div>
-      <div className="relative z-2 mt-[14vh] flex w-[420px] max-w-full flex-col items-center border border-tinta bg-white px-7 py-6 text-center bajo:mt-0 bajo:py-4 movil:mt-0 movil:w-full movil:items-stretch movil:border-x-0 movil:border-b-0 movil:px-5 movil:pt-4 movil:pb-4 movil:text-left">
+      <div className="relative z-2 mt-[14vh] flex w-[420px] max-w-full flex-col items-center bg-white px-7 py-6 text-center bajo:mt-0 bajo:py-4 movil:mt-0 movil:w-full movil:items-stretch movil:px-5 movil:pt-4 movil:pb-4 movil:text-left">
         {/* Al cambiar de portada, el lector de pantalla lee la nueva */}
         <div aria-live={varias ? "polite" : undefined} className="flex w-full flex-col items-center gap-3 movil:items-start movil:gap-2 bajo:gap-2">
           {d.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#555555] uppercase">{d.antetitulo}</span>}

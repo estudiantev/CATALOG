@@ -64,7 +64,7 @@ export default async function CatalogoPage({
       <div className="bg-white font-cuerpo text-[15px] text-tinta">
         <h1 className="sr-only">Catálogo de {categoria.plural.toLowerCase()}</h1>
         <RutaNavegacion pasos={[{ nombre: "Inicio", href: "/" }, { nombre: "Catálogo", href: "/catalogo" }, { nombre: categoria.plural }]} />
-        <p className="border-b border-tinta px-6 py-24 text-center text-[18px]">No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.</p>
+        <p className="px-6 py-24 text-center text-[18px]">No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.</p>
       </div>
     );
   }

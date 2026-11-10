@@ -88,7 +88,7 @@ export function Encabezado({
         Saltar al contenido
       </a>
       {anuncios && <Anuncios {...anuncios} />}
-      <header className="flex h-14 items-center gap-2 border-b border-tinta bg-white px-4">
+      <header className="flex h-14 items-center gap-2 bg-white px-4">
         <Link href="/" aria-label="FARA collections, inicio" onClick={cerrarMenus} className="flex flex-none items-center transition-opacity duration-150 hover:opacity-70">
           <Image src="/logo-fara.svg" alt="" width={722} height={341} priority className="h-12 w-auto" />
         </Link>
@@ -101,7 +101,7 @@ export function Encabezado({
                 aria-expanded={catalogoAbierto}
                 aria-controls="menu-catalogo"
                 onClick={() => setCatalogoAbierto((abierto) => !abierto)}
-                className={`${cajaNav} cursor-pointer gap-2 aria-expanded:border-acento aria-expanded:bg-acento aria-expanded:text-white`}
+                className={`${cajaNav} cursor-pointer gap-2 aria-expanded:bg-acento aria-expanded:text-white`}
               >
                 Catálogo
                 <Chevron arriba={catalogoAbierto} />
@@ -198,7 +198,7 @@ export function Encabezado({
 
       {/* Menú desplegable de Catálogo (escritorio): ocasiones, tallas y colores */}
       {catalogoAbierto && (
-        <div id="menu-catalogo" className="absolute inset-x-0 top-full hidden border-b border-tinta bg-white px-[clamp(16px,3.6vw,54px)] pt-12 pb-14 menu:block">
+        <div id="menu-catalogo" className="absolute inset-x-0 top-full hidden bg-white px-[clamp(16px,3.6vw,54px)] pt-12 pb-14 menu:block">
           <div className="flex flex-wrap items-start gap-x-[clamp(56px,8vw,120px)] gap-y-10">
             {ocasiones.length > 0 && (
               <section aria-labelledby="col-ocasiones" className="flex flex-none flex-col gap-5">
@@ -249,7 +249,7 @@ export function Encabezado({
       {/* Menú móvil. Tiene su propio scroll: en el inicio el marco queda fijo y, con el celular en
           horizontal, lo de abajo no se alcanzaría moviendo la página. */}
       {menuMovilAbierto && (
-        <nav id="menu-movil" aria-label="Menú principal" className="absolute inset-x-0 top-full h-[calc(100dvh-var(--alto-marco))] overflow-y-auto overscroll-contain border-b border-tinta bg-white pt-3 pb-6 menu:hidden">
+        <nav id="menu-movil" aria-label="Menú principal" className="absolute inset-x-0 top-full h-[calc(100dvh-var(--alto-marco))] overflow-y-auto overscroll-contain bg-white pt-3 pb-6 menu:hidden">
           <ul>
             <li>
               <button

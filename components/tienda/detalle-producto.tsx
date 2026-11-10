@@ -28,8 +28,8 @@ const valorGrupo = "font-normal text-[#555555]";
 const enlaceTexto = "text-tinta underline underline-offset-3 transition-colors duration-150 hover:text-acento";
 
 // Los segmentos (Comprar / Alquilar, el periodo): el elegido en negro; los demás, azules al pasar
-const segmento = (elegido: boolean, primero: boolean) =>
-  `min-h-11 flex-[1_1_0] text-[15px] font-medium ${primero ? "" : "border-l border-tinta"} ${
+const segmento = (elegido: boolean) =>
+  `min-h-11 flex-[1_1_0] text-[15px] font-medium ${
     elegido ? "bg-tinta text-white" : "cursor-pointer bg-white text-tinta transition-colors duration-150 hover:bg-acento hover:text-white"
   }`;
 
@@ -64,7 +64,7 @@ function hoyLocal() {
 
 function Acordeon({ id, titulo, abierto, onCambiar, children }: { id: string; titulo: string; abierto: boolean; onCambiar: () => void; children: ReactNode }) {
   return (
-    <div id={id} className="scroll-mt-4 border-b border-tinta">
+    <div id={id} className="scroll-mt-4">
       <h2>
         <button
           type="button"
@@ -162,7 +162,7 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
   const modalidades = [seVende && "compra", seAlquila && "alquiler"].filter(Boolean);
 
   return (
-    <div className="flex flex-wrap items-stretch border-b border-tinta">
+    <div className="flex flex-wrap items-stretch">
       {/* Las fotos son las de la variante elegida: cambian con el color, el largo, etc. */}
       <GaleriaProducto key={actual?.fotos[0]?.url ?? "sin-foto"} nombre={producto.nombre} fotos={actual?.fotos ?? []} />
 
@@ -173,9 +173,9 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
         {!actual && <p className="mt-9 text-[#444444]">Este producto todavía no está disponible.</p>}
 
         {actual && seVende && seAlquila && (
-          <div role="group" aria-label="Modalidad" className={`mt-9 flex border border-tinta ${anchoControles}`}>
-            {(["compra", "alquiler"] as const).map((m, i) => (
-              <button key={m} type="button" aria-pressed={modo === m} onClick={() => setModo(m)} className={segmento(modo === m, i === 0)}>
+          <div role="group" aria-label="Modalidad" className={`mt-9 flex ${anchoControles}`}>
+            {(["compra", "alquiler"] as const).map((m) => (
+              <button key={m} type="button" aria-pressed={modo === m} onClick={() => setModo(m)} className={segmento(modo === m)}>
                 {m === "compra" ? "Comprar" : "Alquilar"}
               </button>
             ))}
@@ -270,9 +270,9 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
               <span id="periodo-etiqueta" className={etiquetaGrupo}>
                 Periodo
               </span>
-              <div role="group" aria-labelledby="periodo-etiqueta" className="flex border border-tinta">
-                {PERIODOS.map((p, i) => (
-                  <button key={p.valor} type="button" aria-pressed={periodo === p.valor} onClick={() => setPeriodo(p.valor)} className={`${segmento(periodo === p.valor, i === 0)} min-h-[42px] text-[14px]`}>
+              <div role="group" aria-labelledby="periodo-etiqueta" className="flex">
+                {PERIODOS.map((p) => (
+                  <button key={p.valor} type="button" aria-pressed={periodo === p.valor} onClick={() => setPeriodo(p.valor)} className={`${segmento(periodo === p.valor)} min-h-[42px] text-[14px]`}>
                     {p.nombre}
                   </button>
                 ))}
@@ -292,7 +292,7 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
               setAviso(true);
               campoFecha.current?.focus();
             }}
-            className={`inline-flex min-h-[52px] min-w-0 flex-auto items-center justify-between gap-x-7 gap-y-1 border border-tinta bg-[#ededed] px-[22px] py-2 text-[17px] text-tinta ${hoverBlanca}`}
+            className={`inline-flex min-h-[52px] min-w-0 flex-auto items-center justify-between gap-x-7 gap-y-1 bg-[#ededed] px-[22px] py-2 text-[17px] text-tinta ${hoverBlanca}`}
           >
             <span className="inline-flex items-center gap-2.5">
               <IconoWhatsApp />
@@ -302,7 +302,7 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
             {precioBoton && <span className="whitespace-nowrap">{precioBoton}</span>}
           </a>
           {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}
-          <span aria-hidden="true" className={`flex min-h-[52px] w-[52px] flex-none items-center justify-center border border-tinta bg-white text-tinta ${hoverBlanca}`}>
+          <span aria-hidden="true" className={`flex min-h-[52px] w-[52px] flex-none items-center justify-center bg-white text-tinta ${hoverBlanca}`}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
             </svg>
@@ -325,7 +325,7 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
         )}
 
         {(info.length > 0 || producto.caracteristicas.length > 0) && (
-          <dl className="mt-9 grid max-w-[520px] grid-cols-2 gap-x-6 gap-y-[18px] border-y border-tinta py-[18px]">
+          <dl className="mt-9 grid max-w-[520px] grid-cols-2 gap-x-6 gap-y-[18px] py-[18px]">
             {info.map((i) => (
               <div key={i.nombre} className="flex min-w-0 flex-col gap-0.5">
                 <dt className="text-[13px] text-[#666666]">{i.nombre}</dt>
@@ -352,7 +352,7 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
           </p>
         )}
 
-        <div className="mt-9 max-w-[520px] border-t border-tinta">
+        <div className="mt-9 max-w-[520px]">
           {cuidados.length > 0 && (
             <Acordeon id="detalles-cuidados" titulo="Detalles y cuidados" abierto={!!abiertos.cuidados} onCambiar={() => alternar("cuidados")}>
               <dl className="grid grid-cols-[max-content_1fr] gap-x-5 gap-y-2 leading-normal">

@@ -126,8 +126,7 @@ export function FormularioRegistro({ correoPorConfirmar, destino }: { correoPorC
   return (
     <>
       <BotonGoogle destino={destino} />
-      <hr className="mt-6 border-tinta" />
-      <form onSubmit={registrar} noValidate className="mx-auto mt-6 flex w-full max-w-74 flex-col items-center">
+      <form onSubmit={registrar} noValidate className="mx-auto mt-12 flex w-full max-w-74 flex-col items-center">
         <p className="mb-4 text-[18px]">O regístrate con tu correo</p>
         <label htmlFor="nombre" className="sr-only">Nombre</label>
         <input id="nombre" autoComplete="given-name" placeholder="Nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} className={campoCuenta} />

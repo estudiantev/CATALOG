@@ -61,9 +61,7 @@ export function FormularioIngreso({ aviso, destino }: { aviso?: string; destino:
     <>
       <BotonGoogle destino={destino} />
 
-      <hr className="mt-6 border-tinta" />
-
-      <form onSubmit={iniciarSesion} noValidate className="mx-auto mt-6 flex w-full max-w-74 flex-col items-center">
+      <form onSubmit={iniciarSesion} noValidate className="mx-auto mt-12 flex w-full max-w-74 flex-col items-center">
         <p className="text-[18px]">Continuar con Correo</p>
         {aviso && <p className="mt-3 w-full text-center text-[14px] leading-[20px] text-grafito">{aviso}</p>}
         <label htmlFor="correo" className="sr-only">Correo</label>

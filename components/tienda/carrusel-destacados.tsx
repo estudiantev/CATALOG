@@ -39,7 +39,7 @@ export function CarruselDestacados({ etiqueta, children }: { etiqueta: string; c
 
   return (
     <>
-      <div role="region" aria-roledescription="carrusel" aria-label={etiqueta} className="flex min-h-0 flex-auto border-y border-tinta">
+      <div role="region" aria-roledescription="carrusel" aria-label={etiqueta} className="flex min-h-0 flex-auto">
         <ul
           ref={lista}
           className="flex min-w-0 flex-auto cursor-grab snap-x snap-mandatory overflow-x-auto overscroll-x-contain select-none [scrollbar-width:none] data-arrastrando:cursor-grabbing [&_a]:cursor-grab [&_h3]:cursor-pointer [&[data-arrastrando]_*]:cursor-grabbing [&::-webkit-scrollbar]:hidden"

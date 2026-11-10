@@ -1,18 +1,18 @@
-// Las cajas con borde negro del encabezado y de la página de inicio
+// Las cajas del encabezado y de la página de inicio
 
 // Al pasar el cursor se invierten: las cajas blancas se ponen negras y las negras, blancas
 export const hoverBlanca = "transition-colors duration-150 hover:border-acento hover:bg-acento hover:text-white";
 const hoverAzul = "transition-colors duration-150 hover:bg-white hover:text-tinta";
 
 // Opciones del encabezado. Sin colores, para que no compitan con los de cada una
-const cajaBase = "inline-flex min-h-[34px] items-center border border-tinta font-archivo text-[12px] font-semibold tracking-[0.08em] uppercase";
+const cajaBase = "inline-flex min-h-[34px] items-center font-archivo text-[12px] font-semibold tracking-[0.08em] uppercase";
 export const cajaNav = `${cajaBase} bg-white px-3.5 text-tinta ${hoverBlanca}`;
 // En el celular son cuadrados con su ícono; en escritorio llevan también el texto
 const cajaIcono = `${cajaBase} size-10 justify-center gap-1.5 menu:size-auto menu:px-3`;
 export const cajaIconoBlanca = `${cajaIcono} bg-white text-tinta ${hoverBlanca}`;
 export const cajaIconoAzul = `${cajaIcono} bg-acento text-white ${hoverAzul}`;
 
-const botonCaja = "inline-flex min-h-10 items-center justify-center border border-tinta px-[22px] font-archivo text-[12px] font-bold tracking-[0.1em] uppercase";
+const botonCaja = "inline-flex min-h-10 items-center justify-center px-[22px] font-archivo text-[12px] font-bold tracking-[0.1em] uppercase";
 export const botonBlanco = `${botonCaja} bg-white text-tinta ${hoverBlanca}`;
 export const botonAzul = `${botonCaja} bg-acento text-white ${hoverAzul}`;
 // Estos no se invierten: se levantan con una sombra
@@ -24,7 +24,7 @@ const tituloCajaBase =
 export const tituloCaja = `${tituloCajaBase} bg-acento2`;
 export const tituloCajaAzul = `${tituloCajaBase} bg-acento`;
 
-export const barraSeccion = "flex flex-none flex-wrap items-center justify-between gap-2.5 border-b border-tinta px-3 py-2.5";
+export const barraSeccion = "flex flex-none flex-wrap items-center justify-between gap-2.5 px-3 py-2.5";
 
 // Letras blancas con contorno y sombra negros
 export const letraContorno =

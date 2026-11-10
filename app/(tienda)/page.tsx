@@ -18,8 +18,8 @@ import { resolverTarjeta } from "@/lib/variantes";
 // (lib/contenido-servidor.ts).
 export const dynamic = "force-dynamic";
 
-// Según cuántas tarjetas de colecciones haya. Las filas siempre van completas: el fondo de la
-// sección es oscuro y una celda vacía se vería como un hueco negro.
+// Según cuántas tarjetas de colecciones haya. Las filas siempre van completas: una celda vacía
+// se vería como un hueco.
 const COLUMNAS_COLECCIONES: Record<number, string> = {
   2: "sm:grid-cols-2",
   3: "min-[841px]:grid-cols-3",
@@ -43,7 +43,7 @@ export default async function InicioPage() {
           id="catalogo"
           aria-labelledby={destacados.titulo ? "titulo-catalogo" : undefined}
           aria-label={destacados.titulo ? undefined : "Catálogo"}
-          className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla"
+          className="flex flex-col bg-white min-[1000px]:pantalla"
         >
           {/* Mide lo mismo que la barra de avance de abajo (56 px): las fotos se llevan el resto del alto */}
           <div className="flex min-h-14 flex-none flex-wrap items-center justify-between gap-x-6 gap-y-1 px-[clamp(16px,3vw,32px)] py-1.5">
@@ -86,7 +86,7 @@ export default async function InicioPage() {
       )}
 
       {ocasiones && (
-        <section id="colecciones" aria-label="Colecciones" className={`grid grid-cols-1 gap-px border-t border-tinta bg-tinta min-[1000px]:pantalla ${COLUMNAS_COLECCIONES[ocasiones.length]}`}>
+        <section id="colecciones" aria-label="Colecciones" className={`grid grid-cols-1 min-[1000px]:pantalla ${COLUMNAS_COLECCIONES[ocasiones.length]}`}>
           {ocasiones.map((tarjeta) =>
             "clave" in tarjeta ? (
               <TarjetaOcasion key={tarjeta.clave} {...tarjeta} sizes="(min-width: 640px) 50vw, 100vw" grande />
@@ -98,7 +98,7 @@ export default async function InicioPage() {
       )}
 
       {pasos && (
-        <section id="pasos" aria-labelledby="titulo-pasos" className="flex flex-col border-t border-tinta bg-white min-[1000px]:pantalla">
+        <section id="pasos" aria-labelledby="titulo-pasos" className="flex flex-col bg-white min-[1000px]:pantalla">
           <div className={barraSeccion}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <h2 id="titulo-pasos" className={tituloCaja}>
@@ -116,7 +116,7 @@ export default async function InicioPage() {
               <span>{pasos.boton}</span>
             </a>
           </div>
-          <ol className="grid flex-auto grid-cols-1 gap-px bg-tinta md:grid-cols-3">
+          <ol className="grid flex-auto grid-cols-1 md:grid-cols-3">
             {pasos.pasos.map((paso, i) => (
               <li key={i} className="flex flex-col justify-between gap-4 bg-white p-6 md:gap-8 md:p-8">
                 <span aria-hidden="true" className={`${letraContorno} text-[clamp(64px,12vw,176px)]`}>
@@ -133,9 +133,9 @@ export default async function InicioPage() {
       )}
 
       {nosotros && (
-        <section id="nosotros" aria-label="Quiénes somos" className="relative flex items-center justify-center border-t border-tinta bg-tinte-verde px-6 py-12 min-[1000px]:pantalla min-[1000px]:pt-[72px]">
+        <section id="nosotros" aria-label="Quiénes somos" className="relative flex items-center justify-center bg-tinte-verde px-6 py-12 min-[1000px]:pantalla min-[1000px]:pt-[72px]">
           {nosotros.foto && <Image src={nosotros.foto.url} alt="" fill unoptimized sizes="100vw" className="object-cover" />}
-          <div className="relative flex w-[620px] max-w-full flex-col gap-[18px] border border-tinta bg-white p-6 sm:p-10">
+          <div className="relative flex w-[620px] max-w-full flex-col gap-[18px] bg-white p-6 sm:p-10">
             <h2 className={`${letraContorno} text-[clamp(32px,4.4vw,54px)]`}>{nosotros.titulo}</h2>
             {nosotros.lema && <p className="text-[17px] font-bold text-acento">{nosotros.lema}</p>}
             <p className="text-[15px] leading-[1.65] text-[#444444]">{nosotros.texto}</p>
@@ -144,14 +144,14 @@ export default async function InicioPage() {
       )}
 
       {inspiracion && (
-        <section id="inspiracion" aria-label="Inspiración" className="flex flex-wrap border-t border-tinta bg-white min-[1000px]:pantalla">
-          <div className="flex flex-[2_1_360px] flex-col items-start gap-5 border-tinta px-8 py-10 max-[840px]:border-b min-[841px]:border-r">
+        <section id="inspiracion" aria-label="Inspiración" className="flex flex-wrap bg-white min-[1000px]:pantalla">
+          <div className="flex flex-[2_1_360px] flex-col items-start gap-5 px-8 py-10">
             {inspiracion.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-acento2-oscuro uppercase">{inspiracion.antetitulo}</span>}
             <p className="max-w-[30ch] text-[24px] leading-[1.3] font-medium text-tinta">{inspiracion.texto}</p>
             <EnlaceContenido boton={inspiracion.boton} className={botonVerde} />
           </div>
           <div className="flex flex-[3_1_480px] p-6">
-            <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden border border-tinta bg-tinte-azul">
+            <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden bg-tinte-azul">
               {inspiracion.video ? (
                 <VideoInspiracion url={inspiracion.video.url} />
               ) : inspiracion.foto ? (

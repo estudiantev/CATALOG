@@ -32,7 +32,7 @@ export function BotonCerrarSesion() {
         type="button"
         onClick={cerrarSesion}
         disabled={saliendo}
-        className={`inline-flex min-h-11 cursor-pointer items-center gap-2 border border-tinta bg-white px-4 font-archivo text-[12px] font-semibold tracking-[0.08em] text-tinta uppercase disabled:cursor-wait disabled:opacity-60 ${hoverBlanca}`}
+        className={`inline-flex min-h-11 cursor-pointer items-center gap-2 bg-white px-4 font-archivo text-[12px] font-semibold tracking-[0.08em] text-tinta uppercase disabled:cursor-wait disabled:opacity-60 ${hoverBlanca}`}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

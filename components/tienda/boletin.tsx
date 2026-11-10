@@ -15,7 +15,7 @@ export function Boletin({ titulo, nota }: { titulo: string; nota: string }) {
       <label htmlFor="boletin-correo" className="text-[12px] font-semibold tracking-[0.12em] text-tinta uppercase">
         {titulo}
       </label>
-      <div className="flex items-stretch gap-1.5 border-2 border-acento bg-white p-[5px] focus-within:shadow-[0_0_0_3px_rgba(0,0,0,.2)]">
+      <div className="flex items-stretch gap-1.5 bg-white p-[5px] focus-within:shadow-[0_0_0_3px_rgba(0,0,0,.2)]">
         <input
           id="boletin-correo"
           name="correo"
@@ -25,7 +25,7 @@ export function Boletin({ titulo, nota }: { titulo: string; nota: string }) {
           placeholder="Tu correo electrónico"
           className="min-h-[46px] min-w-0 flex-auto bg-transparent px-3.5 text-[16px] text-tinta outline-none"
         />
-        <button type="submit" className="flex-none cursor-pointer border border-acento bg-acento px-[22px] text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-white hover:text-acento">
+        <button type="submit" className="flex-none cursor-pointer bg-acento px-[22px] text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-white hover:text-acento">
           Suscribirme
         </button>
       </div>

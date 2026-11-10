@@ -60,9 +60,7 @@ function conModo(p: ProductoCatalogo, modo: Modo): ProductoCatalogo {
   return { ...p, variantes: p.variantes.filter((v) => (modo === "compra" ? v.precioVenta > 0 : v.precioAlquiler > 0)) };
 }
 
-const caja = "border border-tinta";
-const boton = (elegido: boolean) =>
-  `${caja} ${elegido ? "bg-tinta text-white" : `cursor-pointer bg-white text-tinta ${hoverBlanca}`}`;
+const boton = (elegido: boolean) => (elegido ? "bg-tinta text-white" : `cursor-pointer bg-white text-tinta ${hoverBlanca}`);
 
 type Tarjeta = NonNullable<ReturnType<typeof resolverTarjeta<Foto>>> & {
   producto: ProductoCatalogo;
@@ -75,18 +73,18 @@ function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (pro
   // RF-10: abre el detalle con la combinación filtrada (y el color elegido) ya elegida
   const href = `/catalogo/${producto.productId}?v=${variantId}`;
   return (
-    <li className="group/tarjeta flex min-w-0 flex-col border-r border-b border-tinta">
+    <li className="group/tarjeta flex min-w-0 flex-col">
       {/* La foto lleva al mismo lugar que el nombre: para el lector de pantalla basta con uno */}
       <Link href={href} tabIndex={-1} aria-hidden="true" className="group relative block aspect-[3/4] overflow-hidden bg-[#f3f3f3]">
         <FotosProducto portada={portada} hover={hover} sizes="(min-width: 1200px) 25vw, (min-width: 900px) 33vw, 50vw" />
         {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}
-        <span className={`absolute top-2 right-2 flex size-[30px] items-center justify-center border border-tinta bg-white text-tinta ${hoverBlanca}`}>
+        <span className={`absolute top-2 right-2 flex size-[30px] items-center justify-center bg-white text-tinta ${hoverBlanca}`}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
           </svg>
         </span>
       </Link>
-      <div className="flex flex-auto flex-col gap-1 border-t border-tinta px-3.5 pt-3 pb-3.5">
+      <div className="flex flex-auto flex-col gap-1 px-3.5 pt-3 pb-3.5">
         <h3 className="text-[15px] font-medium [overflow-wrap:anywhere]">
           <Link href={href} className="group-hover/tarjeta:underline group-hover/tarjeta:underline-offset-3">
             {producto.nombre}
@@ -258,9 +256,9 @@ export function Catalogo({
   return (
     <div className="bg-white font-cuerpo text-[15px] text-tinta">
       {actual && <h1 className="sr-only">Catálogo de {actual.plural.toLowerCase()}</h1>}
-      <RutaNavegacion sinLinea pasos={ruta}>
-        <div role="group" aria-label="Modalidad" className="flex border border-tinta">
-          {MODOS.map((m, i) => (
+      <RutaNavegacion pasos={ruta}>
+        <div role="group" aria-label="Modalidad" className="flex">
+          {MODOS.map((m) => (
             <button
               key={m.valor}
               type="button"
@@ -269,7 +267,7 @@ export function Catalogo({
                 setModo(m.valor);
                 setLimite(POR_PAGINA);
               }}
-              className={`min-h-[30px] px-3 text-[13px] font-medium ${i > 0 ? "border-l border-tinta" : ""} ${
+              className={`min-h-[30px] px-3 text-[13px] font-medium ${
                 modo === m.valor ? "bg-acento text-white" : "cursor-pointer bg-white text-tinta transition-colors duration-150 hover:bg-acento hover:text-white"
               }`}
             >
@@ -350,7 +348,7 @@ export function Catalogo({
         aria-label={grupoAbierto ? `Filtro: ${grupoAbierto.nombre}` : "Filtro"}
         hidden={!grupoAbierto}
         onKeyDown={(e) => e.key === "Escape" && setAbierto(null)}
-        className="border-y border-tinta px-[clamp(16px,3vw,32px)] py-4"
+        className="px-[clamp(16px,3vw,32px)] py-4"
       >
         {grupoAbierto && (
           <div className="flex items-start gap-6">
@@ -408,7 +406,7 @@ export function Catalogo({
         )}
       </div>
 
-      <div className="flex min-h-[52px] flex-wrap items-center gap-2 border-b border-tinta px-[clamp(16px,3vw,32px)] py-2.5">
+      <div className="flex min-h-[52px] flex-wrap items-center gap-2 px-[clamp(16px,3vw,32px)] py-2.5">
         <span className="mr-1 text-[11px] font-semibold tracking-[0.12em] uppercase">Filtros aplicados</span>
         {chips.length === 0 ? (
           <span className="text-[14px] text-[#555555]">Ninguno</span>
@@ -423,7 +421,7 @@ export function Catalogo({
                   chip.quitar();
                   setLimite(POR_PAGINA);
                 }}
-                className={`inline-flex min-h-[30px] cursor-pointer items-center gap-1.5 border border-tinta bg-white px-2.5 text-[13px] text-tinta ${hoverBlanca}`}
+                className={`inline-flex min-h-[30px] cursor-pointer items-center gap-1.5 bg-white px-2.5 text-[13px] text-tinta ${hoverBlanca}`}
               >
                 {chip.nombre}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -446,7 +444,7 @@ export function Catalogo({
                 <TarjetaCatalogo key={t.producto.productId} tarjeta={t} onColor={(id, c) => setColorDe((actuales) => ({ ...actuales, [id]: c }))} />
               ))}
             </ul>
-            <div className="flex flex-col items-center gap-3 border-b border-tinta px-4 py-8">
+            <div className="flex flex-col items-center gap-3 px-4 py-8">
               <span aria-live="polite" className="text-[13px] text-[#555555]">
                 Mostrando {visibles.length < tarjetas.length ? `${visibles.length} de ${productosTexto(tarjetas.length)}` : productosTexto(tarjetas.length)}
               </span>
@@ -458,7 +456,7 @@ export function Catalogo({
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-3.5 border-b border-tinta px-6 py-24 text-center">
+          <div className="flex flex-col items-center gap-3.5 px-6 py-24 text-center">
             <h2 className="text-[22px] font-medium">{productos.length ? "No encontramos productos con estos filtros" : "Todavía no hay productos en esta categoría"}</h2>
             {productos.length > 0 && (
               <>

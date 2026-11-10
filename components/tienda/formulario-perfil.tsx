@@ -177,7 +177,7 @@ export function FormularioPerfil({
               <Campo id="apellido" etiqueta="Apellido" error={errores.apellido}>
                 <input {...campo("apellido")} autoComplete="family-name" maxLength={LARGO_NOMBRE} />
               </Campo>
-              <div className="flex min-w-0 flex-col gap-0.5 border-y border-tinta py-3 sm:col-span-2">
+              <div className="flex min-w-0 flex-col gap-0.5 py-3 sm:col-span-2">
                 <p className={etiquetaDato}>Correo</p>
                 <p className={valorDato}>{perfil.correo || "—"}</p>
                 <p className={`${textoAyuda} mt-1`}>Es tu usuario para iniciar sesión, por eso no se cambia aquí.</p>
@@ -199,7 +199,7 @@ export function FormularioPerfil({
             <p className="mt-3 max-w-[46ch] text-[14px] leading-[1.5] text-[#444444]">Todas son opcionales y van en centímetros.</p>
             {/* Desde 1280 px la ficha va al lado de los campos; más abajo, encima */}
             <div className="mt-4 grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)] xl:items-start">
-              <div className="max-w-[22rem] border border-tinta bg-white p-3.5">
+              <div className="max-w-[22rem] bg-white p-3.5">
                 <FichaMedidas medidas={medidasEnVivo} copa={valores.copa || null} resaltar={enfocada} decorativa />
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 xl:grid-cols-2">
@@ -231,7 +231,7 @@ export function FormularioPerfil({
         </div>
       </div>
 
-      <div className={`flex flex-wrap items-center gap-2 border-b border-tinta py-4 ${margenCuenta}`}>
+      <div className={`flex flex-wrap items-center gap-2 py-4 ${margenCuenta}`}>
         <button type="submit" disabled={enviando} className={`${botonAzul} cursor-pointer disabled:cursor-wait disabled:opacity-70`}>
           {enviando ? "Guardando…" : "Guardar cambios"}
         </button>

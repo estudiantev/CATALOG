@@ -1,11 +1,10 @@
 // Estilos del área de la clienta (/cuenta y /cuenta/perfil), con el lenguaje del resto de la
-// tienda: fondo blanco, líneas negras, títulos en caja negra y botones negro y blanco.
+// tienda: fondo blanco, títulos en caja negra y botones negro y blanco.
 
 // Mismo margen lateral que la ruta de navegación y el detalle del producto
 export const margenCuenta = "px-[clamp(16px,3vw,32px)]";
-// Los dos paneles (tus datos y tus medidas) van lado a lado desde 1024 px, separados por una
-// línea. Ahí llenan el alto que queda: la página ocupa justo una pantalla (app/(tienda)/cuenta/layout.tsx).
-export const panelesCuenta = "grid gap-px border-b border-tinta bg-tinta lg:flex-auto lg:grid-cols-2";
+// Los dos paneles (tus datos y tus medidas) van lado a lado desde 1024 px. Ahí llenan el alto que queda: la página ocupa justo una pantalla (app/(tienda)/cuenta/layout.tsx).
+export const panelesCuenta = "grid lg:flex-auto lg:grid-cols-2";
 export const panelCuenta = "flex min-w-0 flex-col items-start p-[clamp(16px,2.2vw,28px)]";
 
 // Títulos en caja, más chicos que los de la página de inicio

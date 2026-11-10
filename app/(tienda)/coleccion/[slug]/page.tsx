@@ -43,11 +43,11 @@ export default async function ColeccionPage({ params }: Props) {
   const portada = (
     <>
       {foto && (
-        <div className="relative h-[clamp(200px,30vw,420px)] border-b border-tinta bg-[#f3f3f3]">
+        <div className="relative h-[clamp(200px,30vw,420px)] bg-[#f3f3f3]">
           <Image src={foto.url} alt="" fill unoptimized priority sizes="100vw" className="object-cover" />
         </div>
       )}
-      <div className="border-b border-tinta px-[clamp(16px,3vw,32px)] pt-10 pb-8">
+      <div className="px-[clamp(16px,3vw,32px)] pt-10 pb-8">
         <h1 className="text-[clamp(32px,2.8vw,42px)] leading-[1.1] font-medium tracking-[-0.01em] [overflow-wrap:anywhere]">{titulo}</h1>
         {descripcion && <p className="mt-3 max-w-[70ch] text-[16px] leading-[1.5] whitespace-pre-line text-[#555555]">{descripcion}</p>}
       </div>
@@ -59,7 +59,7 @@ export default async function ColeccionPage({ params }: Props) {
       <div className="bg-white font-cuerpo text-[15px] text-tinta">
         <RutaNavegacion pasos={ruta} />
         {portada}
-        <p className="border-b border-tinta px-6 py-24 text-center text-[18px]">Por ahora no hay productos disponibles en esta colección.</p>
+        <p className="px-6 py-24 text-center text-[18px]">Por ahora no hay productos disponibles en esta colección.</p>
       </div>
     );
   }
