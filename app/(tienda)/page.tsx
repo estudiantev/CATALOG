@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CarruselDestacados } from "@/components/tienda/carrusel-destacados";
 import { enlaceWhatsApp } from "@/components/tienda/datos";
 import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
-import { barraSeccion, botonVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
+import { barraSeccion, botonInicioVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
@@ -110,7 +110,7 @@ export default async function InicioPage() {
               href={enlaceWhatsApp("Hola, quisiera reservar un vestido en Fara Collection.")}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${botonVerde} gap-2.5`}
+              className={`${botonInicioVerde} gap-2.5`}
             >
               <IconoWhatsApp />
               <span>{pasos.boton}</span>
@@ -148,7 +148,7 @@ export default async function InicioPage() {
           <div className="flex flex-[2_1_360px] flex-col items-start gap-5 px-8 py-10">
             {inspiracion.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-acento2-oscuro uppercase">{inspiracion.antetitulo}</span>}
             <p className="max-w-[30ch] text-[24px] leading-[1.3] font-medium text-tinta">{inspiracion.texto}</p>
-            <EnlaceContenido boton={inspiracion.boton} className={botonVerde} />
+            <EnlaceContenido boton={inspiracion.boton} className={botonInicioVerde} />
           </div>
           <div className="flex flex-[3_1_480px] p-6">
             <div className="relative flex min-h-[360px] flex-auto items-end justify-center overflow-hidden bg-tinte-azul">

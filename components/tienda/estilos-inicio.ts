@@ -16,7 +16,17 @@ const botonCaja = "inline-flex min-h-10 items-center justify-center px-[22px] fo
 export const botonBlanco = `${botonCaja} bg-white text-tinta ${hoverBlanca}`;
 export const botonAzul = `${botonCaja} bg-acento text-white ${hoverAzul}`;
 // Estos no se invierten: se levantan con una sombra
-export const botonVerde = `${botonCaja} bg-acento2 text-white transition-[box-shadow,transform] duration-150 hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111111] motion-reduce:transition-none`;
+const levantar =
+  "transition-[box-shadow,transform] duration-150 hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111111] motion-reduce:transition-none";
+export const botonVerde = `${botonCaja} bg-acento2 text-white ${levantar}`;
+
+// Los botones de la página de inicio: 48 px de alto, con la letra del texto (sin mayúsculas) y un
+// filo oscuro abajo a la derecha. Los colores y el efecto al pasar el cursor son los de arriba.
+const botonInicio =
+  "inline-flex min-h-12 items-center justify-center px-5 text-center font-cuerpo text-[16px] leading-[1.25] shadow-[1px_1px_0_#111111]";
+export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${hoverBlanca}`;
+export const botonInicioAzul = `${botonInicio} bg-acento text-white ${hoverAzul}`;
+export const botonInicioVerde = `${botonInicio} bg-acento2 text-white ${levantar}`;
 
 // Títulos de sección en una caja negra
 const tituloCajaBase =
