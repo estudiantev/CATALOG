@@ -10,7 +10,7 @@ import { nombreOpcion } from "@/lib/productos";
 import { enlaceCuenta } from "@/lib/redireccion";
 import { Anuncios } from "./anuncios";
 import { COLORES } from "./datos";
-import { cajaIconoAzul, cajaIconoBlanca, cajaNav } from "./estilos-inicio";
+import { cajaNav, opcionIcono, opcionNav } from "./estilos-inicio";
 import { useSesion } from "./use-sesion";
 
 const enlaceMega =
@@ -88,52 +88,53 @@ export function Encabezado({
         Saltar al contenido
       </a>
       {anuncios && <Anuncios {...anuncios} />}
-      <header className="flex h-14 items-center gap-2 bg-white px-4">
+      {/* 50 px de alto más una línea gris muy suave abajo */}
+      <header className="flex h-[51px] items-center gap-2 border-b border-[#f0f0f0] bg-white px-[15px] menu:gap-11">
         <Link href="/" aria-label="FARA collections, inicio" onClick={cerrarMenus} className="flex flex-none items-center transition-opacity duration-150 hover:opacity-70">
           <Image src="/logo-fara.svg" alt="" width={722} height={341} priority className="h-12 w-auto" />
         </Link>
 
-        <nav aria-label="Principal" className="ml-[clamp(0px,4vw,56px)] hidden min-w-0 flex-auto menu:flex">
-          <ul className="flex items-center gap-2">
+        <nav aria-label="Principal" className="hidden min-w-0 flex-auto menu:flex">
+          <ul className="flex items-center gap-[21px]">
             <li>
               <button
                 type="button"
                 aria-expanded={catalogoAbierto}
                 aria-controls="menu-catalogo"
                 onClick={() => setCatalogoAbierto((abierto) => !abierto)}
-                className={`${cajaNav} cursor-pointer gap-2 aria-expanded:bg-acento aria-expanded:text-white`}
+                className={`${opcionNav} cursor-pointer gap-1.5 aria-expanded:underline aria-expanded:underline-offset-3`}
               >
                 Catálogo
                 <Chevron arriba={catalogoAbierto} />
               </button>
             </li>
             <li>
-              <Link href="/colecciones" onClick={cerrarMenus} className={cajaNav}>
+              <Link href="/colecciones" onClick={cerrarMenus} className={opcionNav}>
                 Colecciones
               </Link>
             </li>
             <li>
-              <a href="#contacto" onClick={cerrarMenus} className={cajaNav}>
+              <a href="#contacto" onClick={cerrarMenus} className={opcionNav}>
                 Contacto
               </a>
             </li>
             <li>
-              <Link href="/catalogo?categoria=accesorios" onClick={cerrarMenus} className={cajaNav}>
+              <Link href="/catalogo?categoria=accesorios" onClick={cerrarMenus} className={opcionNav}>
                 Accesorios
               </Link>
             </li>
           </ul>
         </nav>
 
-        <div className="ml-auto flex flex-none items-center gap-1.5 menu:gap-2">
-          <button type="button" aria-label="Buscar" className={`${cajaIconoBlanca} cursor-pointer`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <div className="ml-auto flex flex-none items-center gap-1.5 menu:gap-[21px]">
+          <button type="button" aria-label="Buscar" className={`${opcionIcono} cursor-pointer menu:w-8`}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="6.5" />
               <path d="M20 20l-4.2-4.2" />
             </svg>
           </button>
-          <a href="#" aria-label="Favoritos" className={cajaIconoBlanca}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <a href="#" aria-label="Favoritos" className={opcionIcono}>
+            <svg className="menu:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
             </svg>
             <span aria-hidden="true" className="hidden menu:inline">
@@ -143,8 +144,8 @@ export function Encabezado({
           {/* Solo para el staff. Es un atajo: /admin igual revisa la sesión en el servidor. Hasta
               1100 px va solo el ícono, para que entre junto al nombre sin tapar el menú. */}
           {staff && (
-            <Link href="/admin" aria-label="Panel de administración" title="Panel de administración" onClick={cerrarMenus} className={cajaIconoBlanca}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <Link href="/admin" aria-label="Panel de administración" title="Panel de administración" onClick={cerrarMenus} className={opcionIcono}>
+              <svg className="min-[1100px]:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="9" />
                 <rect x="14" y="3" width="7" height="5" />
                 <rect x="14" y="12" width="7" height="9" />
@@ -161,9 +162,9 @@ export function Encabezado({
             href={sesion ? "/cuenta" : enlaceCuenta("/login", pathname)}
             aria-label={sesion ? (sesion.nombre ? `Mi cuenta, ${sesion.nombre}` : "Mi cuenta") : "Ingresar"}
             onClick={cerrarMenus}
-            className={`${cajaIconoAzul} relative`}
+            className={`${opcionIcono} relative`}
           >
-            <svg className="menu:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg className="menu:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" />
             </svg>
@@ -178,15 +179,15 @@ export function Encabezado({
             aria-expanded={menuMovilAbierto}
             aria-controls="menu-movil"
             onClick={() => setMenuMovilAbierto((abierto) => !abierto)}
-            className={`${cajaIconoBlanca} cursor-pointer menu:hidden`}
+            className={`${opcionIcono} cursor-pointer menu:hidden`}
           >
             {menuMovilAbierto ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 6l12 12" />
                 <path d="M18 6L6 18" />
               </svg>
             ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                 <path d="M4 7h16" />
                 <path d="M4 12h16" />
                 <path d="M4 17h16" />

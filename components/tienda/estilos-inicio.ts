@@ -1,16 +1,18 @@
-// Las cajas del encabezado y de la página de inicio
+// Estilos del encabezado y de la página de inicio
 
 // Al pasar el cursor se invierten: las cajas blancas se ponen negras y las negras, blancas
 export const hoverBlanca = "transition-colors duration-150 hover:border-acento hover:bg-acento hover:text-white";
 const hoverAzul = "transition-colors duration-150 hover:bg-white hover:text-tinta";
 
-// Opciones del encabezado. Sin colores, para que no compitan con los de cada una
-const cajaBase = "inline-flex min-h-[34px] items-center font-archivo text-[12px] font-semibold tracking-[0.08em] uppercase";
-export const cajaNav = `${cajaBase} bg-white px-3.5 text-tinta ${hoverBlanca}`;
-// En el celular son cuadrados con su ícono; en escritorio llevan también el texto
-const cajaIcono = `${cajaBase} size-10 justify-center gap-1.5 menu:size-auto menu:px-3`;
-export const cajaIconoBlanca = `${cajaIcono} bg-white text-tinta ${hoverBlanca}`;
-export const cajaIconoAzul = `${cajaIcono} bg-acento text-white ${hoverAzul}`;
+// Opciones del encabezado: texto en mayúsculas, sin caja, que se subraya al pasar el cursor. Miden
+// 44 px de alto para el dedo aunque solo se vea el texto.
+const opcionBase =
+  "inline-flex items-center text-[14px] leading-[18px] tracking-[0.02em] text-tinta uppercase hover:underline hover:underline-offset-3";
+export const opcionNav = `${opcionBase} min-h-11`;
+// En el celular son íconos de 40 px; en escritorio, el texto (Buscar es solo el ícono)
+export const opcionIcono = `${opcionBase} size-10 justify-center gap-1.5 menu:size-auto menu:min-h-11`;
+// Las tallas de los menús del encabezado
+export const cajaNav = `inline-flex min-h-[34px] items-center bg-white px-3.5 font-archivo text-[12px] font-semibold tracking-[0.08em] text-tinta uppercase ${hoverBlanca}`;
 
 const botonCaja = "inline-flex min-h-10 items-center justify-center px-[22px] font-archivo text-[12px] font-bold tracking-[0.1em] uppercase";
 export const botonBlanco = `${botonCaja} bg-white text-tinta ${hoverBlanca}`;
@@ -20,12 +22,14 @@ const levantar =
   "transition-[box-shadow,transform] duration-150 hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111111] motion-reduce:transition-none";
 export const botonVerde = `${botonCaja} bg-acento2 text-white ${levantar}`;
 
-// Los botones de la página de inicio: 48 px de alto, con la letra del texto (sin mayúsculas) y un
-// filo oscuro abajo a la derecha. Los colores y el efecto al pasar el cursor son los de arriba.
+// Los botones de la página de inicio: 49 px de alto, con la letra del texto (sin mayúsculas) y una
+// línea negra alrededor
 const botonInicio =
-  "inline-flex min-h-12 items-center justify-center px-5 text-center font-cuerpo text-[16px] leading-[1.25] shadow-[1px_1px_0_#111111]";
-export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${hoverBlanca}`;
-export const botonInicioAzul = `${botonInicio} bg-acento text-white ${hoverAzul}`;
+  "inline-flex items-center justify-center border border-tinta px-[19px] py-3 text-center font-cuerpo text-[18px] leading-[23px]";
+// Los de la portada: el principal gris claro y el otro blanco. Al pasar el cursor se subraya el texto.
+const subrayar = "hover:underline hover:underline-offset-3";
+export const botonInicioGris = `${botonInicio} bg-[#e8e8e8] text-tinta ${subrayar}`;
+export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${subrayar}`;
 export const botonInicioVerde = `${botonInicio} bg-acento2 text-white ${levantar}`;
 
 // Títulos de sección en una caja negra

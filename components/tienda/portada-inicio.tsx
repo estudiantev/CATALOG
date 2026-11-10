@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { DiapositivaLista } from "@/lib/contenido-servidor";
 import { EnlaceContenido } from "./enlace-contenido";
-import { botonInicioAzul, botonInicioBlanco } from "./estilos-inicio";
+import { botonInicioBlanco, botonInicioGris } from "./estilos-inicio";
 import { Vestido } from "./vestido";
 
 // La misma condición de la variante `movil` de tienda.css
@@ -57,19 +57,19 @@ export function PortadaInicio({ diapositivas }: { diapositivas: DiapositivaLista
           </div>
         )}
       </div>
-      <div className="relative z-2 mt-[14vh] flex w-[420px] max-w-full flex-col items-center bg-white px-7 py-6 text-center bajo:mt-0 bajo:py-4 movil:mt-0 movil:w-full movil:items-stretch movil:px-5 movil:pt-4 movil:pb-4 movil:text-left">
+      <div className="relative z-2 flex w-[480px] max-w-full flex-col items-start bg-white px-5 pt-6 pb-[21px] bajo:py-4 movil:w-full movil:items-stretch movil:py-4">
         {/* Al cambiar de portada, el lector de pantalla lee la nueva */}
-        <div aria-live={varias ? "polite" : undefined} className="flex w-full flex-col items-center gap-3 movil:items-start movil:gap-2 bajo:gap-2">
-          {d.antetitulo && <span className="text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#555555] uppercase">{d.antetitulo}</span>}
-          <h1 className="text-[26px] leading-[1.2] font-medium break-words text-tinta movil:text-[clamp(22px,6.4vw,28px)] movil:leading-[1.15]">{d.titulo}</h1>
-          {d.texto && <p className="max-w-[36ch] text-[15px] leading-[1.55] text-[#444444] movil:text-[14px] movil:leading-[1.45]">{d.texto}</p>}
-          <div className="mt-1 flex flex-wrap justify-center gap-2 movil:w-full movil:max-w-[420px]">
-            <EnlaceContenido boton={d.botonPrincipal} className={`${botonInicioAzul} ${botonPortada}`} />
+        <div aria-live={varias ? "polite" : undefined} className="flex w-full flex-col items-start">
+          {d.antetitulo && <span className="mb-3.5 text-[14px] leading-[18px] tracking-[0.02em] uppercase">{d.antetitulo}</span>}
+          <h1 className="mb-3 text-[26px] leading-[1.25] font-normal tracking-[-0.005em] break-words text-tinta">{d.titulo}</h1>
+          {d.texto && <p className="mb-5 text-[18px] leading-[1.35] text-tinta">{d.texto}</p>}
+          <div className="flex flex-wrap gap-2 movil:w-full movil:max-w-[420px]">
+            <EnlaceContenido boton={d.botonPrincipal} className={`${botonInicioGris} ${botonPortada}`} />
             {d.botonSecundario.texto && <EnlaceContenido boton={d.botonSecundario} className={`${botonInicioBlanco} ${botonPortada}`} />}
           </div>
         </div>
         {varias && (
-          <div className="-mb-3 flex items-center movil:justify-center">
+          <div className="-mb-3 -ml-[7px] flex items-center movil:ml-0 movil:justify-center">
             {diapositivas.map((_, i) => (
               <button
                 key={i}

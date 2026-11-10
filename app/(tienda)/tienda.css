@@ -68,10 +68,10 @@
  * un anuncio largo ocupa más de una línea en el celular y Encabezado lo cambia por el alto real.
  */
 :root {
-  --alto-marco: 56px;
+  --alto-marco: 51px;
 }
 :root:has(#anuncios) {
-  --alto-marco: 86px;
+  --alto-marco: 91px;
 }
 
 /*

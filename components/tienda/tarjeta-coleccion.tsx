@@ -40,7 +40,7 @@ const ESTILOS = {
     nombre: "line-clamp-3 text-[clamp(20px,calc(100cqw/(var(--letras)*0.92)),32.5px)] wrap-anywhere",
     descripcion: "text-[17.5px] wrap-anywhere",
     // Como los botones de la página de inicio (botonInicio en estilos-inicio.ts)
-    boton: "min-h-12 px-5 font-cuerpo text-[16px] leading-[1.25] shadow-[1px_1px_0_#111111]",
+    boton: "border border-tinta px-[19px] py-3 font-cuerpo text-[18px] leading-[23px]",
     flecha: 15,
   },
 };

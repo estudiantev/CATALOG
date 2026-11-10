@@ -29,7 +29,7 @@ export function Anuncios({ mensajes, segundos }: DatosSeccion["anuncios"]) {
       role="region"
       aria-label="Anuncios"
       aria-roledescription={varios ? "carrusel" : undefined}
-      className="flex min-h-[30px] flex-none items-center gap-2 bg-acento px-2 text-[12.5px] leading-[1.3] tracking-[0.01em] text-white"
+      className="flex min-h-10 flex-none items-center gap-2 bg-acento px-2 text-[16px] leading-[22px] text-white"
     >
       {/* Mismo ancho que los controles, para que el anuncio quede centrado */}
       {varios && <div aria-hidden="true" className="hidden w-[84px] flex-none min-[701px]:block" />}
@@ -51,7 +51,7 @@ export function Anuncios({ mensajes, segundos }: DatosSeccion["anuncios"]) {
             >
               {mensaje.texto}{" "}
               {mensaje.boton.texto && (
-                <EnlaceContenido boton={mensaje.boton} className="whitespace-nowrap text-white underline underline-offset-3 focus-visible:outline-white focus-visible:-outline-offset-2" />
+                <EnlaceContenido boton={mensaje.boton} className="whitespace-nowrap text-white underline underline-offset-2 focus-visible:outline-white focus-visible:-outline-offset-2" />
               )}
             </p>
           );
