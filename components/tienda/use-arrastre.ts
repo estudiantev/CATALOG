@@ -37,8 +37,14 @@ export function useArrastre(ref: RefObject<HTMLElement | null>, selectorElemento
       if (!fin?.movido) return;
       delete c.dataset.arrastrando;
       // Lo que avanza la fila de un elemento al siguiente: su ancho más el espacio entre ellos
-      const [primero, segundo] = c.querySelectorAll<HTMLElement>(selectorElemento);
-      const paso = segundo ? segundo.offsetLeft - primero.offsetLeft : (primero?.getBoundingClientRect().width ?? 0);
+      // (Sin desestructurar la lista: el target es5 de tsconfig no permite recorrer un NodeList)
+      const elementos = c.querySelectorAll<HTMLElement>(selectorElemento);
+      const paso =
+        elementos.length > 1
+          ? elementos[1].offsetLeft - elementos[0].offsetLeft
+          : elementos.length
+            ? elementos[0].getBoundingClientRect().width
+            : 0;
       const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (paso) c.scrollTo({ left: Math.round(c.scrollLeft / paso) * paso, behavior: suave ? "smooth" : "auto" });
       clearTimeout(espera);
