@@ -23,7 +23,7 @@ const levantar =
 export const botonVerde = `${botonCaja} bg-acento2 text-white ${levantar}`;
 
 // Los botones de la página de inicio: con la letra del texto (sin mayúsculas) y una línea negra
-// alrededor. Miden 49 px de alto; el de la sección del catálogo, 51 px.
+// alrededor. Miden 49 px de alto.
 const formaInicio =
   "inline-flex items-center justify-center border border-tinta px-[19px] text-center font-cuerpo text-[18px] leading-[23px]";
 const botonInicio = `${formaInicio} py-3`;
@@ -35,8 +35,6 @@ const hoverClaro = "transition-colors duration-150 hover:bg-[#e8e8e8]";
 export const botonInicioGris = `${botonInicio} bg-[#e8e8e8] text-tinta ${hoverGris}`;
 export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${hoverClaro}`;
 export const botonInicioVerde = `${botonInicio} bg-acento2 text-white ${levantar}`;
-// "Ver todo el catálogo", junto al título de los destacados
-export const botonCatalogoInicio = `${formaInicio} bg-white py-[13px] text-tinta ${hoverClaro}`;
 
 // Títulos de sección en una caja negra
 const tituloCajaBase =

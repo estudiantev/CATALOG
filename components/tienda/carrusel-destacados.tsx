@@ -7,19 +7,35 @@ import { useArrastre } from "./use-arrastre";
 // y parte de la siguiente. En el celular y con el trackpad se desliza sola; con el mouse se
 // arrastra y, al soltar, encaja en la tarjeta más cercana. Si no entran todas, la flecha de la
 // derecha avanza y, al final, vuelve al comienzo.
+//
+// La cuadrícula tiene dos filas: las fotos y los textos (cada tarjeta ocupa las dos con subgrid,
+// así todas las fotos miden lo mismo aunque un nombre ocupe dos líneas). Desde 1000 px las fotos
+// se llevan el alto que sobra en la pantalla; más abajo tienen su propia proporción.
 export function CarruselDestacados({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   const lista = useRef<HTMLUListElement>(null);
   const [desborda, setDesborda] = useState(false);
+  const [altoFotos, setAltoFotos] = useState(0);
   useArrastre(lista, "li");
 
   useEffect(() => {
     const c = lista.current;
     if (!c) return;
-    const medir = () => setDesborda(c.scrollWidth - c.clientWidth > 1);
+    let activo = true;
+    const medir = () => {
+      if (!activo) return;
+      setDesborda(c.scrollWidth - c.clientWidth > 1);
+      // La primera fila de la cuadrícula, en px: la flecha va a media altura de las fotos
+      setAltoFotos(parseFloat(getComputedStyle(c).gridTemplateRows) || 0);
+    };
     medir();
     const observador = new ResizeObserver(medir);
     observador.observe(c);
-    return () => observador.disconnect();
+    // Las letras cambian el alto de los textos (y con él, el de las fotos) cuando terminan de cargar
+    document.fonts?.ready.then(medir);
+    return () => {
+      activo = false;
+      observador.disconnect();
+    };
   }, []);
 
   const avanzar = () => {
@@ -31,16 +47,18 @@ export function CarruselDestacados({ etiqueta, children }: { etiqueta: string; c
   };
 
   return (
-    <div role="region" aria-roledescription="carrusel" aria-label={etiqueta} className="relative">
+    <div role="region" aria-roledescription="carrusel" aria-label={etiqueta} className="relative flex min-h-0 flex-auto flex-col">
       <ul
         ref={lista}
-        className="grid cursor-grab auto-cols-[72%] grid-flow-col gap-5 snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth select-none [scrollbar-width:none] motion-reduce:scroll-auto data-arrastrando:cursor-grabbing min-[901px]:auto-cols-[calc((100%-60px)/4)] [&_a]:cursor-grab [&_h3]:cursor-pointer [&[data-arrastrando]_*]:cursor-grabbing [&::-webkit-scrollbar]:hidden"
+        className="grid flex-auto cursor-grab auto-cols-[72%] grid-flow-col grid-rows-[auto_auto] gap-x-5 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth select-none [scrollbar-width:none] motion-reduce:scroll-auto data-arrastrando:cursor-grabbing min-[901px]:auto-cols-[calc((100%-60px)/4)] min-[1000px]:min-h-[360px] min-[1000px]:grid-rows-[minmax(240px,1fr)_auto] [&_a]:cursor-grab [&_h3]:cursor-pointer [&[data-arrastrando]_*]:cursor-grabbing [&::-webkit-scrollbar]:hidden"
       >
         {children}
       </ul>
-      {/* Mide lo que la foto de una tarjeta: la flecha queda a la derecha, a media altura de la foto */}
-      {desborda && (
-        <div className="pointer-events-none absolute top-0 right-0 flex aspect-[447/541] w-[72%] items-center justify-end min-[901px]:w-[calc((100%-60px)/4)]">
+      {desborda && altoFotos > 0 && (
+        <div
+          style={{ height: altoFotos }}
+          className="pointer-events-none absolute top-0 right-0 flex w-[72%] items-center justify-end min-[901px]:w-[calc((100%-60px)/4)]"
+        >
           <button
             type="button"
             aria-label="Ver más productos"

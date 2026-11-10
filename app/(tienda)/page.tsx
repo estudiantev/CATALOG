@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CarruselDestacados } from "@/components/tienda/carrusel-destacados";
 import { enlaceWhatsApp } from "@/components/tienda/datos";
 import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
-import { barraSeccion, botonCatalogoInicio, botonInicioVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
+import { barraSeccion, botonInicioVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
@@ -45,10 +45,10 @@ export default async function InicioPage() {
           aria-label={destacados.titulo ? undefined : "Catálogo"}
           className="flex flex-col bg-white px-[18px] pt-5 pb-14 min-[1000px]:pantalla"
         >
-          <div className="mb-[21px] flex items-start justify-between gap-4">
+          <div className="mb-[21px] flex items-baseline justify-between gap-4 text-[14px] leading-[18px]">
             {/* El título y el subtítulo son opcionales */}
             {(destacados.titulo || destacados.subtitulo) && (
-              <div className="mt-[7px] flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-[14px] leading-[18px]">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
                 {destacados.titulo && (
                   <h2 id="titulo-catalogo" className="font-normal tracking-[0.02em] uppercase">
                     {destacados.titulo}
@@ -57,13 +57,18 @@ export default async function InicioPage() {
                 {destacados.subtitulo && <p className="text-[#666666]">{destacados.subtitulo}</p>}
               </div>
             )}
-            <Link href="/catalogo" className={`${botonCatalogoInicio} ml-auto flex-none`}>
+            {/* Un enlace de texto y no un botón: deja más alto para las fotos. Se toca en un área
+                más grande que el texto, sin que ocupe más lugar. */}
+            <Link
+              href="/catalogo"
+              className="relative ml-auto flex-none tracking-[0.02em] uppercase after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:underline hover:underline-offset-3"
+            >
               Ver todo el catálogo
             </Link>
           </div>
           <CarruselDestacados etiqueta="Productos destacados">
             {tarjetas.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
-              <li key={producto.productId} className="min-w-0 snap-start">
+              <li key={producto.productId} className="row-span-2 grid min-w-0 snap-start grid-rows-subgrid">
                 <TarjetaDestacado
                   href={`/catalogo/${producto.productId}?v=${variantId}`}
                   nombre={producto.nombre}
