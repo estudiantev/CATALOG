@@ -36,9 +36,11 @@ export function useArrastre(ref: RefObject<HTMLElement | null>, selectorElemento
       arrastre = null;
       if (!fin?.movido) return;
       delete c.dataset.arrastrando;
-      const ancho = c.querySelector(selectorElemento)?.getBoundingClientRect().width ?? 0;
+      // Lo que avanza la fila de un elemento al siguiente: su ancho más el espacio entre ellos
+      const [primero, segundo] = c.querySelectorAll<HTMLElement>(selectorElemento);
+      const paso = segundo ? segundo.offsetLeft - primero.offsetLeft : (primero?.getBoundingClientRect().width ?? 0);
       const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (ancho) c.scrollTo({ left: Math.round(c.scrollLeft / ancho) * ancho, behavior: suave ? "smooth" : "auto" });
+      if (paso) c.scrollTo({ left: Math.round(c.scrollLeft / paso) * paso, behavior: suave ? "smooth" : "auto" });
       clearTimeout(espera);
       espera = window.setTimeout(() => {
         c.style.scrollSnapType = "";

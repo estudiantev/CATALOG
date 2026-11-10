@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { Foto } from "@/lib/catalogo";
 import { formatoSoles } from "@/lib/productos";
-import { hoverBlanca } from "./estilos-inicio";
 import { FotosProducto } from "./tarjeta-producto";
 
-// Tarjeta del carrusel de la página de inicio
+// Tarjeta del carrusel de la página de inicio: la foto con su etiqueta y, debajo, el nombre, el
+// alquiler (en gris) y la venta
 export function TarjetaDestacado({
   href,
   nombre,
@@ -27,35 +27,27 @@ export function TarjetaDestacado({
   sizes: string;
 }) {
   return (
-    <Link href={href} className="group flex min-w-0 flex-auto flex-col">
-      {/* Desde 1000 px llena el alto de la sección; más abajo, la forma vertical de un vestido */}
-      <div className="relative aspect-[4/7] max-h-[720px] overflow-hidden bg-[#f0f0f0] transition-colors duration-200 group-hover:bg-[#e8e8e8] min-[1000px]:aspect-auto min-[1000px]:max-h-none min-[1000px]:min-h-[300px] min-[1000px]:flex-auto">
+    <Link href={href} className="group block text-tinta">
+      <div className="relative aspect-[447/541] overflow-hidden bg-[#f7f7f7]">
         <FotosProducto portada={portada} hover={hover} sizes={sizes} />
         {etiqueta && (
-          <span className="absolute top-3 left-3 bg-[#fbd1da] px-2 py-[5px] text-[11px] leading-none font-semibold tracking-[0.08em] text-tinta uppercase">
-            {etiqueta}
-          </span>
+          <span className="absolute top-0 left-0 bg-[#fbd1da] px-2.5 font-mono text-[14px] leading-[30px] tracking-[0.04em] uppercase">{etiqueta}</span>
         )}
-        {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}
-        <span aria-hidden="true" className={`absolute top-2.5 right-2.5 flex size-8 items-center justify-center bg-white text-tinta ${hoverBlanca}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
-          </svg>
-        </span>
       </div>
-      <div className="flex flex-none flex-col gap-1 px-3.5 pt-2.5 pb-3">
-        <h3 className="truncate text-[13px] text-tinta group-hover:underline group-hover:underline-offset-3">{nombre}</h3>
-        {/* RF-06: el menor precio entre las variantes. Venta y alquiler en una sola línea */}
-        <p className="text-[11px] whitespace-nowrap text-[#555555] min-[700px]:text-[12px]">
-          <span className="text-tinta">
-            {desde && "Desde "}
-            {formatoSoles.format(precioVenta)}
-          </span>
-          {" · "}
+      <h3 className="mt-4 text-[17px] leading-[25px] group-hover:underline group-hover:underline-offset-3">{nombre}</h3>
+      {/* RF-06: el menor precio entre las variantes */}
+      {precioAlquiler > 0 && (
+        <p className="text-[17px] leading-[25px] text-[#666666]">
           Alquiler {desde && "desde "}
-          {formatoSoles.format(precioAlquiler)}/día
+          {formatoSoles.format(precioAlquiler)} por día
         </p>
-      </div>
+      )}
+      {precioVenta > 0 && (
+        <p className="mt-1 text-[17px] leading-[25px]">
+          {desde && "Desde "}
+          {formatoSoles.format(precioVenta)}
+        </p>
+      )}
     </Link>
   );
 }

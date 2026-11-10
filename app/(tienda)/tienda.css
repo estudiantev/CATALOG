@@ -49,6 +49,7 @@
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-titulo: var(--font-instrument), Georgia, "Times New Roman", serif;
   --font-cuerpo: var(--font-dm-sans), system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
   --font-archivo: var(--font-archivo-ancho), sans-serif;
 }
 

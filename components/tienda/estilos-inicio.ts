@@ -22,15 +22,21 @@ const levantar =
   "transition-[box-shadow,transform] duration-150 hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111111] motion-reduce:transition-none";
 export const botonVerde = `${botonCaja} bg-acento2 text-white ${levantar}`;
 
-// Los botones de la página de inicio: 49 px de alto, con la letra del texto (sin mayúsculas) y una
-// línea negra alrededor
-const botonInicio =
-  "inline-flex items-center justify-center border border-tinta px-[19px] py-3 text-center font-cuerpo text-[18px] leading-[23px]";
-// Los de la portada: el principal gris claro y el otro blanco. Al pasar el cursor se subraya el texto.
-const subrayar = "hover:underline hover:underline-offset-3";
-export const botonInicioGris = `${botonInicio} bg-[#e8e8e8] text-tinta ${subrayar}`;
-export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${subrayar}`;
+// Los botones de la página de inicio: con la letra del texto (sin mayúsculas) y una línea negra
+// alrededor. Miden 49 px de alto; el de la sección del catálogo, 51 px.
+const formaInicio =
+  "inline-flex items-center justify-center border border-tinta px-[19px] text-center font-cuerpo text-[18px] leading-[23px]";
+const botonInicio = `${formaInicio} py-3`;
+// Al pasar el cursor el fondo se oscurece un poco: el gris claro pasa a un gris más fuerte y el
+// blanco, a gris claro
+const hoverGris = "transition-colors duration-150 hover:bg-[#d6d6d6]";
+const hoverClaro = "transition-colors duration-150 hover:bg-[#e8e8e8]";
+// Los de la portada: el principal gris claro y el otro blanco
+export const botonInicioGris = `${botonInicio} bg-[#e8e8e8] text-tinta ${hoverGris}`;
+export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${hoverClaro}`;
 export const botonInicioVerde = `${botonInicio} bg-acento2 text-white ${levantar}`;
+// "Ver todo el catálogo", junto al título de los destacados
+export const botonCatalogoInicio = `${formaInicio} bg-white py-[13px] text-tinta ${hoverClaro}`;
 
 // Títulos de sección en una caja negra
 const tituloCajaBase =

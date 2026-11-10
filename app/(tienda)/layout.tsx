@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, DM_Sans, Instrument_Serif, Jost, Playfair_Display } from "next/font/google";
+import { Archivo, DM_Mono, DM_Sans, Instrument_Serif, Jost, Playfair_Display } from "next/font/google";
 import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
@@ -31,6 +31,13 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
+// Las etiquetas de los productos destacados del inicio
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-dm-mono",
+});
+
 // Con el eje de ancho: los títulos usan la versión expandida
 const archivo = Archivo({
   subsets: ["latin"],
@@ -59,7 +66,7 @@ export default async function TiendaLayout({
     <html
       lang="es"
       data-scroll-behavior="smooth"
-      className={`${jost.variable} ${playfair.variable} ${instrument.variable} ${dmSans.variable} ${archivo.variable}`}
+      className={`${jost.variable} ${playfair.variable} ${instrument.variable} ${dmSans.variable} ${dmMono.variable} ${archivo.variable}`}
     >
       <body className="antialiased">
         <ConfigurarAmplify />

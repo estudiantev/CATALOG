@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CarruselDestacados } from "@/components/tienda/carrusel-destacados";
 import { enlaceWhatsApp } from "@/components/tienda/datos";
 import { EnlaceContenido } from "@/components/tienda/enlace-contenido";
-import { barraSeccion, botonInicioVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
+import { barraSeccion, botonCatalogoInicio, botonInicioVerde, letraContorno, tituloCaja } from "@/components/tienda/estilos-inicio";
 import { IconoWhatsApp } from "@/components/tienda/iconos";
 import { PortadaInicio } from "@/components/tienda/portada-inicio";
 import { TarjetaColeccion, TarjetaOcasion } from "@/components/tienda/tarjeta-coleccion";
@@ -43,31 +43,27 @@ export default async function InicioPage() {
           id="catalogo"
           aria-labelledby={destacados.titulo ? "titulo-catalogo" : undefined}
           aria-label={destacados.titulo ? undefined : "Catálogo"}
-          className="flex flex-col bg-white min-[1000px]:pantalla"
+          className="flex flex-col bg-white px-[18px] pt-5 pb-14 min-[1000px]:pantalla"
         >
-          {/* Mide lo mismo que la barra de avance de abajo (56 px): las fotos se llevan el resto del alto */}
-          <div className="flex min-h-14 flex-none flex-wrap items-center justify-between gap-x-6 gap-y-1 px-[clamp(16px,3vw,32px)] py-1.5">
-            {/* El título es opcional: sin caja ni color, con la misma letra que "Ver todo el catálogo" */}
+          <div className="mb-[21px] flex items-start justify-between gap-4">
+            {/* El título y el subtítulo son opcionales */}
             {(destacados.titulo || destacados.subtitulo) && (
-              <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
+              <div className="mt-[7px] flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-[14px] leading-[18px]">
                 {destacados.titulo && (
-                  <h2 id="titulo-catalogo" className="text-[15px] font-medium tracking-[0.06em] text-tinta uppercase">
+                  <h2 id="titulo-catalogo" className="font-normal tracking-[0.02em] uppercase">
                     {destacados.titulo}
                   </h2>
                 )}
-                {destacados.subtitulo && <p className="text-[13px] text-[#444444]">{destacados.subtitulo}</p>}
+                {destacados.subtitulo && <p className="text-[#666666]">{destacados.subtitulo}</p>}
               </div>
             )}
-            <Link
-              href="/catalogo"
-              className="ml-auto inline-flex min-h-11 items-center text-[15px] font-medium tracking-[0.06em] text-tinta uppercase transition-colors duration-150 hover:text-acento hover:underline hover:underline-offset-4"
-            >
+            <Link href="/catalogo" className={`${botonCatalogoInicio} ml-auto flex-none`}>
               Ver todo el catálogo
             </Link>
           </div>
           <CarruselDestacados etiqueta="Productos destacados">
             {tarjetas.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
-              <li key={producto.productId} className="flex flex-none basis-[80%] snap-start min-[700px]:basis-1/2 min-[1000px]:basis-1/4">
+              <li key={producto.productId} className="min-w-0 snap-start">
                 <TarjetaDestacado
                   href={`/catalogo/${producto.productId}?v=${variantId}`}
                   nombre={producto.nombre}
@@ -77,7 +73,7 @@ export default async function InicioPage() {
                   portada={portada}
                   hover={hover}
                   etiqueta={destacados.etiquetas[producto.productId]}
-                  sizes="(min-width: 1000px) 25vw, (min-width: 700px) 50vw, 80vw"
+                  sizes="(min-width: 901px) 25vw, 72vw"
                 />
               </li>
             ))}
