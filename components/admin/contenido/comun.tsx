@@ -43,8 +43,8 @@ const ENLACES_SUGERIDOS = [
   { valor: "/#catalogo", nombre: "Sección Catálogo" },
   { valor: "/#colecciones", nombre: "Sección Colecciones" },
   { valor: "/#pasos", nombre: "Sección Alquiler en 3 pasos" },
-  { valor: "/#nosotros", nombre: "Sección Quiénes somos" },
   { valor: "/#inspiracion", nombre: "Sección Inspiración" },
+  { valor: "/#nosotros", nombre: "Sección Quiénes somos" },
 ];
 
 // Va una sola vez en la página: la comparten todos los campos de enlace

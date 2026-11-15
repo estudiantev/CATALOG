@@ -26,7 +26,6 @@ import { Campo, CasillaVisible, PieSeccion, useSeccion } from "./comun";
 import { CampoFoto, type FotoFormulario, aFormulario, aImagen, subirFoto, useFotosGuardadas } from "./foto";
 
 type TarjetaFormulario = Omit<TarjetaInicio, "imagen"> & { foto: FotoFormulario | null };
-type CampoTexto = "titulo" | "modalidad" | "descripcion";
 
 // Por qué una colección elegida no se vería como se espera
 const AVISOS = {
@@ -74,18 +73,16 @@ export function EditorOcasiones({
       const fija = inicial.datos[eleccion];
       return {
         nombre: OCASIONES.find((o) => o.clave === eleccion)!.nombre,
-        descripcion: fija.descripcion,
         sinFoto: fija.imagen ? "Sin foto se usa la de la colección." : "Sin foto se ve la ilustración del vestido.",
         aviso: undefined,
       };
     }
     const coleccion = colecciones?.find((c) => eleccionDeColeccion(c.slug) === eleccion);
     if (!coleccion) {
-      return { nombre: colecciones ? "Colección eliminada" : (slugDeEleccion(eleccion) ?? eleccion), descripcion: "", sinFoto: "Sin foto se usa la de la colección.", aviso: undefined };
+      return { nombre: colecciones ? "Colección eliminada" : (slugDeEleccion(eleccion) ?? eleccion), sinFoto: "Sin foto se usa la de la colección.", aviso: undefined };
     }
     return {
       nombre: coleccion.title,
-      descripcion: coleccion.description ?? "",
       sinFoto: coleccion.imageKey ? "Sin foto se usa la de la colección." : "La colección no tiene foto: sin una aquí, la tarjeta va solo con su color.",
       aviso: aOpcion(coleccion).aviso,
     };
@@ -95,8 +92,7 @@ export function EditorOcasiones({
     setTarjetas(lista);
     s.editado("tarjetas");
   };
-  const agregar = (eleccion: string) =>
-    cambiarLista([...tarjetas, { eleccion, titulo: "", modalidad: esOcasion(eleccion) ? inicial.datos[eleccion].modalidad : "", descripcion: "", foto: null }]);
+  const agregar = (eleccion: string) => cambiarLista([...tarjetas, { eleccion, titulo: "", foto: null }]);
   const quitar = (tarjeta: TarjetaFormulario) => {
     if (tarjeta.foto?.archivo) URL.revokeObjectURL(tarjeta.foto.vistaPrevia);
     cambiarLista(tarjetas.filter((t) => t !== tarjeta));
@@ -108,9 +104,9 @@ export function EditorOcasiones({
   };
   const cambiar = (eleccion: string, cambios: Partial<TarjetaFormulario>) =>
     setTarjetas((actuales) => actuales.map((t) => (t.eleccion === eleccion ? { ...t, ...cambios } : t)));
-  const cambiarTexto = (eleccion: string, campo: CampoTexto, valor: string) => {
-    cambiar(eleccion, { [campo]: valor });
-    s.editado(`tarjetas.${eleccion}.${campo}`);
+  const cambiarTitulo = (eleccion: string, titulo: string) => {
+    cambiar(eleccion, { titulo });
+    s.editado(`tarjetas.${eleccion}.titulo`);
   };
 
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
@@ -132,8 +128,8 @@ export function EditorOcasiones({
             <h2>Colecciones</h2>
           </CardTitle>
           <CardDescription>
-            Elige de {MINIMO_EN_INICIO} a {MAXIMO_EN_INICIO} colecciones para la página de inicio, en el orden en que quieres verlas. El título, la modalidad, la descripción y la foto de cada
-            tarjeta son solo de la página de inicio: no cambian la colección. Lo que dejes vacío se toma de la colección.
+            Elige de {MINIMO_EN_INICIO} a {MAXIMO_EN_INICIO} colecciones para la página de inicio, en el orden en que quieres verlas. Cada una se ve como un cuadro con su foto y su
+            título al centro. El título y la foto son solo de la página de inicio: no cambian la colección. Lo que dejes vacío se toma de la colección.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -198,33 +194,13 @@ export function EditorOcasiones({
                             </Button>
                           </div>
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,10rem)]">
-                          <Campo {...s.campo(ruta("titulo"))} etiqueta="Título (opcional)">
-                            <Input
-                              {...s.entrada(ruta("titulo"))}
-                              maxLength={LARGO.titulo}
-                              placeholder={datos.nombre}
-                              value={tarjeta.titulo}
-                              onChange={(e) => cambiarTexto(eleccion, "titulo", e.target.value)}
-                            />
-                          </Campo>
-                          <Campo {...s.campo(ruta("modalidad"))} etiqueta="Modalidad (opcional)">
-                            <Input
-                              {...s.entrada(ruta("modalidad"))}
-                              maxLength={LARGO.modalidad}
-                              placeholder="Venta y alquiler"
-                              value={tarjeta.modalidad}
-                              onChange={(e) => cambiarTexto(eleccion, "modalidad", e.target.value)}
-                            />
-                          </Campo>
-                        </div>
-                        <Campo {...s.campo(ruta("descripcion"))} etiqueta="Descripción (opcional)">
+                        <Campo {...s.campo(ruta("titulo"))} etiqueta="Título (opcional)">
                           <Input
-                            {...s.entrada(ruta("descripcion"))}
-                            maxLength={LARGO.descripcion}
-                            placeholder={datos.descripcion}
-                            value={tarjeta.descripcion}
-                            onChange={(e) => cambiarTexto(eleccion, "descripcion", e.target.value)}
+                            {...s.entrada(ruta("titulo"))}
+                            maxLength={LARGO.titulo}
+                            placeholder={datos.nombre}
+                            value={tarjeta.titulo}
+                            onChange={(e) => cambiarTitulo(eleccion, e.target.value)}
                           />
                         </Campo>
                         <CampoFoto

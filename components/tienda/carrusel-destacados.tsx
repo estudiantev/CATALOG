@@ -9,8 +9,8 @@ import { useArrastre } from "./use-arrastre";
 // derecha avanza y, al final, vuelve al comienzo.
 //
 // La cuadrícula tiene dos filas: las fotos y los textos (cada tarjeta ocupa las dos con subgrid,
-// así todas las fotos miden lo mismo aunque un nombre ocupe dos líneas). Desde 1000 px las fotos
-// se llevan el alto que sobra en la pantalla; más abajo tienen su propia proporción.
+// así todas las fotos miden lo mismo aunque un nombre ocupe dos líneas). Las fotos van en 2:3,
+// como el mockup (TarjetaDestacado).
 export function CarruselDestacados({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   const lista = useRef<HTMLUListElement>(null);
   const [desborda, setDesborda] = useState(false);
@@ -47,10 +47,10 @@ export function CarruselDestacados({ etiqueta, children }: { etiqueta: string; c
   };
 
   return (
-    <div role="region" aria-roledescription="carrusel" aria-label={etiqueta} className="relative flex min-h-0 flex-auto flex-col">
+    <div role="region" aria-roledescription="carrusel" aria-label={etiqueta} className="relative">
       <ul
         ref={lista}
-        className="grid flex-auto cursor-grab auto-cols-[72%] grid-flow-col grid-rows-[auto_auto] gap-x-5 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth select-none [scrollbar-width:none] motion-reduce:scroll-auto data-arrastrando:cursor-grabbing min-[901px]:auto-cols-[calc((100%-60px)/4)] min-[1000px]:min-h-[360px] min-[1000px]:grid-rows-[minmax(240px,1fr)_auto] [&_a]:cursor-grab [&_h3]:cursor-pointer [&[data-arrastrando]_*]:cursor-grabbing [&::-webkit-scrollbar]:hidden"
+        className="grid cursor-grab auto-cols-[72%] grid-flow-col grid-rows-[auto_auto] gap-x-5 snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth select-none [scrollbar-width:none] motion-reduce:scroll-auto data-arrastrando:cursor-grabbing min-[901px]:auto-cols-[calc((100%-60px)/4)] [&_a]:cursor-grab [&_h3]:cursor-pointer [&[data-arrastrando]_*]:cursor-grabbing [&::-webkit-scrollbar]:hidden"
       >
         {children}
       </ul>

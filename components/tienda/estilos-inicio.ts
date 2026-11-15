@@ -36,6 +36,19 @@ export const botonInicioGris = `${botonInicio} bg-[#e8e8e8] text-tinta ${hoverGr
 export const botonInicioBlanco = `${botonInicio} bg-white text-tinta ${hoverClaro}`;
 export const botonInicioVerde = `${botonInicio} bg-acento2 text-white ${levantar}`;
 
+// Las secciones de la página de inicio después de la portada (como el mockup de la raíz del repo).
+// El título: texto pequeño en mayúsculas
+export const tituloSeccion = "text-[14px] leading-[18px] font-normal tracking-[0.02em] uppercase";
+// Botones y etiquetas blancos con una línea negra a la derecha y abajo. Al pasar el cursor se
+// subraya el texto.
+export const cajaEsquina = "border-r border-b border-tinta bg-white text-tinta";
+const botonEsquina = `inline-block ${cajaEsquina} hover:underline hover:underline-offset-3`;
+export const botonEsquinaChico = `${botonEsquina} px-[15px] py-[9px] text-[15px] leading-5 whitespace-nowrap`;
+export const botonEsquinaGrande = `${botonEsquina} px-[19px] py-[13px] text-[17px] leading-[23px]`;
+// Las de texto al lado de un video, una foto o un mapa: un tercio de texto y dos de recuadro
+export const columnasDivididas = "grid flex-1 grid-cols-1 gap-10 min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]";
+export const textoDividido = "mb-8 max-w-[30ch] text-[25px] leading-[35px] tracking-[0.005em] break-words";
+
 // Títulos de sección en una caja negra
 const tituloCajaBase =
   "border border-tinta px-3.5 py-[3px] font-archivo text-[clamp(17px,5.4vw,22px)] leading-[1.25] font-extrabold font-stretch-expanded tracking-[0.02em] text-white uppercase";

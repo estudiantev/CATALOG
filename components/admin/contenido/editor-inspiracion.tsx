@@ -95,7 +95,7 @@ export function EditorInspiracion({
                 nombre="foto-inspiracion"
                 etiqueta="Foto o video (opcional)"
                 sinFoto="Sin foto ni video se ven las ilustraciones de vestidos."
-                recomendacion="El espacio es casi cuadrado: lo que quede fuera se recorta por los lados o por arriba y abajo. El video se reproduce solo, en bucle y sin sonido."
+                recomendacion="El espacio es casi cuadrado: lo que quede fuera se recorta por los lados o por arriba y abajo. El video se reproduce solo, en bucle y sin sonido; tiene botones para activar el sonido y pausarlo."
                 foto={medio}
                 onChange={setMedio}
                 conVideo

@@ -105,8 +105,8 @@ export function EditorContenido() {
       <EditorDestacados inicial={datos.destacados} productos={productos} errorProductos={errorProductos} />
       <EditorOcasiones inicial={datos.ocasiones} vistasPrevias={vistasPrevias} colecciones={colecciones} errorColecciones={errorColecciones} />
       <EditorPasos inicial={datos.pasos} />
-      <EditorNosotros inicial={datos.nosotros} vistasPrevias={vistasPrevias} />
       <EditorInspiracion inicial={datos.inspiracion} vistasPrevias={vistasPrevias} />
+      <EditorNosotros inicial={datos.nosotros} vistasPrevias={vistasPrevias} />
       <EditorPie inicial={datos.pie} />
     </div>
   );

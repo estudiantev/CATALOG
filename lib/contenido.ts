@@ -21,8 +21,8 @@ export const SECCIONES = [
   { id: "destacados", nombre: "Catálogo" },
   { id: "ocasiones", nombre: "Colecciones" },
   { id: "pasos", nombre: "Alquiler en 3 pasos" },
-  { id: "nosotros", nombre: "Quiénes somos" },
   { id: "inspiracion", nombre: "Inspiración" },
+  { id: "nosotros", nombre: "Quiénes somos" },
   { id: "pie", nombre: "Pie de página" },
 ] as const;
 export type Seccion = (typeof SECCIONES)[number]["id"];
@@ -40,7 +40,7 @@ export type ClaveOcasion = (typeof OCASIONES)[number]["clave"];
 // La página de inicio muestra de 2 a 4 colecciones, en el orden elegido en el panel. Cada elección
 // es la clave de una de OCASIONES ("gala") o el enlace de una de /admin/colecciones con este
 // prefijo ("coleccion:novias-2027"), que no choca con las claves aunque el enlace sea "gala".
-// Cada una lleva su tarjeta con textos y foto solo para la página de inicio.
+// Cada una lleva su tarjeta con título y foto solo para la página de inicio.
 export const MINIMO_EN_INICIO = 2;
 export const MAXIMO_EN_INICIO = 4;
 const PREFIJO_COLECCION = "coleccion:";
@@ -50,8 +50,8 @@ export const eleccionDeColeccion = (slug: string) => `${PREFIJO_COLECCION}${slug
 export const slugDeEleccion = (eleccion: string) => (eleccion.startsWith(PREFIJO_COLECCION) ? eleccion.slice(PREFIJO_COLECCION.length) : null);
 export const esOcasion = (eleccion: string): eleccion is ClaveOcasion => OCASIONES.some(({ clave }) => clave === eleccion);
 
-// Una tarjeta sin textos ni foto propios: muestra los de la colección
-export const tarjetaVacia = (eleccion: string, modalidad = ""): TarjetaInicio => ({ eleccion, titulo: "", modalidad, descripcion: "", imagen: null });
+// Una tarjeta sin título ni foto propios: muestra los de la colección
+export const tarjetaVacia = (eleccion: string): TarjetaInicio => ({ eleccion, titulo: "", imagen: null });
 
 // Lo que se ve de verdad: se saltan las colecciones despublicadas o borradas y, si quedan menos
 // de dos, entran De Gala y De XV
@@ -60,7 +60,7 @@ export function tarjetasVigentes(datos: DatosSeccion["ocasiones"], estaVisible: 
     const slug = slugDeEleccion(eleccion);
     return slug === null || estaVisible(slug);
   });
-  const relleno = OCASIONES_BASE.filter((clave) => !vigentes.some((t) => t.eleccion === clave)).map((clave) => tarjetaVacia(clave, datos[clave].modalidad));
+  const relleno = OCASIONES_BASE.filter((clave) => !vigentes.some((t) => t.eleccion === clave)).map((clave) => tarjetaVacia(clave));
   return [...vigentes, ...relleno.slice(0, Math.max(0, MINIMO_EN_INICIO - vigentes.length))];
 }
 
@@ -97,7 +97,7 @@ export const LARGO = {
   textoPaso: 140,
   anuncio: 90,
   etiqueta: 16,
-  lema: 60,
+  direccion: 160,
   textoNosotros: 400,
   textoInspiracion: 140,
   descripcionPie: 240,
@@ -117,9 +117,9 @@ export type Diapositiva = {
 };
 export type Anuncio = { texto: string; boton: Boton }; // sin texto en el botón, va sin enlace
 export type Ocasion = { modalidad: string; descripcion: string; imagen: Imagen | null }; // sin foto, la ilustración
-// Una colección en la página de inicio. Sus textos y su foto son solo de la página de inicio: no
-// cambian la colección. Lo que quede vacío sale de la colección (la modalidad, vacía, no se muestra).
-export type TarjetaInicio = { eleccion: string; titulo: string; modalidad: string; descripcion: string; imagen: Imagen | null };
+// Una colección en la página de inicio. Su título y su foto son solo de la página de inicio: no
+// cambian la colección. Lo que quede vacío sale de la colección.
+export type TarjetaInicio = { eleccion: string; titulo: string; imagen: Imagen | null };
 export type Paso = { titulo: string; texto: string };
 
 export type DatosSeccion = {
@@ -132,10 +132,12 @@ export type DatosSeccion = {
     etiquetas: Record<string, string>; // productId → "Nuevo"; sin etiqueta, no se muestra
   };
   // tarjetas: las de la página de inicio, en orden. Las cuatro fijas guardan aparte su texto y su
-  // foto propios, los de /colecciones; el panel ya no los cambia.
+  // foto propios; el panel ya no los cambia. Su foto es la de la tarjeta que se deja sin foto.
   ocasiones: Record<ClaveOcasion, Ocasion> & { tarjetas: TarjetaInicio[] };
   pasos: { titulo: string; subtitulo: string; pasos: Paso[]; boton: string };
-  nosotros: { titulo: string; lema: string; texto: string; imagen: Imagen | null };
+  // Junto al texto va el mapa del local (con la dirección); sin dirección, la foto. Sin texto en el
+  // botón, va sin botón.
+  nosotros: { titulo: string; texto: string; boton: Boton; direccion: string; imagen: Imagen | null };
   // Una foto o un video: el panel guarda uno de los dos. Sin ninguno, las ilustraciones
   inspiracion: { antetitulo: string; texto: string; boton: Boton; imagen: Imagen | null; video: Imagen | null };
   pie: {
@@ -181,7 +183,7 @@ export const POR_DEFECTO: DatosSeccion = {
     xv: { modalidad: "Venta y alquiler", descripcion: "Para tu fiesta de quince años.", imagen: null },
     cortos: { modalidad: "Venta", descripcion: "Para cócteles, cumpleaños y celebraciones.", imagen: null },
     floreados: { modalidad: "Venta", descripcion: "Estampados en flor para eventos de día.", imagen: null },
-    tarjetas: [tarjetaVacia("gala", "Venta y alquiler"), tarjetaVacia("xv", "Venta y alquiler")],
+    tarjetas: [tarjetaVacia("gala"), tarjetaVacia("xv")],
   },
   pasos: {
     titulo: "Alquiler en 3 pasos",
@@ -195,9 +197,10 @@ export const POR_DEFECTO: DatosSeccion = {
   },
   nosotros: {
     titulo: "¿Quiénes somos?",
-    lema: "Un vestido para cada momento.",
     texto:
       "Somos una tienda de Tacna que vende y alquila vestidos de gala, de XV, cortos y floreados. Creemos que lucir increíble en cada evento no debería significar comprar un vestido nuevo cada vez.",
+    boton: { texto: "", enlace: "" },
+    direccion: "",
     imagen: null,
   },
   inspiracion: {
@@ -286,8 +289,6 @@ function tarjeta(v: unknown): TarjetaInicio {
   return {
     eleccion: typeof o.eleccion === "string" ? o.eleccion : "",
     titulo: texto(o.titulo, "", LARGO.titulo, true),
-    modalidad: texto(o.modalidad, "", LARGO.modalidad, true),
-    descripcion: texto(o.descripcion, "", LARGO.descripcion, true),
     imagen: imagen(o.imagen),
   };
 }
@@ -327,10 +328,8 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
         ];
       }),
     ) as Record<ClaveOcasion, Ocasion>;
-    // Lo guardado antes de las tarjetas trae solo la lista de elegidas. Con la modalidad de las
-    // fijas copiada y lo demás vacío, la página de inicio se ve igual que antes.
-    const desdeLista = (eleccion: string) => tarjetaVacia(eleccion, esOcasion(eleccion) ? fijas[eleccion].modalidad : "");
-    const leidas = Array.isArray(d.tarjetas) ? lista(d.tarjetas).map(tarjeta) : lista(d.enInicio).filter(eleccionValida).map(desdeLista);
+    // Lo guardado antes de las tarjetas trae solo la lista de elegidas: van sin título ni foto propios
+    const leidas = Array.isArray(d.tarjetas) ? lista(d.tarjetas).map(tarjeta) : lista(d.enInicio).filter(eleccionValida).map((e) => tarjetaVacia(e));
     const tarjetas = leidas
       .filter((t, i) => eleccionValida(t.eleccion) && leidas.findIndex((otra) => otra.eleccion === t.eleccion) === i)
       .slice(0, MAXIMO_EN_INICIO);
@@ -342,7 +341,7 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
           ? tarjetas
           : OCASIONES.map(({ clave }) => clave)
               .filter((clave) => OCASIONES_BASE.includes(clave) || fijas[clave].imagen)
-              .map(desdeLista),
+              .map((clave) => tarjetaVacia(clave)),
     };
   },
   destacados: (d) => {
@@ -381,8 +380,9 @@ const NORMALIZAR: { [S in Seccion]: (datos: Objeto) => DatosSeccion[S] } = {
   },
   nosotros: (d) => ({
     titulo: texto(d.titulo, POR_DEFECTO.nosotros.titulo, LARGO.tituloSeccion),
-    lema: texto(d.lema, "", LARGO.lema, true),
     texto: texto(d.texto, POR_DEFECTO.nosotros.texto, LARGO.textoNosotros),
+    boton: boton(d.boton, BOTON_VACIO, true),
+    direccion: texto(d.direccion, "", LARGO.direccion, true),
     imagen: imagen(d.imagen),
   }),
   inspiracion: (d) => ({
@@ -483,8 +483,6 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
     r.minimo("tarjetas", d.tarjetas.length, MINIMO_EN_INICIO, `Elige al menos ${MINIMO_EN_INICIO} colecciones.`);
     for (const t of d.tarjetas) {
       r.texto(`tarjetas.${t.eleccion}.titulo`, t.titulo, LARGO.titulo);
-      r.texto(`tarjetas.${t.eleccion}.modalidad`, t.modalidad, LARGO.modalidad);
-      r.texto(`tarjetas.${t.eleccion}.descripcion`, t.descripcion, LARGO.descripcion);
     }
   },
   destacados: (d, r) => {
@@ -502,8 +500,12 @@ const VALIDAR: { [S in Seccion]: (datos: DatosSeccion[S], r: Revisor) => void } 
   },
   nosotros: (d, r) => {
     r.texto("titulo", d.titulo, LARGO.tituloSeccion, "Escribe el título de la sección.");
-    r.texto("lema", d.lema, LARGO.lema);
     r.texto("texto", d.texto, LARGO.textoNosotros, "Escribe el texto.");
+    if (d.boton.texto.trim() || d.boton.enlace.trim()) {
+      r.texto("boton.texto", d.boton.texto, LARGO.boton, "Escribe el texto del botón o borra su enlace.");
+      r.enlace("boton.enlace", d.boton.enlace, "Escribe a dónde lleva el botón o borra su texto.");
+    }
+    r.texto("direccion", d.direccion, LARGO.direccion);
   },
   inspiracion: (d, r) => {
     r.texto("antetitulo", d.antetitulo, LARGO.antetitulo);
