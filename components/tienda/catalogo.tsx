@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Foto, ProductoCatalogo } from "@/lib/catalogo";
-import { CATEGORIAS, type Categoria, type Clave, FAMILIAS_COLOR, type Filtros, NOMBRES_CLAVE, formatoSoles, nombreOpcion, ordenarValores } from "@/lib/productos";
+import { CATEGORIAS, type Categoria, type Clave, FAMILIAS_COLOR, type Filtros, NOMBRES_CLAVE, nombreOpcion, ordenarValores, precioCorto } from "@/lib/productos";
 import { resolverTarjeta } from "@/lib/variantes";
 import { botonAzul, hoverBlanca } from "./estilos-inicio";
 import { RutaNavegacion } from "./ruta-navegacion";
@@ -21,8 +21,8 @@ const MODOS: { valor: Modo; nombre: string }[] = [
 
 const ORDENES = [
   { valor: "novedades", nombre: "Novedades" },
-  { valor: "precio-asc", nombre: "Precio: de menor a mayor" },
-  { valor: "precio-desc", nombre: "Precio: de mayor a menor" },
+  { valor: "precio-asc", nombre: "Precio: menor a mayor" },
+  { valor: "precio-desc", nombre: "Precio: mayor a menor" },
   { valor: "az", nombre: "Nombre: A a Z" },
   { valor: "za", nombre: "Nombre: Z a A" },
 ] as const;
@@ -48,6 +48,10 @@ type Elegidos = Partial<Record<IdGrupo, string[]>>;
 type TipoGrupo = "lista" | "botones" | "colores";
 type Grupo = { id: IdGrupo; nombre: string; tipo: TipoGrupo; opciones: { valor: string; nombre: string; cantidad: number }[] };
 
+// Los que van a la vista en la barra, en este orden; los demás se abren todos juntos con "Más filtros"
+const PRINCIPALES: IdGrupo[] = ["talla", "color", "ocasion", "material"];
+const MAS = "mas";
+
 // Minúsculas y sin tildes, para que "Floreado" encuentre "floreados"
 const normalizar = (texto: string) => texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const unicos = (valores: (string | null | undefined)[]) => Array.from(new Set(valores.filter((v): v is string => Boolean(v))));
@@ -61,6 +65,67 @@ function conModo(p: ProductoCatalogo, modo: Modo): ProductoCatalogo {
 }
 
 const boton = (elegido: boolean) => (elegido ? "bg-tinta text-white" : `cursor-pointer bg-white text-tinta ${hoverBlanca}`);
+// Las opciones de la barra: como el menú del encabezado, texto en mayúsculas. `relative`: el texto
+// oculto de la cuenta (sr-only) queda dentro de la fila que se desliza en el celular y no la ensancha.
+const botonBarra = (abierto: boolean) =>
+  `relative inline-flex min-h-11 flex-none items-center gap-2 px-4 text-[13px] leading-none tracking-[0.04em] whitespace-nowrap uppercase ${boton(abierto)}`;
+const enfoqueAdentro = "focus-visible:-outline-offset-2";
+
+function Chevron({ arriba }: { arriba: boolean }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={arriba ? "rotate-180" : undefined}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function Cuenta({ cantidad, invertida }: { cantidad: number; invertida: boolean }) {
+  if (!cantidad) return null;
+  return (
+    <span className={`inline-flex h-[18px] min-w-[18px] items-center justify-center px-1 text-[11px] tracking-normal ${invertida ? "bg-white text-tinta" : "bg-tinta text-white"}`}>
+      {cantidad}
+      <span className="sr-only"> elegidos</span>
+    </span>
+  );
+}
+
+// Las opciones de un grupo: la talla en botones, lo demás con casillas (el color con su muestra)
+function Opciones({ grupo, elegidos, alternar, columnas }: { grupo: Grupo; elegidos: string[]; alternar: (valor: string) => void; columnas: boolean }) {
+  if (grupo.tipo === "botones") {
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {grupo.opciones.map((o) => {
+          const elegido = elegidos.includes(o.valor);
+          return (
+            <button
+              key={o.valor}
+              type="button"
+              aria-pressed={elegido}
+              onClick={() => alternar(o.valor)}
+              className={`min-h-9 min-w-11 border border-tinta px-2.5 text-[13px] font-medium ${boton(elegido)}`}
+            >
+              {o.nombre}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+  return (
+    <ul className={columnas ? "grid grid-cols-[repeat(auto-fill,minmax(min(100%,180px),1fr))] gap-x-8 gap-y-2.5" : "flex flex-col gap-2.5"}>
+      {grupo.opciones.map((o) => (
+        <li key={o.valor}>
+          <label className="group/opcion flex cursor-pointer items-center gap-2.5 text-[14px]">
+            <input type="checkbox" checked={elegidos.includes(o.valor)} onChange={() => alternar(o.valor)} className="size-4 flex-none cursor-pointer accent-acento" />
+            {grupo.tipo === "colores" && <span aria-hidden="true" className="size-3.5 flex-none border border-tinta" style={{ background: muestra(o.valor) }} />}
+            <span className="min-w-0 flex-auto group-hover/opcion:underline group-hover/opcion:underline-offset-3">{o.nombre}</span>
+            <span className="text-[12px] text-[#666666]">{o.cantidad}</span>
+          </label>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 type Tarjeta = NonNullable<ReturnType<typeof resolverTarjeta<Foto>>> & {
   producto: ProductoCatalogo;
@@ -68,14 +133,23 @@ type Tarjeta = NonNullable<ReturnType<typeof resolverTarjeta<Foto>>> & {
   color?: string;
 };
 
-function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (productId: string, color: string) => void }) {
+// La foto y tres líneas debajo: el nombre, los precios y los colores.
+// `limitarFoto`: desde 1000 px la foto baja de alto si la primera fila no entra en la pantalla.
+function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; limitarFoto: boolean; onColor: (productId: string, color: string) => void }) {
   const { producto, variantId, precioVenta, precioAlquiler, desde, portada, hover, colores, color } = tarjeta;
   // RF-10: abre el detalle con la combinación filtrada (y el color elegido) ya elegida
   const href = `/catalogo/${producto.productId}?v=${variantId}`;
   return (
     <li className="group/tarjeta flex min-w-0 flex-col">
-      {/* La foto lleva al mismo lugar que el nombre: para el lector de pantalla basta con uno */}
-      <Link href={href} tabIndex={-1} aria-hidden="true" className="group relative block aspect-[3/4] overflow-hidden bg-[#f3f3f3]">
+      {/* La foto lleva al mismo lugar que el nombre: para el lector de pantalla basta con uno.
+          Los 225 px son la ruta, la barra de filtros y las tres líneas de la tarjeta. w-full: al
+          bajar de alto no se angosta. */}
+      <Link
+        href={href}
+        tabIndex={-1}
+        aria-hidden="true"
+        className={`group relative block aspect-[3/4] w-full overflow-hidden bg-[#f3f3f3] ${limitarFoto ? "min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-225px)]" : ""}`}
+      >
         <FotosProducto portada={portada} hover={hover} sizes="(min-width: 1200px) 25vw, (min-width: 900px) 33vw, 50vw" />
         {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}
         <span className={`absolute top-2 right-2 flex size-[30px] items-center justify-center bg-white text-tinta ${hoverBlanca}`}>
@@ -84,30 +158,32 @@ function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (pro
           </svg>
         </span>
       </Link>
-      <div className="flex flex-auto flex-col gap-1 px-3.5 pt-3 pb-3.5">
-        <h3 className="text-[15px] font-medium [overflow-wrap:anywhere]">
+      <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3.5">
+        {/* Una sola línea: si el nombre es largo termina en "…" */}
+        <h3 className="truncate text-[14px] leading-5 font-medium">
           <Link href={href} className="group-hover/tarjeta:underline group-hover/tarjeta:underline-offset-3">
             {producto.nombre}
           </Link>
         </h3>
-        {/* RF-06: el menor precio entre las variantes que cumplen los filtros */}
-        <p className="flex flex-wrap gap-x-3.5 gap-y-0.5 text-[13px]">
-          {/* En una tarjeta angosta se parten en dos líneas, pero el precio va siempre junto */}
+        {/* RF-06: el menor precio entre las variantes que cumplen los filtros. Como en el inicio: la
+            venta sola y el alquiler en gris, los dos en una línea (en el celular, si no entran, el
+            alquiler pasa abajo; cada precio va siempre junto). */}
+        <p className="flex flex-wrap gap-x-3 text-[13px] leading-[18px]">
           {precioVenta > 0 && (
-            <span>
-              <span className="font-semibold text-acento">Compra</span> {desde && "desde "}
-              <span className="whitespace-nowrap">{formatoSoles.format(precioVenta)}</span>
+            <span className="font-semibold whitespace-nowrap">
+              {desde && "Desde "}
+              {precioCorto(precioVenta)}
             </span>
           )}
           {precioAlquiler > 0 && (
-            <span>
-              <span className="font-semibold text-acento2">Alquiler</span> {desde && "desde "}
-              <span className="whitespace-nowrap">{formatoSoles.format(precioAlquiler)}</span> por día
+            <span className="whitespace-nowrap text-[#555555]">
+              Alquiler {desde && "desde "}
+              {precioCorto(precioAlquiler)}/día
             </span>
           )}
         </p>
         {colores.length > 0 && (
-          <div role="group" aria-label={`Colores de ${producto.nombre}`} className="mt-auto flex flex-wrap pt-2.5">
+          <div role="group" aria-label={`Colores de ${producto.nombre}`} className="flex flex-wrap gap-1 pt-0.5">
             {colores.map((c) => {
               const elegido = c === color;
               const claro = c === "WHITE" || c === "IVORY";
@@ -119,11 +195,10 @@ function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (pro
                   title={nombreOpcion("color", c)}
                   aria-pressed={elegido}
                   onClick={() => onColor(producto.productId, c)}
-                  className={`size-[34px] cursor-pointer focus-visible:-outline-offset-2 ${
-                    elegido ? "shadow-[inset_0_0_0_2px_#ffffff,inset_0_0_0_3px_#111111]" : claro ? "shadow-[inset_0_0_0_1px_#bdbdbd]" : ""
-                  }`}
-                  style={{ background: muestra(c) }}
-                />
+                  className={`size-[22px] cursor-pointer p-[3px] focus-visible:outline-offset-1 ${elegido ? "shadow-[inset_0_0_0_1px_#111111]" : ""}`}
+                >
+                  <span className={`block size-full ${claro ? "shadow-[inset_0_0_0_1px_#bdbdbd]" : ""}`} style={{ background: muestra(c) }} />
+                </button>
               );
             })}
           </div>
@@ -134,8 +209,8 @@ function TarjetaCatalogo({ tarjeta, onColor }: { tarjeta: Tarjeta; onColor: (pro
 }
 
 // El catálogo de una categoría (/catalogo) o los productos de una colección (/coleccion/…).
-// Los filtros van arriba de los productos, así la lista usa todo el ancho. Con `categoria` lleva
-// su título; `encabezado` va entre la ruta y los filtros (la portada de la colección).
+// Buscar, los filtros, los aplicados y el orden van en una sola barra arriba de los productos. Con
+// `categoria` lleva su título; `encabezado` va entre la ruta y la barra (la portada de la colección).
 export function Catalogo({
   productos,
   ruta,
@@ -156,8 +231,24 @@ export function Catalogo({
   const [orden, setOrden] = useState<Orden>("novedades");
   const [limite, setLimite] = useState(POR_PAGINA);
   const [colorDe, setColorDe] = useState<Record<string, string>>({}); // productId → color elegido en su tarjeta
-  // El grupo cuyas opciones se ven debajo de la fila de filtros (uno a la vez)
-  const [abierto, setAbierto] = useState<IdGrupo | null>(null);
+  // Lo que se despliega debajo de la barra: un grupo o "Más filtros" (uno a la vez)
+  const [abierto, setAbierto] = useState<IdGrupo | typeof MAS | null>(null);
+  const barra = useRef<HTMLDivElement>(null);
+
+  // Escape o un clic fuera de la barra cierran lo desplegado
+  useEffect(() => {
+    if (!abierto) return;
+    const alPresionar = (e: KeyboardEvent) => e.key === "Escape" && setAbierto(null);
+    const alHacerClic = (e: MouseEvent) => {
+      if (!barra.current?.contains(e.target as Node)) setAbierto(null);
+    };
+    document.addEventListener("keydown", alPresionar);
+    document.addEventListener("mousedown", alHacerClic);
+    return () => {
+      document.removeEventListener("keydown", alPresionar);
+      document.removeEventListener("mousedown", alHacerClic);
+    };
+  }, [abierto]);
 
   // Lo que queda con la modalidad y la búsqueda: de aquí salen las cantidades del panel
   const base = useMemo(() => {
@@ -249,8 +340,13 @@ export function Catalogo({
       (elegidos[id] ?? []).map((valor) => ({ clave: `${id}-${valor}`, nombre: nombreDe(id, valor), quitar: () => alternar(id, valor) })),
     ),
   ];
-  const visibles = tarjetas.slice(0, limite);
+  const principales = PRINCIPALES.flatMap((id) => grupos.filter((g) => g.id === id));
+  const secundarios = grupos.filter((g) => !PRINCIPALES.includes(g.id));
+  const elegidosEn = (lista: Grupo[]) => lista.reduce((total, g) => total + (elegidos[g.id]?.length ?? 0), 0);
   const grupoAbierto = grupos.find((g) => g.id === abierto);
+  const nombrePanel = abierto === MAS ? "Más filtros" : grupoAbierto?.nombre;
+  const alternarPanel = (id: IdGrupo | typeof MAS) => setAbierto((a) => (a === id ? null : id));
+  const visibles = tarjetas.slice(0, limite);
   const productosTexto = (n: number) => (n === 1 ? "1 producto" : `${n} productos`);
 
   return (
@@ -278,162 +374,164 @@ export function Catalogo({
       </RutaNavegacion>
       {encabezado}
 
-      {/* Buscar, un botón por grupo de filtros y el orden. En el celular los botones se deslizan de lado. */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 px-[clamp(16px,3vw,32px)] pt-1 pb-3">
-        <input
-          type="search"
-          aria-label="Buscar en el catálogo"
-          placeholder="Buscar: gala, sirena, floreado…"
-          value={texto}
-          onChange={(e) => {
-            setTexto(e.target.value);
-            setLimite(POR_PAGINA);
-          }}
-          className="min-h-9 w-full rounded-none border border-tinta bg-white px-3 text-[14px] text-tinta placeholder:text-[#8a8a8a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento min-[760px]:w-64"
-        />
-        <div
-          role="group"
-          aria-label="Filtros"
-          className="-mx-[clamp(16px,3vw,32px)] flex min-w-0 flex-[1_1_100%] gap-1.5 overflow-x-auto px-[clamp(16px,3vw,32px)] [scrollbar-width:none] min-[760px]:mx-0 min-[760px]:flex-[1_1_0] min-[760px]:flex-wrap min-[760px]:overflow-visible min-[760px]:px-0 [&::-webkit-scrollbar]:hidden"
-        >
-          {grupos.map((g) => {
-            const cantidad = elegidos[g.id]?.length ?? 0;
-            const esAbierto = abierto === g.id;
-            return (
+      {/* La barra: un rectángulo del alto del menú del encabezado con buscar, los filtros principales,
+          "Más filtros", los aplicados y el orden. En el celular se reparte en filas: buscar y el orden
+          arriba, los filtros (que se deslizan de lado) y los aplicados debajo. */}
+      <div ref={barra} className="relative z-10 mx-[clamp(16px,3vw,32px)] mb-3">
+        <div data-barra-catalogo className="flex flex-wrap border border-tinta bg-white min-[1000px]:h-[51px] min-[1000px]:flex-nowrap">
+          <label className="flex min-h-11 min-w-0 flex-1 cursor-text items-center gap-2.5 px-4 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:w-[clamp(170px,16vw,260px)] min-[1000px]:flex-none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="flex-none">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <input
+              type="search"
+              aria-label="Buscar en el catálogo"
+              placeholder="Buscar…"
+              value={texto}
+              onChange={(e) => {
+                setTexto(e.target.value);
+                setLimite(POR_PAGINA);
+              }}
+              className="min-w-0 flex-1 self-stretch bg-transparent text-[14px] text-tinta outline-none placeholder:text-[#8a8a8a]"
+            />
+          </label>
+
+          <div
+            role="group"
+            aria-label="Filtros"
+            className="relative order-3 flex min-w-0 basis-full divide-x divide-tinta overflow-x-auto border-t border-tinta [scrollbar-width:none] min-[1000px]:order-none min-[1000px]:basis-auto min-[1000px]:flex-none min-[1000px]:overflow-visible min-[1000px]:border-t-0 min-[1000px]:border-l [&::-webkit-scrollbar]:hidden"
+          >
+            {principales.map((g) => (
               <button
                 key={g.id}
                 type="button"
-                aria-expanded={esAbierto}
+                aria-expanded={abierto === g.id}
                 aria-controls="panel-filtro"
-                onClick={() => setAbierto((a) => (a === g.id ? null : g.id))}
-                className={`inline-flex min-h-9 flex-none items-center gap-2 px-3 font-archivo text-[12px] font-bold tracking-[0.1em] uppercase ${boton(esAbierto)}`}
+                onClick={() => alternarPanel(g.id)}
+                className={`${botonBarra(abierto === g.id)} ${enfoqueAdentro}`}
               >
                 {g.nombre}
-                {cantidad > 0 && (
-                  <span className={`inline-flex h-5 min-w-5 items-center justify-center px-1.5 text-[11px] tracking-normal ${esAbierto ? "bg-white text-tinta" : "bg-acento text-white"}`}>
-                    {cantidad}
-                    <span className="sr-only"> elegidos</span>
-                  </span>
-                )}
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={esAbierto ? "rotate-180" : undefined}>
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
+                <Cuenta cantidad={elegidos[g.id]?.length ?? 0} invertida={abierto === g.id} />
+                <Chevron arriba={abierto === g.id} />
               </button>
-            );
-          })}
-        </div>
-        <label className="ml-auto flex items-center gap-2 text-[13px] font-medium">
-          Ordenar por
-          <select
-            value={orden}
-            onChange={(e) => {
-              setOrden(e.target.value as Orden);
-              setLimite(POR_PAGINA);
-            }}
-            className="min-h-9 cursor-pointer rounded-none border border-tinta bg-white px-2.5 text-[14px] text-tinta focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
-          >
-            {ORDENES.map((o) => (
-              <option key={o.valor} value={o.valor}>
-                {o.nombre}
-              </option>
             ))}
-          </select>
-        </label>
-      </div>
-
-      {/* Las opciones del grupo abierto, a todo el ancho */}
-      <div
-        id="panel-filtro"
-        role="region"
-        aria-label={grupoAbierto ? `Filtro: ${grupoAbierto.nombre}` : "Filtro"}
-        hidden={!grupoAbierto}
-        onKeyDown={(e) => e.key === "Escape" && setAbierto(null)}
-        className="px-[clamp(16px,3vw,32px)] py-4"
-      >
-        {grupoAbierto && (
-          <div className="flex items-start gap-6">
-            <div className="min-w-0 flex-auto">
-              {grupoAbierto.tipo === "botones" ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {grupoAbierto.opciones.map((o) => {
-                    const elegido = elegidos[grupoAbierto.id]?.includes(o.valor) ?? false;
-                    return (
-                      <button
-                        key={o.valor}
-                        type="button"
-                        aria-pressed={elegido}
-                        onClick={() => alternar(grupoAbierto.id, o.valor)}
-                        className={`min-h-9 min-w-11 px-2.5 text-[13px] font-medium ${boton(elegido)}`}
-                      >
-                        {o.nombre}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,180px),1fr))] gap-x-8 gap-y-2.5">
-                  {grupoAbierto.opciones.map((o) => (
-                    <li key={o.valor}>
-                      <label className="group/opcion flex cursor-pointer items-center gap-2.5 text-[14px]">
-                        <input
-                          type="checkbox"
-                          checked={elegidos[grupoAbierto.id]?.includes(o.valor) ?? false}
-                          onChange={() => alternar(grupoAbierto.id, o.valor)}
-                          className="size-4 flex-none cursor-pointer accent-acento"
-                        />
-                        {grupoAbierto.tipo === "colores" && (
-                          <span aria-hidden="true" className="size-3.5 flex-none border border-tinta" style={{ background: muestra(o.valor) }} />
-                        )}
-                        <span className="min-w-0 flex-auto group-hover/opcion:underline group-hover/opcion:underline-offset-3">{o.nombre}</span>
-                        <span className="text-[12px] text-[#666666]">{o.cantidad}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <button
-              type="button"
-              aria-label={`Cerrar ${grupoAbierto.nombre}`}
-              onClick={() => setAbierto(null)}
-              className={`flex size-9 flex-none items-center justify-center ${boton(false)}`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex min-h-[52px] flex-wrap items-center gap-2 px-[clamp(16px,3vw,32px)] py-2.5">
-        <span className="mr-1 text-[11px] font-semibold tracking-[0.12em] uppercase">Filtros aplicados</span>
-        {chips.length === 0 ? (
-          <span className="text-[14px] text-[#555555]">Ninguno</span>
-        ) : (
-          <>
-            {chips.map((chip) => (
+            {secundarios.length > 0 && (
               <button
-                key={chip.clave}
                 type="button"
-                aria-label={`Quitar filtro ${chip.nombre}`}
-                onClick={() => {
-                  chip.quitar();
-                  setLimite(POR_PAGINA);
-                }}
-                className={`inline-flex min-h-[30px] cursor-pointer items-center gap-1.5 bg-white px-2.5 text-[13px] text-tinta ${hoverBlanca}`}
+                aria-expanded={abierto === MAS}
+                aria-controls="panel-filtro"
+                onClick={() => alternarPanel(MAS)}
+                className={`${botonBarra(abierto === MAS)} ${enfoqueAdentro}`}
               >
-                {chip.nombre}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+                  <circle cx="16" cy="7" r="2" />
+                  <circle cx="10" cy="17" r="2" />
+                </svg>
+                Más filtros
+                <Cuenta cantidad={elegidosEn(secundarios)} invertida={abierto === MAS} />
+              </button>
+            )}
+          </div>
+
+          {/* Los aplicados: en la barra, entre los filtros y el orden. Si no entran, se deslizan de lado
+              y "Limpiar todo" queda siempre a la vista. */}
+          {chips.length > 0 && (
+            <div
+              role="group"
+              aria-label="Filtros aplicados"
+              className="order-4 flex min-w-0 basis-full items-center gap-1.5 border-t border-tinta px-3 py-2 min-[1000px]:order-none min-[1000px]:flex-1 min-[1000px]:basis-auto min-[1000px]:border-t-0 min-[1000px]:border-l min-[1000px]:py-0"
+            >
+              {/* El borde derecho se desvanece: si no entran todos, el último no queda cortado en seco */}
+              <div className="flex min-w-0 flex-wrap gap-1.5 min-[1000px]:flex-nowrap min-[1000px]:overflow-x-auto min-[1000px]:pr-4 min-[1000px]:[mask-image:linear-gradient(to_right,#000_calc(100%-16px),transparent)] min-[1000px]:[scrollbar-width:none] min-[1000px]:[&::-webkit-scrollbar]:hidden">
+                {chips.map((chip) => (
+                  <button
+                    key={chip.clave}
+                    type="button"
+                    aria-label={`Quitar filtro ${chip.nombre}`}
+                    onClick={() => {
+                      chip.quitar();
+                      setLimite(POR_PAGINA);
+                    }}
+                    className="inline-flex min-h-[30px] flex-none cursor-pointer items-center gap-1.5 bg-[#f2f2f2] px-2.5 text-[13px] whitespace-nowrap text-tinta transition-colors duration-150 hover:bg-tinta hover:text-white focus-visible:-outline-offset-2"
+                  >
+                    {chip.nombre}
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={limpiar}
+                className="min-h-[30px] flex-none cursor-pointer px-1 text-[13px] whitespace-nowrap underline underline-offset-3 transition-colors duration-150 hover:text-[#555555]"
+              >
+                Limpiar todo
+              </button>
+            </div>
+          )}
+
+          <label className="relative order-2 ml-auto flex min-h-11 flex-none items-center gap-2 border-l border-tinta pl-4 text-[13px] tracking-[0.04em] uppercase focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:order-none">
+            <span className="max-[1199px]:sr-only">Ordenar</span>
+            <select
+              value={orden}
+              onChange={(e) => {
+                setOrden(e.target.value as Orden);
+                setLimite(POR_PAGINA);
+              }}
+              className="field-sizing-content cursor-pointer appearance-none self-stretch bg-transparent pr-9 text-[14px] tracking-normal text-tinta normal-case outline-none"
+            >
+              {ORDENES.map((o) => (
+                <option key={o.valor} value={o.valor}>
+                  {o.nombre}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-4">
+              <Chevron arriba={false} />
+            </span>
+          </label>
+        </div>
+
+        {/* Lo que se despliega debajo de la barra, encima de los productos */}
+        <div
+          id="panel-filtro"
+          role="region"
+          aria-label={nombrePanel ? `Filtro: ${nombrePanel}` : "Filtro"}
+          hidden={!abierto}
+          className="absolute inset-x-0 top-full max-h-[min(70svh,520px)] overflow-y-auto border border-t-0 border-tinta bg-white px-5 py-5 shadow-[0_12px_24px_-12px_rgba(0,0,0,0.25)]"
+        >
+          {abierto && (
+            <div className="flex items-start gap-6">
+              <div className="min-w-0 flex-auto">
+                {abierto === MAS ? (
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,190px),1fr))] gap-x-8 gap-y-6">
+                    {secundarios.map((g) => (
+                      <fieldset key={g.id} className="min-w-0">
+                        <legend className="mb-3 text-[12px] font-semibold tracking-[0.12em] uppercase">{g.nombre}</legend>
+                        <Opciones grupo={g} elegidos={elegidos[g.id] ?? []} alternar={(valor) => alternar(g.id, valor)} columnas={false} />
+                      </fieldset>
+                    ))}
+                  </div>
+                ) : (
+                  grupoAbierto && <Opciones grupo={grupoAbierto} elegidos={elegidos[grupoAbierto.id] ?? []} alternar={(valor) => alternar(grupoAbierto.id, valor)} columnas />
+                )}
+              </div>
+              <button
+                type="button"
+                aria-label={`Cerrar ${nombrePanel ?? "filtro"}`}
+                onClick={() => setAbierto(null)}
+                className={`flex size-9 flex-none items-center justify-center ${boton(false)}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
-            ))}
-            <button type="button" onClick={limpiar} className="min-h-[30px] cursor-pointer px-1 text-[13px] underline underline-offset-3 transition-colors duration-150 hover:text-acento">
-              Limpiar todo
-            </button>
-          </>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       <section aria-label="Productos" className="flex flex-col">
@@ -441,7 +539,12 @@ export function Catalogo({
           <>
             <ul className="grid grid-cols-2 min-[900px]:grid-cols-3 min-[1200px]:grid-cols-4">
               {visibles.map((t) => (
-                <TarjetaCatalogo key={t.producto.productId} tarjeta={t} onColor={(id, c) => setColorDe((actuales) => ({ ...actuales, [id]: c }))} />
+                <TarjetaCatalogo
+                  key={t.producto.productId}
+                  tarjeta={t}
+                  limitarFoto={!encabezado}
+                  onColor={(id, c) => setColorDe((actuales) => ({ ...actuales, [id]: c }))}
+                />
               ))}
             </ul>
             <div className="flex flex-col items-center gap-3 px-4 py-8">

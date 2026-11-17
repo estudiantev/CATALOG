@@ -156,6 +156,15 @@ export const formatoSoles = new Intl.NumberFormat("es-PE", {
   currency: "PEN",
 });
 
+// Sin ".00" cuando el precio es exacto (S/ 2,500); si tiene céntimos van los dos decimales (S/ 49.90)
+const formatoSolesEntero = new Intl.NumberFormat("es-PE", {
+  style: "currency",
+  currency: "PEN",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+export const precioCorto = (monto: number) => (Number.isInteger(monto) ? formatoSolesEntero : formatoSoles).format(monto);
+
 // Carpeta de S3 de las fotos de un producto (debe estar dentro de "product-images/*",
 // la ruta que autoriza amplify/storage/resource.ts)
 export const carpetaImagenes = (productId: string) => `product-images/${productId}/`;
