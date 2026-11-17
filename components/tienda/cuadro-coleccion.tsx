@@ -19,7 +19,8 @@ const FIJAS: Record<ClaveOcasion, { coleccion: (typeof COLECCIONES)[number]; ves
 
 // Un cuadro de la sección Colecciones de la página de inicio: la foto y, al centro, el nombre en
 // una etiqueta blanca. Desde 1000 px la sección llena la pantalla: si el cuadro no entra, baja
-// de alto (80 px son los márgenes de la sección).
+// de alto (80 px son los márgenes de la sección). w-full lo mantiene a todo el ancho de su
+// columna: sin él, con el alto limitado, el navegador también lo angosta para que siga cuadrado.
 export function CuadroColeccion({
   href,
   nombre,
@@ -36,7 +37,7 @@ export function CuadroColeccion({
   return (
     <Link
       href={href}
-      className="group relative block aspect-square overflow-hidden bg-[#f3f3f3] text-tinta min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-80px)]"
+      className="group relative block aspect-square w-full overflow-hidden bg-[#f3f3f3] text-tinta min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-80px)]"
     >
       {foto ? (
         <Image src={foto.url} alt="" fill unoptimized sizes={sizes} className="object-cover" />
@@ -49,7 +50,7 @@ export function CuadroColeccion({
       )}
       {/* Un nombre largo pasa a la línea siguiente en vez de salirse del cuadro */}
       <span
-        className={`absolute top-1/2 left-1/2 w-max max-w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 px-6 py-[17px] text-center text-[18px] leading-[23px] break-words group-hover:underline group-hover:underline-offset-3 ${cajaEsquina}`}
+        className={`absolute top-1/2 left-1/2 w-max max-w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 px-6 py-4.25 text-center text-[18px] leading-5.75 wrap-break-word group-hover:underline group-hover:underline-offset-3 ${cajaEsquina}`}
       >
         {nombre}
       </span>

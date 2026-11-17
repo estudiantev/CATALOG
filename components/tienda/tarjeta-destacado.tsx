@@ -30,8 +30,8 @@ export function TarjetaDestacado({
     <Link href={href} className="group row-span-2 grid grid-rows-subgrid text-tinta">
       {/* En 2:3, como el mockup. Desde 1000 px la sección llena la pantalla: si la tarjeta no entra
           (una pantalla ancha y baja), la foto baja de alto. Los 200 px son el título de la sección,
-          los textos de la tarjeta y los márgenes. */}
-      <div className="relative aspect-[2/3] overflow-hidden bg-[#f7f7f7] min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-200px)]">
+          los textos de la tarjeta y los márgenes. w-full: al bajar de alto no se angosta. */}
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#f7f7f7] min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-200px)]">
         <FotosProducto portada={portada} hover={hover} sizes={sizes} />
         {etiqueta && (
           <span className="absolute top-0 left-0 bg-[#fbd1da] px-2.5 font-mono text-[14px] leading-[30px] tracking-[0.04em] uppercase">{etiqueta}</span>
