@@ -64,6 +64,9 @@
   }
 }
 
+/* Desde aquí la ruta, la modalidad y los filtros del catálogo entran juntos en una sola barra */
+@custom-variant una-fila (@media (width >= 85rem));
+
 /* Celulares y tablets en vertical. La portada repite esta condición para elegir su foto. */
 @custom-variant movil (@media (max-width: 999px) and (orientation: portrait));
 /* Pantallas bajas en horizontal (el celular girado): la portada entra en lo que queda de alto */

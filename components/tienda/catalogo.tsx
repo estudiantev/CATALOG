@@ -6,7 +6,7 @@ import type { Foto, ProductoCatalogo } from "@/lib/catalogo";
 import { type Clave, FAMILIAS_COLOR, type Filtros, NOMBRES_CLAVE, nombreOpcion, ordenarValores, precioCorto } from "@/lib/productos";
 import { resolverTarjeta } from "@/lib/variantes";
 import { botonAzul, hoverBlanca } from "./estilos-inicio";
-import { RutaNavegacion } from "./ruta-navegacion";
+import { Ruta, RutaNavegacion } from "./ruta-navegacion";
 import { FotosProducto } from "./tarjeta-producto";
 
 export type Modo = "todo" | "compra" | "alquiler";
@@ -134,7 +134,8 @@ type Tarjeta = NonNullable<ReturnType<typeof resolverTarjeta<Foto>>> & {
 };
 
 // La foto y tres líneas debajo: el nombre, los precios y los colores.
-// `limitarFoto`: desde 1000 px la foto baja de alto si la primera fila no entra en la pantalla.
+// `limitarFoto`: desde 1000 px la foto baja de alto si la primera fila no entra en la pantalla. Lo
+// que va arriba y debajo de la foto lo da --resto-catalogo, que pone el catálogo.
 function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; limitarFoto: boolean; onColor: (productId: string, color: string) => void }) {
   const { producto, variantId, precioVenta, precioAlquiler, desde, portada, hover, colores, color } = tarjeta;
   // RF-10: abre el detalle con la combinación filtrada (y el color elegido) ya elegida
@@ -142,13 +143,12 @@ function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; 
   return (
     <li className="group/tarjeta flex min-w-0 flex-col">
       {/* La foto lleva al mismo lugar que el nombre: para el lector de pantalla basta con uno.
-          Los 225 px son la ruta, la barra de filtros y las tres líneas de la tarjeta. w-full: al
-          bajar de alto no se angosta. */}
+          w-full: al bajar de alto no se angosta. */}
       <Link
         href={href}
         tabIndex={-1}
         aria-hidden="true"
-        className={`group relative block aspect-[3/4] w-full overflow-hidden bg-[#f3f3f3] ${limitarFoto ? "min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-225px)]" : ""}`}
+        className={`group relative block aspect-[3/4] w-full overflow-hidden bg-[#f3f3f3] ${limitarFoto ? "min-[1000px]:max-h-[calc(100svh-var(--alto-marco)-var(--resto-catalogo))]" : ""}`}
       >
         <FotosProducto portada={portada} hover={hover} sizes="(min-width: 1200px) 25vw, (min-width: 900px) 33vw, 50vw" />
         {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}
@@ -160,7 +160,8 @@ function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; 
       </Link>
       <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3.5">
         {/* Una sola línea: si el nombre es largo termina en "…" */}
-        <h3 className="truncate text-[14px] leading-5 font-medium">
+        {/* En la computadora, un poco más grande; en el celular, como antes, para que el nombre entre */}
+        <h3 className="truncate text-[14px] leading-5 font-medium min-[1000px]:text-[16px] min-[1000px]:leading-[22px]">
           <Link href={href} className="group-hover/tarjeta:underline group-hover/tarjeta:underline-offset-3">
             {producto.nombre}
           </Link>
@@ -168,7 +169,7 @@ function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; 
         {/* RF-06: el menor precio entre las variantes que cumplen los filtros. Como en el inicio: la
             venta sola y el alquiler en gris, los dos en una línea (en el celular, si no entran, el
             alquiler pasa abajo; cada precio va siempre junto). */}
-        <p className="flex flex-wrap gap-x-3 text-[13px] leading-[18px]">
+        <p className="flex flex-wrap gap-x-3 text-[13px] leading-[18px] min-[1000px]:text-[15px] min-[1000px]:leading-[21px]">
           {precioVenta > 0 && (
             <span className="font-semibold whitespace-nowrap">
               {desde && "Desde "}
@@ -349,37 +350,90 @@ export function Catalogo({
   const visibles = tarjetas.slice(0, limite);
   const productosTexto = (n: number) => (n === 1 ? "1 producto" : `${n} productos`);
 
-  return (
-    <div className="bg-white font-cuerpo text-[15px] text-tinta">
-      {categoria && <h1 className="sr-only">Catálogo de {categoria.toLowerCase()}</h1>}
-      <RutaNavegacion pasos={ruta}>
-        <div role="group" aria-label="Modalidad" className="flex">
-          {MODOS.map((m) => (
+  // En /catalogo, en pantallas anchas (variante `una-fila` de tienda.css), la ruta y la modalidad van
+  // dentro de la barra: arriba de los productos queda un solo rectángulo, y los filtros aplicados
+  // pasan a una línea debajo. Más angosto no entran: la ruta va en su propia línea, como en las
+  // colecciones, donde la portada va entre la ruta y la barra.
+  const enLinea = !encabezado;
+  const fueraDeLaFila = enLinea ? "una-fila:hidden" : "";
+  // En una sola fila los filtros van un poco más juntos, para que todo entre desde 1360 px; buscar
+  // ocupa lo que sobre, así la barra no deja huecos
+  const botonFila = enLinea ? "una-fila:px-3" : "";
+
+  const modalidad = (clase: string, claseBoton = "px-3") => (
+    <div role="group" aria-label="Modalidad" className={`flex ${clase}`}>
+      {MODOS.map((m) => (
+        <button
+          key={m.valor}
+          type="button"
+          aria-pressed={modo === m.valor}
+          onClick={() => {
+            setModo(m.valor);
+            setLimite(POR_PAGINA);
+          }}
+          className={`min-h-[30px] ${claseBoton} text-[13px] font-medium ${
+            modo === m.valor ? "bg-acento text-white" : "cursor-pointer bg-white text-tinta transition-colors duration-150 hover:bg-acento hover:text-white"
+          }`}
+        >
+          {m.nombre}
+        </button>
+      ))}
+    </div>
+  );
+
+  // `clase` es la del grupo; `claseLista`, la de los botones de los filtros
+  const aplicados = (clase: string, claseLista: string) =>
+    chips.length > 0 && (
+      <div role="group" aria-label="Filtros aplicados" className={clase}>
+        <div className={claseLista}>
+          {chips.map((chip) => (
             <button
-              key={m.valor}
+              key={chip.clave}
               type="button"
-              aria-pressed={modo === m.valor}
+              aria-label={`Quitar filtro ${chip.nombre}`}
               onClick={() => {
-                setModo(m.valor);
+                chip.quitar();
                 setLimite(POR_PAGINA);
               }}
-              className={`min-h-[30px] px-3 text-[13px] font-medium ${
-                modo === m.valor ? "bg-acento text-white" : "cursor-pointer bg-white text-tinta transition-colors duration-150 hover:bg-acento hover:text-white"
-              }`}
+              className="inline-flex min-h-[30px] flex-none cursor-pointer items-center gap-1.5 bg-[#f2f2f2] px-2.5 text-[13px] whitespace-nowrap text-tinta transition-colors duration-150 hover:bg-tinta hover:text-white focus-visible:-outline-offset-2"
             >
-              {m.nombre}
+              {chip.nombre}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={limpiar}
+          className="min-h-[30px] flex-none cursor-pointer px-1 text-[13px] whitespace-nowrap underline underline-offset-3 transition-colors duration-150 hover:text-[#555555]"
+        >
+          Limpiar todo
+        </button>
+      </div>
+    );
+
+  return (
+    <div className="bg-white font-cuerpo text-[15px] text-tinta">
+      {categoria && <h1 className="sr-only">Catálogo de {categoria.toLowerCase()}</h1>}
+      <RutaNavegacion pasos={ruta} className={fueraDeLaFila}>
+        {modalidad("")}
       </RutaNavegacion>
       {encabezado}
 
       {/* La barra: un rectángulo del alto del menú del encabezado con buscar, los filtros principales,
-          "Más filtros", los aplicados y el orden. En el celular se reparte en filas: buscar y el orden
-          arriba, los filtros (que se deslizan de lado) y los aplicados debajo. */}
-      <div ref={barra} className="relative z-10 mx-[clamp(16px,3vw,32px)] mb-3">
+          "Más filtros", los aplicados y el orden (en una sola fila, también la ruta y la modalidad). En
+          el celular se reparte en filas: buscar y el orden arriba, los filtros (que se deslizan de
+          lado) y los aplicados debajo. */}
+      <div ref={barra} className={`relative z-10 mx-[clamp(16px,3vw,32px)] mb-3 ${enLinea ? "una-fila:mt-3" : ""}`}>
         <div data-barra-catalogo className="flex flex-wrap border border-tinta bg-white min-[1000px]:h-[51px] min-[1000px]:flex-nowrap">
-          <label className="flex min-h-11 min-w-0 flex-1 cursor-text items-center gap-2.5 px-4 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:w-[clamp(170px,16vw,260px)] min-[1000px]:flex-none">
+          {enLinea && (
+            <div className="hidden min-w-0 flex-[0_1_auto] items-center border-r border-tinta px-4 text-[13px] text-[#555555] una-fila:flex">
+              <Ruta pasos={ruta} unaLinea />
+            </div>
+          )}
+          <label className={`flex min-h-11 min-w-0 flex-1 cursor-text items-center gap-2.5 px-4 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:w-[clamp(170px,16vw,260px)] min-[1000px]:flex-none ${enLinea ? "una-fila:w-auto una-fila:min-w-[150px] una-fila:flex-[1_1_0%]" : ""}`}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="flex-none">
               <circle cx="11" cy="11" r="7" />
               <path d="M20 20l-3.5-3.5" />
@@ -409,7 +463,7 @@ export function Catalogo({
                 aria-expanded={abierto === g.id}
                 aria-controls="panel-filtro"
                 onClick={() => alternarPanel(g.id)}
-                className={`${botonBarra(abierto === g.id)} ${enfoqueAdentro}`}
+                className={`${botonBarra(abierto === g.id)} ${botonFila} ${enfoqueAdentro}`}
               >
                 {g.nombre}
                 <Cuenta cantidad={elegidos[g.id]?.length ?? 0} invertida={abierto === g.id} />
@@ -422,7 +476,7 @@ export function Catalogo({
                 aria-expanded={abierto === MAS}
                 aria-controls="panel-filtro"
                 onClick={() => alternarPanel(MAS)}
-                className={`${botonBarra(abierto === MAS)} ${enfoqueAdentro}`}
+                className={`${botonBarra(abierto === MAS)} ${botonFila} ${enfoqueAdentro}`}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
@@ -436,45 +490,18 @@ export function Catalogo({
           </div>
 
           {/* Los aplicados: en la barra, entre los filtros y el orden. Si no entran, se deslizan de lado
-              y "Limpiar todo" queda siempre a la vista. */}
-          {chips.length > 0 && (
-            <div
-              role="group"
-              aria-label="Filtros aplicados"
-              className="order-4 flex min-w-0 basis-full items-center gap-1.5 border-t border-tinta px-3 py-2 min-[1000px]:order-none min-[1000px]:flex-1 min-[1000px]:basis-auto min-[1000px]:border-t-0 min-[1000px]:border-l min-[1000px]:py-0"
-            >
-              {/* El borde derecho se desvanece: si no entran todos, el último no queda cortado en seco */}
-              <div className="flex min-w-0 flex-wrap gap-1.5 min-[1000px]:flex-nowrap min-[1000px]:overflow-x-auto min-[1000px]:pr-4 min-[1000px]:[mask-image:linear-gradient(to_right,#000_calc(100%-16px),transparent)] min-[1000px]:[scrollbar-width:none] min-[1000px]:[&::-webkit-scrollbar]:hidden">
-                {chips.map((chip) => (
-                  <button
-                    key={chip.clave}
-                    type="button"
-                    aria-label={`Quitar filtro ${chip.nombre}`}
-                    onClick={() => {
-                      chip.quitar();
-                      setLimite(POR_PAGINA);
-                    }}
-                    className="inline-flex min-h-[30px] flex-none cursor-pointer items-center gap-1.5 bg-[#f2f2f2] px-2.5 text-[13px] whitespace-nowrap text-tinta transition-colors duration-150 hover:bg-tinta hover:text-white focus-visible:-outline-offset-2"
-                  >
-                    {chip.nombre}
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                      <path d="M6 6l12 12M18 6L6 18" />
-                    </svg>
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={limpiar}
-                className="min-h-[30px] flex-none cursor-pointer px-1 text-[13px] whitespace-nowrap underline underline-offset-3 transition-colors duration-150 hover:text-[#555555]"
-              >
-                Limpiar todo
-              </button>
-            </div>
+              y "Limpiar todo" queda siempre a la vista. En una sola fila van debajo de la barra. */}
+          {aplicados(
+            `order-4 flex min-w-0 basis-full items-center gap-1.5 border-t border-tinta px-3 py-2 min-[1000px]:order-none min-[1000px]:flex-1 min-[1000px]:basis-auto min-[1000px]:border-t-0 min-[1000px]:border-l min-[1000px]:py-0 ${fueraDeLaFila}`,
+            // El borde derecho se desvanece: si no entran todos, el último no queda cortado en seco
+            "flex min-w-0 flex-wrap gap-1.5 min-[1000px]:flex-nowrap min-[1000px]:overflow-x-auto min-[1000px]:pr-4 min-[1000px]:[mask-image:linear-gradient(to_right,#000_calc(100%-16px),transparent)] min-[1000px]:[scrollbar-width:none] min-[1000px]:[&::-webkit-scrollbar]:hidden",
           )}
 
-          <label className="relative order-2 ml-auto flex min-h-11 flex-none items-center gap-2 border-l border-tinta pl-4 text-[13px] tracking-[0.04em] uppercase focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:order-none">
-            <span className="max-[1199px]:sr-only">Ordenar</span>
+          {/* Todo / Comprar / Alquilar, a la izquierda del orden */}
+          {enLinea && modalidad("hidden flex-none items-center border-l border-tinta px-2 una-fila:ml-auto una-fila:flex", "px-2.5")}
+
+          <label className={`relative order-2 ml-auto flex min-h-11 flex-none items-center gap-2 border-l border-tinta pl-4 text-[13px] tracking-[0.04em] uppercase focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:order-none ${enLinea ? "una-fila:ml-0" : ""}`}>
+            <span className={`max-[1199px]:sr-only ${enLinea ? "una-fila:max-[1499px]:sr-only" : ""}`}>Ordenar</span>
             <select
               value={orden}
               onChange={(e) => {
@@ -534,7 +561,14 @@ export function Catalogo({
         </div>
       </div>
 
-      <section aria-label="Productos" className="flex flex-col">
+      {enLinea && aplicados("mx-[clamp(16px,3vw,32px)] mb-3 hidden items-center gap-1.5 una-fila:flex", "flex min-w-0 flex-wrap gap-1.5")}
+
+      {/* --resto-catalogo: lo que va arriba y debajo de la foto en la primera fila (la ruta, la barra,
+          los aplicados y las tres líneas de la tarjeta), para que entre entera en la pantalla */}
+      <section
+        aria-label="Productos"
+        className={`flex flex-col [--resto-catalogo:230px] ${enLinea ? (chips.length ? "una-fila:[--resto-catalogo:234px]" : "una-fila:[--resto-catalogo:192px]") : ""}`}
+      >
         {visibles.length > 0 ? (
           <>
             <ul className="grid grid-cols-2 min-[900px]:grid-cols-3 min-[1200px]:grid-cols-4">
