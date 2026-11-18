@@ -30,8 +30,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/admin/ui/table";
-import { cargarProductos, cargarVariantes, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import { CATEGORIAS, type Producto, formatoSoles, leerJson } from "@/lib/productos";
+import { cargarCategorias, cargarProductos, cargarVariantes, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
+import type { Categoria } from "@/lib/categorias";
+import { type Producto, formatoSoles, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
 
 const resumenDe = (producto: Producto) => leerJson<ResumenVariante[]>(producto.variantSummary, []);
@@ -61,12 +62,15 @@ export function TablaProductos({
   puedeEliminar: boolean;
 }) {
   const [productos, setProductos] = useState<Producto[] | null>(null);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [miniaturas, setMiniaturas] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
 
   useEffect(() => {
-    cargarProductos()
-      .then((cargados) => {
+    cargarCategorias()
+      .then(async (todas) => {
+        const cargados = await cargarProductos(todas);
+        setCategorias(todas);
         setProductos(cargados);
         return cargarMiniaturas(cargados).then(setMiniaturas);
       })
@@ -143,7 +147,7 @@ export function TablaProductos({
                 </TableCell>
                 <TableCell className="font-medium">{producto.name}</TableCell>
                 <TableCell>
-                  {CATEGORIAS.find((c) => c.valor === producto.category)?.nombre ?? "—"}
+                  {categorias.find((c) => c.codigo === producto.category)?.nombre ?? "—"}
                 </TableCell>
                 <TableCell className="text-right">{formatoSoles.format(producto.priceSale)}</TableCell>
                 <TableCell className="text-right">{formatoSoles.format(producto.priceRent)}</TableCell>

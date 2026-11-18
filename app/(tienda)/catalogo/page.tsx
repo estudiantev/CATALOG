@@ -3,7 +3,9 @@ import { Catalogo, type FiltrosIniciales } from "@/components/tienda/catalogo";
 import { COLORES } from "@/components/tienda/datos";
 import { RutaNavegacion } from "@/components/tienda/ruta-navegacion";
 import { type ProductoCatalogo, leerCatalogo } from "@/lib/catalogo";
-import { CATEGORIAS, TALLAS } from "@/lib/productos";
+import { categoriaPrincipal } from "@/lib/categorias";
+import { leerCategorias } from "@/lib/categorias-servidor";
+import { TALLAS } from "@/lib/productos";
 
 export const metadata: Metadata = {
   title: "Catálogo",
@@ -48,13 +50,15 @@ export default async function CatalogoPage({
   searchParams: Promise<Parametros>;
 }) {
   const parametros = await searchParams;
-  // RF-01: cada categoría es su propio catálogo; sin ?categoria= se muestran los vestidos
-  const categoria = CATEGORIAS.find((c) => c.slug === leer(parametros, "categoria")) ?? CATEGORIAS[0];
+  // RF-01: cada categoría es su propio catálogo; sin ?categoria= (o con una que ya no existe) se
+  // muestran los vestidos
+  const categorias = await leerCategorias();
+  const categoria = categorias.find((c) => c.slug === leer(parametros, "categoria")) ?? categoriaPrincipal(categorias);
   const filtrosIniciales = filtrosDesdeUrl(parametros);
 
   let productos: ProductoCatalogo[] | null = null;
   try {
-    productos = await leerCatalogo(categoria.valor);
+    productos = await leerCatalogo(categoria.codigo);
   } catch (error) {
     console.error("No se pudo cargar el catálogo:", error);
   }
@@ -72,10 +76,10 @@ export default async function CatalogoPage({
   // key: al llegar desde otro enlace del menú, los filtros vuelven a empezar
   return (
     <Catalogo
-      key={`${categoria.valor}-${JSON.stringify(filtrosIniciales)}`}
+      key={`${categoria.codigo}-${JSON.stringify(filtrosIniciales)}`}
       productos={productos}
       ruta={[{ nombre: "Inicio", href: "/" }, { nombre: "Catálogo", href: "/catalogo" }, { nombre: categoria.plural }]}
-      categoria={categoria.valor}
+      categoria={categoria.plural}
       filtrosIniciales={filtrosIniciales}
     />
   );

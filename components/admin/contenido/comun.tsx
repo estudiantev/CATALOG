@@ -245,15 +245,17 @@ export function CasillaVisible({
   visible,
   onChange,
   etiqueta = "Mostrar esta sección en la página de inicio",
+  disabled,
 }: {
   id: string;
   visible: boolean;
   onChange: (visible: boolean) => void;
   etiqueta?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Checkbox id={id} name={id} checked={visible} onCheckedChange={(valor) => onChange(valor === true)} />
+      <Checkbox id={id} name={id} checked={visible} disabled={disabled} onCheckedChange={(valor) => onChange(valor === true)} />
       <Label htmlFor={id}>{etiqueta}</Label>
     </div>
   );

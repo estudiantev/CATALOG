@@ -36,11 +36,18 @@ export function Encabezado({
   anuncios,
   ocasiones,
   tallas,
+  categorias,
+  escalonMenu,
 }: {
   anuncios: DatosSeccion["anuncios"] | null;
   // Las de los vestidos con stock (lib/catalogo.ts): el menú solo ofrece lo que hay
   ocasiones: string[];
   tallas: string[];
+  // Las elegidas para el menú en el panel de contenido (lib/categorias.ts), en su orden
+  categorias: { nombre: string; href: string }[];
+  // Desde qué ancho entra el menú de escritorio con esas categorías (lib/categorias.ts y la
+  // variante `menu` de tienda.css); por debajo va el de celular
+  escalonMenu: number;
 }) {
   const [catalogoAbierto, setCatalogoAbierto] = useState(false);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
@@ -83,7 +90,7 @@ export function Encabezado({
   }, []);
 
   return (
-    <div ref={contenedor} id="marco" className="relative z-30 bg-white font-cuerpo">
+    <div ref={contenedor} id="marco" data-menu={escalonMenu} className="relative z-30 bg-white font-cuerpo">
       <a href="#contenido" className="absolute left-4 -top-30 z-20 bg-tinta px-4.5 py-3 font-semibold text-white focus:top-3">
         Saltar al contenido
       </a>
@@ -118,11 +125,13 @@ export function Encabezado({
                 Contacto
               </a>
             </li>
-            <li>
-              <Link href="/catalogo?categoria=accesorios" onClick={cerrarMenus} className={opcionNav}>
-                Accesorios
-              </Link>
-            </li>
+            {categorias.map((categoria) => (
+              <li key={categoria.href}>
+                <Link href={categoria.href} onClick={cerrarMenus} className={opcionNav}>
+                  {categoria.nombre}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
 
@@ -141,17 +150,18 @@ export function Encabezado({
               Favoritos
             </span>
           </a>
-          {/* Solo para el staff. Es un atajo: /admin igual revisa la sesión en el servidor. Hasta
-              1100 px va solo el ícono, para que entre junto al nombre sin tapar el menú. */}
+          {/* Solo para el staff. Es un atajo: /admin igual revisa la sesión en el servidor. Con el
+              menú de celular, y en el de escritorio hasta 1100 px, va solo el ícono, para que entre
+              junto al nombre sin tapar el menú. */}
           {staff && (
             <Link href="/admin" aria-label="Panel de administración" title="Panel de administración" onClick={cerrarMenus} className={opcionIcono}>
-              <svg className="min-[1100px]:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg className="menu:min-[1100px]:hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="9" />
                 <rect x="14" y="3" width="7" height="5" />
                 <rect x="14" y="12" width="7" height="9" />
                 <rect x="3" y="16" width="7" height="5" />
               </svg>
-              <span aria-hidden="true" className="hidden min-[1100px]:inline">
+              <span aria-hidden="true" className="hidden menu:min-[1100px]:inline">
                 Panel
               </span>
             </Link>
@@ -324,11 +334,13 @@ export function Encabezado({
                 <span className={`${etiquetaMovil} py-1.5 text-[15px] leading-[20px] font-medium tracking-[0.1em] uppercase`}>Contacto</span>
               </a>
             </li>
-            <li>
-              <Link href="/catalogo?categoria=accesorios" onClick={cerrarMenus} className={`${filaMovil} h-14 px-5`}>
-                <span className={`${etiquetaMovil} py-1.5 text-[15px] leading-[20px] font-medium tracking-[0.1em] uppercase`}>Accesorios</span>
-              </Link>
-            </li>
+            {categorias.map((categoria) => (
+              <li key={categoria.href}>
+                <Link href={categoria.href} onClick={cerrarMenus} className={`${filaMovil} h-14 px-5`}>
+                  <span className={`${etiquetaMovil} py-1.5 text-[15px] leading-[20px] font-medium tracking-[0.1em] uppercase`}>{categoria.nombre}</span>
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       )}

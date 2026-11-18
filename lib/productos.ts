@@ -9,13 +9,7 @@ export type Talla = Schema["Size"]["type"];
 export type FamiliaColor = Schema["ColorFamily"]["type"];
 export type ImagenProducto = Schema["ProductImage"]["type"];
 
-export const CATEGORIAS = [
-  { valor: "DRESS", nombre: "Vestido", plural: "Vestidos", slug: "vestidos" },
-  { valor: "JEWELRY", nombre: "Joya", plural: "Joyas", slug: "joyas" },
-  { valor: "ACCESSORY", nombre: "Accesorio", plural: "Accesorios", slug: "accesorios" },
-] as const;
-
-export type Categoria = (typeof CATEGORIAS)[number]["valor"];
+// Las categorías ya no son una lista fija: están en la tabla Category (lib/categorias.ts)
 
 export const TALLAS = [
   { valor: "XXS", nombre: "XXS" },

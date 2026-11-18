@@ -33,9 +33,35 @@
   --color-acento2-oscuro: #000000;
   --color-tinte-verde: #f2f2f2;
   --color-tinte-azul: #f2f2f2;
+}
 
-  /* Desde aquí se muestra el menú de escritorio: es lo que mide con un nombre de 14 letras en "Mi cuenta" */
-  --breakpoint-menu: 62.375rem;
+/*
+ * Desde dónde se muestra el menú de escritorio. Con las opciones de siempre, desde 62.375rem (998 px):
+ * es lo que mide con un nombre de 14 letras en "Mi cuenta". Más categorías en el menú piden más
+ * ancho: el marco del encabezado lleva data-menu con el escalón que necesita (ANCHOS_MENU en
+ * lib/categorias.ts) y, por debajo, va el menú de celular.
+ */
+@custom-variant menu {
+  &:where([data-menu="0"] *) {
+    @media (width >= 62.375rem) {
+      @slot;
+    }
+  }
+  &:where([data-menu="1"] *) {
+    @media (width >= 67.5rem) {
+      @slot;
+    }
+  }
+  &:where([data-menu="2"] *) {
+    @media (width >= 72.5rem) {
+      @slot;
+    }
+  }
+  &:where([data-menu="3"] *) {
+    @media (width >= 80rem) {
+      @slot;
+    }
+  }
 }
 
 /* Celulares y tablets en vertical. La portada repite esta condición para elegir su foto. */

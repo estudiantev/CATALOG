@@ -18,14 +18,15 @@ import {
 } from "@/components/admin/ui/select";
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import { Textarea } from "@/components/admin/ui/textarea";
-import { clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import { CATEGORIAS, type Categoria, type Producto } from "@/lib/productos";
+import { cargarCategorias, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
+import type { Categoria } from "@/lib/categorias";
+import type { Producto } from "@/lib/productos";
 
 // Datos generales del producto. Precios, tallas, colores y fotos van en sus variantes,
 // y el resumen que usa el catálogo se recalcula desde ellas.
 type Formulario = {
   name: string;
-  category: Categoria | "";
+  category: string; // el código de una categoría (lib/categorias.ts)
   description: string;
   brand: string;
   designer: string;
@@ -47,7 +48,7 @@ const VACIO: Formulario = {
 
 const desdeProducto = (p: Producto): Formulario => ({
   name: p.name,
-  category: (CATEGORIAS.find((c) => c.valor === p.category)?.valor ?? "") as Categoria | "",
+  category: p.category,
   description: p.description ?? "",
   brand: p.brand ?? "",
   designer: p.designer ?? "",
@@ -63,9 +64,17 @@ export function FormularioProducto({ productId }: { productId?: string }) {
   const router = useRouter();
   const editando = productId !== undefined;
   const [form, setForm] = useState<Formulario | null>(editando ? null : VACIO);
+  // Las de la tabla Category, que se crean en el panel de contenido
+  const [categorias, setCategorias] = useState<Categoria[] | null>(null);
   const [error, setError] = useState("");
   const [guardado, setGuardado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    cargarCategorias()
+      .then(setCategorias)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "No se pudieron cargar las categorías. Recarga la página."));
+  }, []);
 
   useEffect(() => {
     if (!productId) return;
@@ -76,7 +85,7 @@ export function FormularioProducto({ productId }: { productId?: string }) {
     });
   }, [productId]);
 
-  if (!form) {
+  if (!form || !categorias) {
     return error ? (
       <Alert variant="destructive">
         <AlertDescription>{error}</AlertDescription>
@@ -93,10 +102,10 @@ export function FormularioProducto({ productId }: { productId?: string }) {
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!form) return;
+    if (!form || !categorias) return;
     setError("");
     if (!form.name.trim()) return setError("Escribe el nombre del producto.");
-    if (!form.category) return setError("Elige una categoría.");
+    if (!categorias.some((c) => c.codigo === form.category)) return setError("Elige una categoría.");
 
     const datos = {
       name: form.name.trim(),
@@ -148,13 +157,14 @@ export function FormularioProducto({ productId }: { productId?: string }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="category">Categoría</Label>
-            <Select value={form.category} onValueChange={(valor) => cambiar("category", valor as Categoria)}>
+            {/* Sin categoría, o con una que ya no existe, pide elegir una */}
+            <Select value={categorias.some((c) => c.codigo === form.category) ? form.category : ""} onValueChange={(valor) => cambiar("category", valor)}>
               <SelectTrigger id="category" className="w-full">
                 <SelectValue placeholder="Elige una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIAS.map((c) => (
-                  <SelectItem key={c.valor} value={c.valor}>{c.nombre}</SelectItem>
+                {categorias.map((c) => (
+                  <SelectItem key={c.codigo} value={c.codigo}>{c.nombre}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

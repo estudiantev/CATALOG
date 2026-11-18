@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { getUrl } from "aws-amplify/storage";
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Skeleton } from "@/components/admin/ui/skeleton";
-import { type OpcionProducto, cargarColecciones, cargarOpcionesProducto, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
+import { type OpcionProducto, cargarCategorias, cargarColecciones, cargarOpcionesProducto, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
+import type { Categoria } from "@/lib/categorias";
 import type { Coleccion } from "@/lib/colecciones";
 import { type ContenidoInicio, PAGINA_INICIO, armarContenido } from "@/lib/contenido";
 import { EnlacesSugeridos } from "./comun";
 import { EditorAnuncios } from "./editor-anuncios";
+import { EditorCategorias } from "./editor-categorias";
 import { EditorDestacados } from "./editor-destacados";
 import { EditorInspiracion } from "./editor-inspiracion";
 import { EditorNosotros } from "./editor-nosotros";
@@ -57,6 +59,8 @@ export function EditorContenido() {
   const [errorProductos, setErrorProductos] = useState("");
   const [colecciones, setColecciones] = useState<Coleccion[] | null>(null);
   const [errorColecciones, setErrorColecciones] = useState("");
+  const [categorias, setCategorias] = useState<Categoria[] | null>(null);
+  const [errorCategorias, setErrorCategorias] = useState("");
 
   useEffect(() => {
     cargarContenido()
@@ -77,6 +81,13 @@ export function EditorContenido() {
       .catch((err: unknown) => {
         console.error("No se pudieron cargar las colecciones:", err);
         setErrorColecciones("No se pudieron cargar tus colecciones. Recarga la página para elegirlas.");
+      });
+    // Están en su propia tabla (Category): si falla, las demás secciones se pueden editar igual
+    cargarCategorias(true)
+      .then(setCategorias)
+      .catch((err: unknown) => {
+        console.error("No se pudieron cargar las categorías:", err);
+        setErrorCategorias(err instanceof Error ? err.message : "No se pudieron cargar las categorías. Recarga la página.");
       });
   }, []);
 
@@ -101,6 +112,7 @@ export function EditorContenido() {
     <div className="space-y-8">
       <EnlacesSugeridos />
       <EditorAnuncios inicial={datos.anuncios} />
+      <EditorCategorias inicial={categorias} error={errorCategorias} />
       <EditorPortada inicial={datos.portada} vistasPrevias={vistasPrevias} />
       <EditorDestacados inicial={datos.destacados} productos={productos} errorProductos={errorProductos} />
       <EditorOcasiones inicial={datos.ocasiones} vistasPrevias={vistasPrevias} colecciones={colecciones} errorColecciones={errorColecciones} />

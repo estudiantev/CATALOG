@@ -3,7 +3,7 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { ProductoDetalle, VarianteDetalle } from "@/lib/catalogo";
 import type { Paso } from "@/lib/contenido";
-import { CATEGORIAS, type Clave, FAMILIAS_COLOR, formatoSoles, nombreOpcion, NOMBRES_CLAVE } from "@/lib/productos";
+import { type Clave, FAMILIAS_COLOR, formatoSoles, nombreOpcion, NOMBRES_CLAVE } from "@/lib/productos";
 import { clavesDelProducto, elegirOpcion, estadoOpcion, varianteInicial } from "@/lib/variantes";
 import { enlaceWhatsApp } from "./datos";
 import { hoverBlanca } from "./estilos-inicio";
@@ -86,7 +86,18 @@ function Acordeon({ id, titulo, abierto, onCambiar, children }: { id: string; ti
   );
 }
 
-export function DetalleProducto({ producto, variantIdInicial, pasos }: { producto: ProductoDetalle; variantIdInicial?: string; pasos: Paso[] }) {
+// `categoria`: el nombre en singular de la del producto ("Vestido"), para el subtítulo
+export function DetalleProducto({
+  producto,
+  categoria,
+  variantIdInicial,
+  pasos,
+}: {
+  producto: ProductoDetalle;
+  categoria?: string;
+  variantIdInicial?: string;
+  pasos: Paso[];
+}) {
   const { variantes } = producto;
   const [actual, setActual] = useState<VarianteDetalle | undefined>(() => varianteInicial(variantes, variantIdInicial));
 
@@ -103,7 +114,6 @@ export function DetalleProducto({ producto, variantIdInicial, pasos }: { product
   useEffect(() => setHoy(hoyLocal()), []);
 
   const claves = clavesDelProducto(variantes).sort((a, b) => ORDEN.indexOf(a.clave) - ORDEN.indexOf(b.clave));
-  const categoria = CATEGORIAS.find((c) => c.valor === producto.categoria)?.nombre;
   const nombreDe = (clave: Clave) => {
     const valor = actual?.opciones[clave];
     return actual && valor ? nombreEnVariante(actual, clave, valor) : null;

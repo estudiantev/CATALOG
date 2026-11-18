@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { Foto, ProductoCatalogo } from "@/lib/catalogo";
-import { CATEGORIAS, type Categoria, type Clave, FAMILIAS_COLOR, type Filtros, NOMBRES_CLAVE, nombreOpcion, ordenarValores, precioCorto } from "@/lib/productos";
+import { type Clave, FAMILIAS_COLOR, type Filtros, NOMBRES_CLAVE, nombreOpcion, ordenarValores, precioCorto } from "@/lib/productos";
 import { resolverTarjeta } from "@/lib/variantes";
 import { botonAzul, hoverBlanca } from "./estilos-inicio";
 import { RutaNavegacion } from "./ruta-navegacion";
@@ -210,7 +210,8 @@ function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; 
 
 // El catálogo de una categoría (/catalogo) o los productos de una colección (/coleccion/…).
 // Buscar, los filtros, los aplicados y el orden van en una sola barra arriba de los productos. Con
-// `categoria` lleva su título; `encabezado` va entre la ruta y la barra (la portada de la colección).
+// `categoria` (su nombre en plural) lleva su título; `encabezado` va entre la ruta y la barra (la
+// portada de la colección).
 export function Catalogo({
   productos,
   ruta,
@@ -220,11 +221,10 @@ export function Catalogo({
 }: {
   productos: ProductoCatalogo[];
   ruta: { nombre: string; href?: string }[];
-  categoria?: Categoria;
+  categoria?: string;
   encabezado?: ReactNode;
   filtrosIniciales?: FiltrosIniciales;
 }) {
-  const actual = CATEGORIAS.find((c) => c.valor === categoria);
   const [modo, setModo] = useState<Modo>(filtrosIniciales.modo);
   const [texto, setTexto] = useState(filtrosIniciales.texto);
   const [elegidos, setElegidos] = useState<Elegidos>(() => ({ ...filtrosIniciales.variante, ...filtrosIniciales.generales }));
@@ -351,7 +351,7 @@ export function Catalogo({
 
   return (
     <div className="bg-white font-cuerpo text-[15px] text-tinta">
-      {actual && <h1 className="sr-only">Catálogo de {actual.plural.toLowerCase()}</h1>}
+      {categoria && <h1 className="sr-only">Catálogo de {categoria.toLowerCase()}</h1>}
       <RutaNavegacion pasos={ruta}>
         <div role="group" aria-label="Modalidad" className="flex">
           {MODOS.map((m) => (

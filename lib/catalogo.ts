@@ -6,10 +6,10 @@ import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
+import { CATEGORIA_PRINCIPAL } from "@/lib/categorias";
+import { leerCategorias } from "@/lib/categorias-servidor";
 import { type OrdenColeccion, ordenarProductos } from "@/lib/colecciones";
 import {
-  CATEGORIAS,
-  type Categoria,
   type FamiliaColor,
   type Opciones,
   TALLAS,
@@ -129,10 +129,11 @@ const CAMPOS_CATALOGO = [
   "createdAt",
 ] as const;
 
-// AP-01: Query al índice por categoría (nunca un Scan). Solo los datos van a la caché;
-// las URLs se firman en cada visita. revalidateTag("catalogo") la invalida desde el panel.
+// AP-01: Query al índice por categoría (nunca un Scan), con el código que guarda Product.category.
+// Solo los datos van a la caché; las URLs se firman en cada visita. revalidateTag("catalogo") la
+// invalida desde el panel.
 const leerProductosDeCategoria = unstable_cache(
-  async (categoria: Categoria) =>
+  async (categoria: string) =>
     runWithAmplifyServerContext({
       nextServerContext: null,
       operation: async (contextSpec) => {
@@ -165,16 +166,16 @@ type ProductoGuardado = Awaited<ReturnType<typeof leerProductosDeCategoria>>[num
 const tieneStock = (producto: ProductoGuardado) =>
   leerJson<ResumenVariante[]>(producto.variantSummary, []).some((v) => v.inStock);
 
-// Lee el catálogo de una categoría como visitante: Product permite lectura a invitados
+// Lee el catálogo de una categoría (su código) como visitante: Product permite lectura a invitados
 // y las fotos de product-images/* también (allow.guest)
-export async function leerCatalogo(categoria: Categoria): Promise<ProductoCatalogo[]> {
+export async function leerCatalogo(categoria: string): Promise<ProductoCatalogo[]> {
   return aCatalogo(await leerProductosDeCategoria(categoria));
 }
 
 // "Nuestro catálogo" de la página de inicio: los productos elegidos en el panel de contenido,
 // en ese orden; si no se eligió ninguno, los vestidos más nuevos. Solo los que tienen stock.
 export async function leerDestacados(ids: string[], cantidad: number): Promise<ProductoCatalogo[]> {
-  const categorias: Categoria[] = ids.length ? CATEGORIAS.map((c) => c.valor) : ["DRESS"];
+  const categorias = ids.length ? (await leerCategorias()).map((c) => c.codigo) : [CATEGORIA_PRINCIPAL];
   const productos = (await Promise.all(categorias.map((c) => leerProductosDeCategoria(c)))).flat().filter(tieneStock);
   const elegidos = ids.length ? ids.flatMap((id) => productos.filter((p) => p.productId === id)) : productos;
   return aCatalogo(elegidos.slice(0, cantidad));
@@ -182,16 +183,16 @@ export async function leerDestacados(ids: string[], cantidad: number): Promise<P
 
 // Los productos con stock de una colección, que puede mezclar categorías, en su orden
 export async function leerProductosColeccion(ids: string[], orden: OrdenColeccion): Promise<ProductoCatalogo[]> {
-  const productos = (await Promise.all(CATEGORIAS.map((c) => leerProductosDeCategoria(c.valor)))).flat().filter(tieneStock);
+  const categorias = await leerCategorias();
+  const productos = (await Promise.all(categorias.map((c) => leerProductosDeCategoria(c.codigo)))).flat().filter(tieneStock);
   return aCatalogo(ordenarProductos(productos, ids, orden));
 }
 
 // "También te puede gustar" del detalle: otros productos con stock de la misma categoría, los
 // más nuevos primero
 export async function leerRelacionados(productId: string, categoria: string, cantidad: number): Promise<ProductoCatalogo[]> {
-  const valida = CATEGORIAS.find((c) => c.valor === categoria)?.valor;
-  if (!valida) return [];
-  const productos = (await leerProductosDeCategoria(valida)).filter((p) => p.productId !== productId && tieneStock(p));
+  if (!categoria) return [];
+  const productos = (await leerProductosDeCategoria(categoria)).filter((p) => p.productId !== productId && tieneStock(p));
   return aCatalogo(productos.slice(0, cantidad));
 }
 
@@ -199,7 +200,7 @@ export async function leerRelacionados(productId: string, categoria: string, can
 // catálogo que abre /catalogo. Sale de la caché y no firma fotos, así no pesa en cada página.
 export async function leerOpcionesMenu(): Promise<{ ocasiones: string[]; tallas: Talla[] }> {
   try {
-    const vestidos = (await leerProductosDeCategoria("DRESS")).filter(tieneStock);
+    const vestidos = (await leerProductosDeCategoria(CATEGORIA_PRINCIPAL)).filter(tieneStock);
     const ocasiones = Array.from(new Set(vestidos.flatMap((p) => (p.occasion?.trim() ? [p.occasion] : [])))).sort((a, b) => a.localeCompare(b, "es"));
     const tallas = TALLAS.map((t) => t.valor).filter((talla) => vestidos.some((p) => (p.availableSizes ?? []).includes(talla)));
     return { ocasiones, tallas };

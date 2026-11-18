@@ -1,7 +1,8 @@
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
+import { type Categoria, type FilaCategoria, armarCategorias } from "@/lib/categorias";
 import { type Coleccion, ordenarColecciones } from "@/lib/colecciones";
-import { CATEGORIAS, type Producto, type Variante, leerJson } from "@/lib/productos";
+import { type Producto, type Variante, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
 // Configura Amplify antes de crear el cliente
 import "@/components/compartido/configurar-amplify";
@@ -25,13 +26,47 @@ export function mensajeErrorDatos(errores: { message: string; errorType?: string
   return error.message;
 }
 
+// El modelo existe en el cliente solo después de desplegar el backend con la tabla Category
+export function tablaCategorias() {
+  const tabla = clienteDatos.models.Category;
+  if (!tabla) {
+    throw new Error(
+      "La tabla Category todavía no existe en el backend. Despliega los cambios de amplify/ (npx ampx sandbox o el pipeline de Amplify) y recarga la página.",
+    );
+  }
+  return tabla;
+}
+
+// Todas, en orden, con las de siempre aunque no tengan fila. Un Scan a propósito: son pocas filas.
+// Mientras la tabla no esté desplegada, los productos siguen con las de siempre; el panel de
+// contenido, que la edita, pide `exigirTabla` para avisar que falta desplegar.
+export async function cargarCategorias(exigirTabla = false): Promise<Categoria[]> {
+  if (!clienteDatos.models.Category && !exigirTabla) return armarCategorias([]);
+  const filas: FilaCategoria[] = [];
+  let nextToken: string | null | undefined;
+  do {
+    const respuesta = await tablaCategorias().list({ limit: 100, nextToken });
+    if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
+    filas.push(...respuesta.data);
+    nextToken = respuesta.nextToken;
+  } while (nextToken);
+  return armarCategorias(filas);
+}
+
+// Si algún producto la usa: una categoría así no se puede eliminar (sus productos dejarían de verse)
+export async function categoriaConProductos(codigo: string) {
+  const { data, errors } = await clienteDatos.models.Product.listProductByCategory({ category: codigo }, { limit: 1, selectionSet: ["productId"] });
+  if (errors?.length) throw new Error(mensajeErrorDatos(errors));
+  return data.length > 0;
+}
+
 // Todos los productos, consultando el índice de cada categoría (nunca un Scan de la tabla)
-export async function cargarProductos() {
+export async function cargarProductos(categorias: Categoria[]) {
   const productos: Producto[] = [];
-  for (const { valor } of CATEGORIAS) {
+  for (const { codigo } of categorias) {
     let nextToken: string | null | undefined;
     do {
-      const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: valor }, { limit: 100, nextToken });
+      const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: codigo }, { limit: 100, nextToken });
       if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
       productos.push(...respuesta.data);
       nextToken = respuesta.nextToken;
@@ -44,11 +79,12 @@ export type OpcionProducto = { productId: string; nombre: string; categoria: str
 
 // Para elegir productos en el CMS y en las colecciones
 export async function cargarOpcionesProducto(): Promise<OpcionProducto[]> {
-  const productos = await cargarProductos();
+  const categorias = await cargarCategorias();
+  const productos = await cargarProductos(categorias);
   return productos.map((p) => ({
     productId: p.productId,
     nombre: p.name,
-    categoria: CATEGORIAS.find((c) => c.valor === p.category)?.nombre ?? p.category,
+    categoria: categorias.find((c) => c.codigo === p.category)?.nombre ?? p.category,
     conStock: leerJson<ResumenVariante[]>(p.variantSummary, []).some((v) => v.inStock),
   }));
 }

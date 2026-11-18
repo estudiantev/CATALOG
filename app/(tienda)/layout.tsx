@@ -5,6 +5,8 @@ import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
 import { RetornoGoogle } from "@/components/tienda/retorno-google";
 import { leerOpcionesMenu } from "@/lib/catalogo";
+import { ANCHOS_MENU, escalonMenu, rutaCategoria } from "@/lib/categorias";
+import { leerCategorias } from "@/lib/categorias-servidor";
 import { leerContenidoMarco } from "@/lib/contenido-servidor";
 import "./tienda.css";
 
@@ -54,13 +56,17 @@ export const metadata: Metadata = {
 };
 
 // Layout raíz de la tienda: tiene su propio <html> y su propio CSS (sin shadcn).
-// Los anuncios y el pie se editan en /admin/contenido; las colecciones, en /admin/colecciones.
+// Los anuncios, las categorías del menú y el pie se editan en /admin/contenido; las colecciones, en
+// /admin/colecciones.
 export default async function TiendaLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [{ anuncios, pie }, { ocasiones, tallas }] = await Promise.all([leerContenidoMarco(), leerOpcionesMenu()]);
+  const [{ anuncios, pie }, { ocasiones, tallas }, categorias] = await Promise.all([leerContenidoMarco(), leerOpcionesMenu(), leerCategorias()]);
+  const categoriasMenu = categorias.filter((c) => c.enMenu).map((c) => ({ nombre: c.plural, href: rutaCategoria(c.slug) }));
+  // El panel no deja guardar nombres que no entran ni en el último escalón; si llegan igual, va el último
+  const escalon = escalonMenu(categoriasMenu.map((c) => c.nombre));
 
   return (
     <html
@@ -71,7 +77,13 @@ export default async function TiendaLayout({
       <body className="antialiased">
         <ConfigurarAmplify />
         <RetornoGoogle />
-        <Encabezado anuncios={anuncios} ocasiones={ocasiones} tallas={tallas} />
+        <Encabezado
+          anuncios={anuncios}
+          ocasiones={ocasiones}
+          tallas={tallas}
+          categorias={categoriasMenu}
+          escalonMenu={escalon === -1 ? ANCHOS_MENU.length - 1 : escalon}
+        />
         <main id="contenido">{children}</main>
         <Pie contenido={pie} />
       </body>

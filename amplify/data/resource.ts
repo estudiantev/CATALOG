@@ -69,7 +69,7 @@ const schema = a.schema({
   Product: a
     .model({
       productId: a.id().required(),
-      category: a.string().required(), // "DRESS" | "JEWELRY" | "ACCESSORY" (lib/productos.ts)
+      category: a.string().required(), // el `code` de una Category: "DRESS", "JEWELRY", "ACCESSORY" o una nueva
       name: a.string().required(),
       description: a.string(),
       brand: a.string(),
@@ -153,6 +153,25 @@ const schema = a.schema({
       allow.authenticated().to(['read']),
       allow.groups(['MARKETING']).to(['create', 'read', 'update']),
       allow.group('ADMIN'),
+    ]),
+
+  // Tabla: las categorías del catálogo, como "Vestidos" o "Accesorios". Product.category guarda su
+  // `code`, así el catálogo de cada una sigue siendo un Query al índice listProductByCategory.
+  // Se crean y se eligen para el menú de la tienda en el panel de contenido (lib/categorias.ts).
+  Category: a
+    .model({
+      code: a.string().required(),   // el que guarda Product.category; nunca cambia
+      name: a.string().required(),   // en singular: "Vestido"
+      plural: a.string().required(), // "Vestidos": el menú y el título del catálogo
+      slug: a.string().required(),   // /catalogo?categoria=vestidos; nunca cambia
+      inMenu: a.boolean().default(false),
+      position: a.integer(),         // orden en el menú
+    })
+    .identifier(['code'])
+    .authorization((allow) => [
+      allow.guest().to(['read']),
+      allow.authenticated().to(['read']),
+      allow.groups(['MARKETING', 'ADMIN']),
     ]),
 
   // Tabla: grupos de productos que arma Marketing, como "Novias 2027". Cada colección tiene su

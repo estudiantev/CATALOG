@@ -111,7 +111,7 @@ npx shadcn@latest add card input table dialog sidebar
 
 Los datos están en dos tablas (`amplify/data/resource.ts`):
 
-- **`Product`**: los datos generales (nombre, categoría, descripción, marca, diseñador, ocasión, material, características) y un **resumen** de sus variantes que el panel recalcula solo: precios "desde", `available*` (tallas, largos, escotes, mangas, siluetas con stock), `colorFamilies` y `variantSummary` (una fila por variante con sus opciones, precios, si tiene stock y las rutas de su portada y contraportada). El resumen nunca se edita a mano.
+- **`Product`**: los datos generales (nombre, categoría —el código de una fila de `Category`, ver [Categorías](#categorías)—, descripción, marca, diseñador, ocasión, material, características) y un **resumen** de sus variantes que el panel recalcula solo: precios "desde", `available*` (tallas, largos, escotes, mangas, siluetas con stock), `colorFamilies` y `variantSummary` (una fila por variante con sus opciones, precios, si tiene stock y las rutas de su portada y contraportada). El resumen nunca se edita a mano.
 - **`ProductVariant`**: cada combinación vendible. Sus 6 opciones (talla, largo, escote, manga, silueta, familia de color, más el nombre y el tono del color), precio de venta, alquiler por día, stock, posición, SKU y hasta 6 fotos en orden (1 = portada, 2 = contraportada).
 
 Qué cambia con cada opción lo deciden los datos, no el código: si dos variantes solo difieren en la talla y tienen las mismas fotos, la talla cambia solo el precio; si el largo trae otras fotos y otro precio, cambia ambos; si el color solo trae otras fotos, cambia solo las fotos. Por eso conviene llenar todas las opciones que apliquen aunque se repitan entre variantes.
@@ -134,7 +134,7 @@ Qué cambia con cada opción lo deciden los datos, no el código: si dos variant
 
 ### Catálogo (tienda)
 
-- `/catalogo?categoria=vestidos|joyas|accesorios` (vestidos si no se indica). Los datos de DynamoDB se guardan en caché 10 minutos por categoría y el panel la invalida al guardar; las URLs de las fotos se firman en cada visita (duran una hora), así nunca llegan vencidas.
+- `/catalogo?categoria=<slug>`, como `vestidos`, `joyas` o `accesorios` (vestidos si no se indica o si la categoría ya no existe). Los datos de DynamoDB se guardan en caché 10 minutos por categoría y el panel la invalida al guardar; las URLs de las fotos se firman en cada visita (duran una hora), así nunca llegan vencidas.
 - **Filtros** en el navegador, sin volver a consultar la base: talla, largo, escote, manga, silueta y color (se pueden marcar varios valores), más ocasión, marca, diseñador, características y búsqueda de texto (sin importar tildes ni mayúsculas). Solo aparecen los valores que tienen stock.
 - Cada tarjeta muestra la variante con stock que cumple **todos** los filtros: su portada (y la contraportada al pasar el cursor), el menor precio de venta y de alquiler por día entre las que cumplen ("Desde" si quedan precios distintos) y un enlace a `/catalogo/<productId>?v=<variantId>` con esa combinación ya elegida. Si ninguna variante con stock cumple, el producto no se muestra.
 - Los enlaces del menú llegan como filtros iniciales: `?color=` marca la familia de color y `?coleccion=gala|xv|cortos|floreados` busca esa palabra en la ocasión, descripción, características y siluetas. Para que un vestido salga en "De Gala", escribe "Gala" en su ocasión o características.
@@ -201,6 +201,20 @@ Una colección es un grupo de productos que arma Marketing para una temporada, u
 
 Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, el panel avisa que falta desplegar.
 
+## Categorías
+
+Cada categoría es su propio catálogo (`/catalogo?categoria=<slug>`) y es la que se elige en cada producto. ADMIN y MARKETING las crean, cambian de nombre, ordenan y eligen para el menú en **`/admin/contenido`**, en el bloque **Categorías** (después de Anuncios).
+
+- **Tabla `Category`** (`amplify/data/resource.ts`): `code` (la clave), `name` (singular, "Vestido"), `plural` ("Vestidos", el que sale en el menú y en el catálogo), `slug`, `inMenu` y `position`. La leen invitados y clientas; MARKETING y ADMIN pueden todo.
+- **Índice:** `Product.category` sigue siendo un texto con el `code` de la categoría, y el catálogo de cada una sigue siendo un Query al índice `listProductByCategory`. No hay relación de Amplify entre las dos tablas.
+- **Las de siempre:** Vestidos (`DRESS`), Joyas (`JEWELRY`) y Accesorios (`ACCESSORY`) están en `CATEGORIAS_BASE` (`lib/categorias.ts`) con los códigos que ya guardaban los productos. Existen aunque la tabla esté vacía o no responda; su fila, si la tienen, cambia su nombre, el menú y el orden. No se pueden eliminar. Vestidos es la de `/catalogo` sin categoría y la del menú desplegable Catálogo (`CATEGORIA_PRINCIPAL`).
+- **Nuevas:** el `slug` sale del plural al crearla (`Ropa de baño` → `ropa-de-bano`) y el `code` del slug (`ROPA_DE_BANO`); los dos ya no cambian, aunque cambie el nombre, para no romper los enlaces ni los productos. Se pueden eliminar solo si no tienen productos (el panel lo revisa con un Query al índice).
+- **Menú:** las marcadas, en el orden de la lista, van en el menú de la tienda después de Contacto (escritorio y celular), hasta `MAXIMO_EN_MENU` (3). Mientras no se guarde nada, el menú queda como antes: solo Accesorios.
+- **Ancho del menú:** el de escritorio se diseñó con una sola categoría y se muestra desde 998 px. Con más, `escalonMenu()` estima el ancho de los nombres (10 px por letra) y elige desde qué ancho se muestra: 998, 1080, 1160 o 1280 px; por debajo va el menú de celular, así las opciones nunca se montan sobre los íconos. Cuenta también el salto de 1100 px, donde el staff pasa a ver "Panel" en texto. El panel no deja guardar nombres que no entran ni en 1280 px y avisa desde qué ancho se ve el menú completo. Los escalones están en `ANCHOS_MENU` y en la variante `menu` de `app/(tienda)/tienda.css`: si cambias uno, cambia el otro.
+- **Lectura** (`lib/categorias-servidor.ts`): el menú, el catálogo y el detalle leen toda la tabla con `unstable_cache` y la etiqueta `"categorias"` (10 minutos); el panel la invalida al guardar. Es un Scan, como en `Collection`: son pocas filas y salen de la caché.
+
+Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, la tienda y los productos siguen con las tres de siempre y el bloque Categorías avisa que falta desplegar.
+
 ## Contenido de la página de inicio (CMS)
 
 ADMIN y MARKETING editan la página de inicio, la barra de anuncios y el pie en **`/admin/contenido`** (opción "Contenido" del menú), sin tocar el código. El diseño sigue en el código; desde el panel se cambian textos, fotos, enlaces, productos y qué secciones se muestran.
@@ -240,6 +254,7 @@ El panel tiene tres capas, de afuera hacia adentro:
 | Ver clientes | Sí | No | No |
 | Editar la página de inicio (Contenido) | Sí | No | Sí |
 | Crear, editar y eliminar colecciones | Sí | No | Sí |
+| Crear, editar y eliminar categorías (Contenido) | Sí | No | Sí |
 | Agregar staff (Equipo) | Sí | No | No |
 
 `lib/permisos.ts` refleja esta tabla para mostrar u ocultar botones y bloquear páginas; si cambias las reglas del backend, actualízalo también. El staff entra por `/admin/login`; quien recibe una invitación cambia ahí su contraseña temporal en el primer ingreso.
