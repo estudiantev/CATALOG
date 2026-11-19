@@ -18,7 +18,7 @@ const enlaceMega =
 const tituloMega = "font-archivo text-[13px] leading-[18px] font-semibold tracking-[0.16em] uppercase";
 const tituloMovil = "pt-1 pb-1 pl-9 font-archivo text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#666666] uppercase";
 // El catálogo de vestidos con esa ocasión ya elegida en los filtros
-const enlaceOcasion = (ocasion: string) => `/catalogo?ocasion=${encodeURIComponent(ocasion)}`;
+const enlaceOcasion = (ocasion: string) => `/vestidos?ocasion=${encodeURIComponent(ocasion)}`;
 const filaMovil =
   "group flex w-full items-center active:bg-durazno focus-visible:outline-offset-[-6px]";
 const etiquetaMovil =
@@ -43,7 +43,7 @@ export function Encabezado({
   // Las de los vestidos con stock (lib/catalogo.ts): el menú solo ofrece lo que hay
   ocasiones: string[];
   tallas: string[];
-  // Las elegidas para el menú en el panel de contenido (lib/categorias.ts), en su orden
+  // Las elegidas para el menú en el panel, en Categorías (lib/categorias.ts), en su orden
   categorias: { nombre: string; href: string }[];
   // Desde qué ancho entra el menú de escritorio con esas categorías (lib/categorias.ts y la
   // variante `menu` de tienda.css); por debajo va el de celular
@@ -221,7 +221,7 @@ export function Encabezado({
                     </li>
                   ))}
                   <li>
-                    <Link href="/catalogo" onClick={cerrarMenus} className={enlaceMega}>Ver todo el catálogo</Link>
+                    <Link href="/vestidos" onClick={cerrarMenus} className={enlaceMega}>Ver todo el catálogo</Link>
                   </li>
                 </ul>
               </section>
@@ -232,7 +232,7 @@ export function Encabezado({
                 <ul className="flex max-w-[15rem] flex-wrap gap-1.5">
                   {tallas.map((talla) => (
                     <li key={talla}>
-                      <Link href={`/catalogo?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
+                      <Link href={`/vestidos?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
                         {nombreOpcion("talla", talla)}
                       </Link>
                     </li>
@@ -297,7 +297,7 @@ export function Encabezado({
                       <ul className="flex flex-wrap gap-1.5 pt-1.5 pr-5 pl-9">
                         {tallas.map((talla) => (
                           <li key={talla}>
-                            <Link href={`/catalogo?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
+                            <Link href={`/vestidos?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
                               {nombreOpcion("talla", talla)}
                             </Link>
                           </li>
@@ -318,7 +318,7 @@ export function Encabezado({
                       ))}
                     </ul>
                   </section>
-                  <Link href="/catalogo" onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] font-medium tracking-[0.08em] uppercase`}>
+                  <Link href="/vestidos" onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] font-medium tracking-[0.08em] uppercase`}>
                     <span className={`${etiquetaMovil} py-1`}>Ver todo el catálogo</span>
                   </Link>
                 </div>

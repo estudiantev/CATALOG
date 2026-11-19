@@ -68,7 +68,7 @@ export default async function InicioPage() {
                 {tituloCatalogo}
               </h2>
             )}
-            <Link href="/catalogo" className={`ml-auto flex-none ${botonEsquinaChico}`}>
+            <Link href="/vestidos" className={`ml-auto flex-none ${botonEsquinaChico}`}>
               Ver todo el catálogo
             </Link>
           </div>
@@ -76,7 +76,7 @@ export default async function InicioPage() {
             {tarjetas.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
               <li key={producto.productId} className="row-span-2 grid min-w-0 snap-start grid-rows-subgrid">
                 <TarjetaDestacado
-                  href={`/catalogo/${producto.productId}?v=${variantId}`}
+                  href={`/vestidos/${producto.productId}?v=${variantId}`}
                   nombre={producto.nombre}
                   precioVenta={precioVenta}
                   precioAlquiler={precioAlquiler}

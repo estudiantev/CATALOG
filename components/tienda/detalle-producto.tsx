@@ -86,15 +86,12 @@ function Acordeon({ id, titulo, abierto, onCambiar, children }: { id: string; ti
   );
 }
 
-// `categoria`: el nombre en singular de la del producto ("Vestido"), para el subtítulo
 export function DetalleProducto({
   producto,
-  categoria,
   variantIdInicial,
   pasos,
 }: {
   producto: ProductoDetalle;
-  categoria?: string;
   variantIdInicial?: string;
   pasos: Paso[];
 }) {
@@ -125,9 +122,9 @@ export function DetalleProducto({
     if (!nombre) return [];
     return [clave === "manga" ? nombre : `${NOMBRES_CLAVE[clave]} ${minuscula(nombre)}`];
   }).join(" · ");
-  // "Vestido midi · Marca"
+  // "Vestido midi · Marca" (el catálogo es solo de vestidos)
   const largo = nombreDe("largo");
-  const subtitulo = [categoria && (largo ? `${categoria} ${minuscula(largo)}` : categoria), producto.marca].filter(Boolean).join(" · ");
+  const subtitulo = [largo ? `Vestido ${minuscula(largo)}` : "Vestido", producto.marca].filter(Boolean).join(" · ");
   const tallas = claves.find((c) => c.clave === "talla")?.valores ?? [];
 
   const alquilando = modo === "alquiler" && seAlquila;

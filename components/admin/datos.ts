@@ -1,6 +1,6 @@
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
-import { type Categoria, type FilaCategoria, armarCategorias } from "@/lib/categorias";
+import { type Categoria, type FilaCategoria, TIPO_VESTIDO, armarCategorias, nombresDeCategorias } from "@/lib/categorias";
 import { type Coleccion, ordenarColecciones } from "@/lib/colecciones";
 import { type Producto, type Variante, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
@@ -38,8 +38,8 @@ export function tablaCategorias() {
 }
 
 // Todas, en orden, con las de siempre aunque no tengan fila. Un Scan a propósito: son pocas filas.
-// Mientras la tabla no esté desplegada, los productos siguen con las de siempre; el panel de
-// contenido, que la edita, pide `exigirTabla` para avisar que falta desplegar.
+// Mientras la tabla no esté desplegada, los productos siguen con las de siempre; la página de
+// Categorías, que la edita, pide `exigirTabla` para avisar que falta desplegar.
 export async function cargarCategorias(exigirTabla = false): Promise<Categoria[]> {
   if (!clienteDatos.models.Category && !exigirTabla) return armarCategorias([]);
   const filas: FilaCategoria[] = [];
@@ -53,38 +53,34 @@ export async function cargarCategorias(exigirTabla = false): Promise<Categoria[]
   return armarCategorias(filas);
 }
 
-// Si algún producto la usa: una categoría así no se puede eliminar (sus productos dejarían de verse)
-export async function categoriaConProductos(codigo: string) {
-  const { data, errors } = await clienteDatos.models.Product.listProductByCategory({ category: codigo }, { limit: 1, selectionSet: ["productId"] });
-  if (errors?.length) throw new Error(mensajeErrorDatos(errors));
-  return data.length > 0;
-}
-
-// Todos los productos, consultando el índice de cada categoría (nunca un Scan de la tabla)
-export async function cargarProductos(categorias: Categoria[]) {
+// Todos los productos con un Query al índice por tipo (nunca un Scan de la tabla): todos son vestidos
+export async function cargarProductos() {
   const productos: Producto[] = [];
-  for (const { codigo } of categorias) {
-    let nextToken: string | null | undefined;
-    do {
-      const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: codigo }, { limit: 100, nextToken });
-      if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
-      productos.push(...respuesta.data);
-      nextToken = respuesta.nextToken;
-    } while (nextToken);
-  }
+  let nextToken: string | null | undefined;
+  do {
+    const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: TIPO_VESTIDO }, { limit: 100, nextToken });
+    if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
+    productos.push(...respuesta.data);
+    nextToken = respuesta.nextToken;
+  } while (nextToken);
   return productos.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// Los nombres de los vestidos que llevan esa categoría: mientras tenga alguno, no se puede eliminar
+export async function productosEnCategoria(codigo: string) {
+  return (await cargarProductos()).filter((p) => (p.categories ?? []).includes(codigo)).map((p) => p.name);
+}
+
+// `categoria`: sus categorías en texto ("De gala, Cortos"), para reconocerlo en la lista
 export type OpcionProducto = { productId: string; nombre: string; categoria: string; conStock: boolean };
 
 // Para elegir productos en el CMS y en las colecciones
 export async function cargarOpcionesProducto(): Promise<OpcionProducto[]> {
-  const categorias = await cargarCategorias();
-  const productos = await cargarProductos(categorias);
+  const [categorias, productos] = await Promise.all([cargarCategorias(), cargarProductos()]);
   return productos.map((p) => ({
     productId: p.productId,
     nombre: p.name,
-    categoria: categorias.find((c) => c.codigo === p.category)?.nombre ?? p.category,
+    categoria: nombresDeCategorias(p.categories, categorias).join(", ") || "Sin categoría",
     conStock: leerJson<ResumenVariante[]>(p.variantSummary, []).some((v) => v.inStock),
   }));
 }

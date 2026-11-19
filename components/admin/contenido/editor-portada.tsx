@@ -17,7 +17,7 @@ const NUEVA: Omit<Diapositiva, "imagen" | "imagenMovil"> = {
   antetitulo: "",
   titulo: "",
   texto: "",
-  botonPrincipal: { texto: "Comprar", enlace: "/catalogo" },
+  botonPrincipal: { texto: "Comprar", enlace: "/vestidos" },
   botonSecundario: { texto: "", enlace: "" },
 };
 

@@ -34,11 +34,11 @@ const ID_ENLACES = "enlaces-sugeridos";
 
 // Sugerencias para los enlaces de los botones (se puede escribir cualquier otro válido)
 const ENLACES_SUGERIDOS = [
-  { valor: "/catalogo", nombre: "Catálogo completo" },
-  { valor: "/catalogo?coleccion=gala", nombre: "Vestidos de gala" },
-  { valor: "/catalogo?coleccion=xv", nombre: "Vestidos de XV" },
-  { valor: "/catalogo?coleccion=cortos", nombre: "Vestidos cortos" },
-  { valor: "/catalogo?coleccion=floreados", nombre: "Vestidos floreados" },
+  { valor: "/vestidos", nombre: "Catálogo completo" },
+  { valor: "/vestidos?coleccion=gala", nombre: "Vestidos de gala" },
+  { valor: "/vestidos?coleccion=xv", nombre: "Vestidos de XV" },
+  { valor: "/vestidos?coleccion=cortos", nombre: "Vestidos cortos" },
+  { valor: "/vestidos?coleccion=floreados", nombre: "Vestidos floreados" },
   { valor: "/colecciones", nombre: "Todas las colecciones" },
   { valor: "/#catalogo", nombre: "Sección Catálogo" },
   { valor: "/#colecciones", nombre: "Sección Colecciones" },
@@ -225,7 +225,7 @@ export function CamposEnlace({
       <Campo {...s.campo(`${ruta}.texto`)} etiqueta={etiqueta} ayuda={ayuda}>
         <Input {...s.entrada(`${ruta}.texto`, Boolean(ayuda))} maxLength={LARGO.boton} value={boton.texto} onChange={(e) => onChange("texto", e.target.value)} />
       </Campo>
-      <Campo {...s.campo(`${ruta}.enlace`)} etiqueta="Lleva a" ayuda="Una página (/catalogo), una sección (/#pasos) o una dirección https://">
+      <Campo {...s.campo(`${ruta}.enlace`)} etiqueta="Lleva a" ayuda="Una página (/vestidos), una sección (/#pasos) o una dirección https://">
         <Input
           {...s.entrada(`${ruta}.enlace`, true)}
           list={ID_ENLACES}

@@ -3,13 +3,9 @@ import { Catalogo, type FiltrosIniciales } from "@/components/tienda/catalogo";
 import { COLORES } from "@/components/tienda/datos";
 import { RutaNavegacion } from "@/components/tienda/ruta-navegacion";
 import { type ProductoCatalogo, leerCatalogo } from "@/lib/catalogo";
-import { categoriaPrincipal } from "@/lib/categorias";
+import { rutaCategoria, tituloCategoria } from "@/lib/categorias";
 import { leerCategorias } from "@/lib/categorias-servidor";
 import { TALLAS } from "@/lib/productos";
-
-export const metadata: Metadata = {
-  title: "Catálogo",
-};
 
 // Las fotos usan URLs firmadas de S3 que vencen: se firman en cada visita.
 // Los datos de DynamoDB sí se guardan en caché 10 minutos (lib/catalogo.ts).
@@ -24,15 +20,27 @@ const COLECCIONES_URL: Record<string, string> = {
 };
 
 type Parametros = Record<string, string | string[] | undefined>;
+type Props = { searchParams: Promise<Parametros> };
 
 const leer = (parametros: Parametros, nombre: string) => {
   const v = parametros[nombre];
   return Array.isArray(v) ? v[0] : v;
 };
 
+// ?categoria=<slug>: la de una categoría; sin él (o con una que ya no existe), todos los vestidos
+async function categoriaDe(parametros: Parametros) {
+  const slug = leer(parametros, "categoria");
+  return slug ? (await leerCategorias()).find((c) => c.slug === slug) : undefined;
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const categoria = await categoriaDe(await searchParams);
+  return { title: categoria ? tituloCategoria(categoria) : "Vestidos" };
+}
+
 // Los enlaces del menú (?ocasion=, ?talla=, ?color=, ?coleccion=, ?modalidad=) llegan como filtros iniciales
 function filtrosDesdeUrl(parametros: Parametros): FiltrosIniciales {
-  const familia = COLORES.find((c) => c.href === `/catalogo?color=${leer(parametros, "color")}`)?.familia;
+  const familia = COLORES.find((c) => c.href === `/vestidos?color=${leer(parametros, "color")}`)?.familia;
   const talla = TALLAS.find((t) => t.valor === leer(parametros, "talla"))?.valor;
   const ocasion = leer(parametros, "ocasion")?.trim();
   const modalidad = leer(parametros, "modalidad");
@@ -44,21 +52,20 @@ function filtrosDesdeUrl(parametros: Parametros): FiltrosIniciales {
   };
 }
 
-export default async function CatalogoPage({
-  searchParams,
-}: {
-  searchParams: Promise<Parametros>;
-}) {
+export default async function VestidosPage({ searchParams }: Props) {
   const parametros = await searchParams;
-  // RF-01: cada categoría es su propio catálogo; sin ?categoria= (o con una que ya no existe) se
-  // muestran los vestidos
-  const categorias = await leerCategorias();
-  const categoria = categorias.find((c) => c.slug === leer(parametros, "categoria")) ?? categoriaPrincipal(categorias);
+  // RF-01: cada categoría tiene su propia página con sus vestidos
+  const categoria = await categoriaDe(parametros);
   const filtrosIniciales = filtrosDesdeUrl(parametros);
+  const titulo = categoria ? tituloCategoria(categoria) : "Vestidos";
+  const ruta = [
+    { nombre: "Inicio", href: "/" },
+    ...(categoria ? [{ nombre: "Vestidos", href: "/vestidos" }, { nombre: categoria.nombre }] : [{ nombre: "Vestidos" }]),
+  ];
 
   let productos: ProductoCatalogo[] | null = null;
   try {
-    productos = await leerCatalogo(categoria.codigo);
+    productos = await leerCatalogo(categoria?.codigo);
   } catch (error) {
     console.error("No se pudo cargar el catálogo:", error);
   }
@@ -66,9 +73,9 @@ export default async function CatalogoPage({
   if (!productos) {
     return (
       <div className="bg-white font-cuerpo text-[15px] text-tinta">
-        <h1 className="sr-only">Catálogo de {categoria.plural.toLowerCase()}</h1>
-        <RutaNavegacion pasos={[{ nombre: "Inicio", href: "/" }, { nombre: "Catálogo", href: "/catalogo" }, { nombre: categoria.plural }]} />
-        <p className="px-6 py-24 text-center text-[18px]">No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.</p>
+        <h1 className="sr-only">{titulo}</h1>
+        <RutaNavegacion pasos={ruta} />
+        <p className="px-6 py-24 text-center text-[18px]">No pudimos cargar los vestidos. Inténtalo de nuevo en unos minutos.</p>
       </div>
     );
   }
@@ -76,10 +83,10 @@ export default async function CatalogoPage({
   // key: al llegar desde otro enlace del menú, los filtros vuelven a empezar
   return (
     <Catalogo
-      key={`${categoria.codigo}-${JSON.stringify(filtrosIniciales)}`}
+      key={`${categoria ? rutaCategoria(categoria.slug) : "todos"}-${JSON.stringify(filtrosIniciales)}`}
       productos={productos}
-      ruta={[{ nombre: "Inicio", href: "/" }, { nombre: "Catálogo", href: "/catalogo" }, { nombre: categoria.plural }]}
-      categoria={categoria.plural}
+      ruta={ruta}
+      titulo={titulo}
       filtrosIniciales={filtrosIniciales}
     />
   );

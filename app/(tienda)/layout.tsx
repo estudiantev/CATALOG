@@ -56,15 +56,15 @@ export const metadata: Metadata = {
 };
 
 // Layout raíz de la tienda: tiene su propio <html> y su propio CSS (sin shadcn).
-// Los anuncios, las categorías del menú y el pie se editan en /admin/contenido; las colecciones, en
-// /admin/colecciones.
+// Los anuncios y el pie se editan en /admin/contenido; las categorías del menú, en /admin/categorias;
+// las colecciones, en /admin/colecciones.
 export default async function TiendaLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [{ anuncios, pie }, { ocasiones, tallas }, categorias] = await Promise.all([leerContenidoMarco(), leerOpcionesMenu(), leerCategorias()]);
-  const categoriasMenu = categorias.filter((c) => c.enMenu).map((c) => ({ nombre: c.plural, href: rutaCategoria(c.slug) }));
+  const categoriasMenu = categorias.filter((c) => c.enMenu).map((c) => ({ nombre: c.nombre, href: rutaCategoria(c.slug) }));
   // El panel no deja guardar nombres que no entran ni en el último escalón; si llegan igual, va el último
   const escalon = escalonMenu(categoriasMenu.map((c) => c.nombre));
 

@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/admin/ui/table";
 import { cargarCategorias, cargarProductos, cargarVariantes, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import type { Categoria } from "@/lib/categorias";
+import { type Categoria, nombresDeCategorias } from "@/lib/categorias";
 import { type Producto, formatoSoles, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
 
@@ -67,9 +67,8 @@ export function TablaProductos({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    cargarCategorias()
-      .then(async (todas) => {
-        const cargados = await cargarProductos(todas);
+    Promise.all([cargarCategorias(), cargarProductos()])
+      .then(async ([todas, cargados]) => {
         setCategorias(todas);
         setProductos(cargados);
         return cargarMiniaturas(cargados).then(setMiniaturas);
@@ -111,7 +110,7 @@ export function TablaProductos({
             <TableRow>
               <TableHead className="w-16">Foto</TableHead>
               <TableHead>Nombre</TableHead>
-              <TableHead>Categoría</TableHead>
+              <TableHead>Categorías</TableHead>
               <TableHead className="text-right">Venta desde</TableHead>
               <TableHead className="text-right">Alquiler/día desde</TableHead>
               <TableHead>Variantes</TableHead>
@@ -147,7 +146,7 @@ export function TablaProductos({
                 </TableCell>
                 <TableCell className="font-medium">{producto.name}</TableCell>
                 <TableCell>
-                  {categorias.find((c) => c.codigo === producto.category)?.nombre ?? "—"}
+                  {nombresDeCategorias(producto.categories, categorias).join(", ") || "—"}
                 </TableCell>
                 <TableCell className="text-right">{formatoSoles.format(producto.priceSale)}</TableCell>
                 <TableCell className="text-right">{formatoSoles.format(producto.priceRent)}</TableCell>

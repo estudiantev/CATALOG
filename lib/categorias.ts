@@ -1,60 +1,68 @@
 import type { Schema } from "@/amplify/data/resource";
 import { crearSlug, slugValido } from "@/lib/colecciones";
 
-// Categorías del catálogo, como "Vestidos" o "Accesorios": cada una es su propio catálogo en
-// /catalogo?categoria=<slug>. Product.category guarda su código, así el catálogo de una categoría
-// sigue siendo un Query al índice listProductByCategory. Se crean, y se eligen para el menú de la
-// tienda, en el panel de contenido. Lo comparten la tienda, que las lee, y el panel, que las edita.
+// Categorías de los vestidos, como "Floreados" o "De gala". Cada una tiene su página en
+// /vestidos?categoria=<slug>, con los vestidos que la llevan. Un vestido puede estar en varias:
+// Product.categories guarda sus códigos. Se crean, y se eligen para el menú de la tienda, en el
+// panel (/admin/categorias). Lo comparten la tienda, que las lee, y el panel, que las edita.
 
 export type FilaCategoria = Pick<Schema["Category"]["type"], "code" | "name" | "plural" | "slug" | "inMenu" | "position">;
 
 export type Categoria = {
-  codigo: string; // el que guarda Product.category ("DRESS"); nunca cambia
-  nombre: string; // en singular, "Vestido": el formulario de productos y el detalle
-  plural: string; // "Vestidos": el menú, el título y la ruta del catálogo
-  slug: string; // el de /catalogo?categoria=vestidos; nunca cambia, para no romper los enlaces
+  codigo: string; // el que guarda Product.categories ("DE_GALA"); nunca cambia
+  nombre: string; // "De gala": el menú, el título de su página y el formulario de productos
+  slug: string; // el de /vestidos?categoria=de-gala; nunca cambia, para no romper los enlaces
   enMenu: boolean;
   posicion: number;
-  base: boolean; // una de las tres de siempre: no se puede eliminar
+  base: boolean; // una de las cinco de siempre: no se puede eliminar
   existe: boolean; // si ya tiene su fila (el panel decide entre crearla o actualizarla)
 };
 
-// Las de antes de la tabla, con los códigos que ya guardan los productos. Están siempre, aunque la
-// tabla esté vacía o no responda; su fila, si la tienen, cambia sus nombres, el menú y el orden.
-// Mientras no se guarden, el menú queda como antes: solo con Accesorios.
-export const CATEGORIAS_BASE: readonly Categoria[] = [
-  { codigo: "DRESS", nombre: "Vestido", plural: "Vestidos", slug: "vestidos", enMenu: false, posicion: 1, base: true, existe: false },
-  { codigo: "JEWELRY", nombre: "Joya", plural: "Joyas", slug: "joyas", enMenu: false, posicion: 2, base: true, existe: false },
-  { codigo: "ACCESSORY", nombre: "Accesorio", plural: "Accesorios", slug: "accesorios", enMenu: true, posicion: 3, base: true, existe: false },
-];
+// El tipo que guarda Product.category en todos los productos: el catálogo es solo de vestidos. El
+// catálogo entero se lee con un Query al índice listProductByCategory con este valor.
+export const TIPO_VESTIDO = "DRESS";
 
-// La de /catalogo sin ?categoria= y la del menú desplegable Catálogo
-export const CATEGORIA_PRINCIPAL = "DRESS";
+// Las cinco de siempre. Están aunque la tabla esté vacía o no responda; su fila, si la tienen,
+// cambia su nombre, el menú y el orden. Mientras no se guarden, van en el menú las tres primeras.
+export const CATEGORIAS_BASE: readonly Categoria[] = [
+  { codigo: "FLOREADOS", nombre: "Floreados", slug: "floreados", enMenu: true, posicion: 1, base: true, existe: false },
+  { codigo: "DE_GALA", nombre: "De gala", slug: "de-gala", enMenu: true, posicion: 2, base: true, existe: false },
+  { codigo: "DE_NOVIA", nombre: "De novia", slug: "de-novia", enMenu: true, posicion: 3, base: true, existe: false },
+  { codigo: "DE_15", nombre: "De 15", slug: "de-15", enMenu: false, posicion: 4, base: true, existe: false },
+  { codigo: "CORTOS", nombre: "Cortos", slug: "cortos", enMenu: false, posicion: 5, base: true, existe: false },
+];
 
 // Las que entran en el menú de la tienda junto a Catálogo, Colecciones y Contacto
 export const MAXIMO_EN_MENU = 3;
 
-export const LARGO_CATEGORIA = { nombre: 24, plural: 24 };
+export const LARGO_CATEGORIA = 24;
 
-export const rutaCategoria = (slug: string) => `/catalogo?categoria=${slug}`;
+export const rutaCategoria = (slug: string) => `/vestidos?categoria=${slug}`;
 
-// El slug de una nueva sale de su plural al crearla: "Ropa de baño" → "ropa-de-bano"
-export const slugDeCategoria = (plural: string) => crearSlug(plural);
+// "Vestidos de gala", "Vestidos floreados": el nombre de la página de una categoría
+export const tituloCategoria = (categoria: Pick<Categoria, "nombre">) => `Vestidos ${categoria.nombre.toLowerCase()}`;
 
-// Y el código, del slug, al estilo de las de siempre: "ropa-de-bano" → "ROPA_DE_BANO"
+// El slug de una nueva sale de su nombre al crearla: "De cóctel" → "de-coctel"
+export const slugDeCategoria = (nombre: string) => crearSlug(nombre);
+
+// Y el código, del slug, al estilo de las de siempre: "de-coctel" → "DE_COCTEL"
 export const codigoDeSlug = (slug: string) => slug.toUpperCase().replace(/-/g, "_");
 
-const texto = (v: unknown, largo: number) => (typeof v === "string" ? v.trim().slice(0, largo) : "");
+// Los nombres de las categorías de un producto, en el orden de la lista (las que ya no existen no van)
+export const nombresDeCategorias = (codigos: readonly (string | null)[] | null | undefined, categorias: Categoria[]) =>
+  categorias.filter((c) => codigos?.includes(c.codigo)).map((c) => c.nombre);
 
+const texto = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, LARGO_CATEGORIA) : "");
+
+// `plural` es el nombre; `name` guarda lo mismo (las filas de antes tenían ahí el singular)
 function leerFila(fila: FilaCategoria): Categoria | null {
   const base = CATEGORIAS_BASE.find((b) => b.codigo === fila.code);
-  const plural = texto(fila.plural, LARGO_CATEGORIA.plural) || base?.plural || "";
+  const nombre = texto(fila.plural) || texto(fila.name) || base?.nombre || "";
   const slug = base?.slug ?? fila.slug;
-  if (!fila.code || !plural || !slugValido(slug)) return null;
+  if (!fila.code || !nombre || !slugValido(slug)) return null;
   return {
     codigo: fila.code,
-    nombre: texto(fila.name, LARGO_CATEGORIA.nombre) || base?.nombre || plural,
-    plural,
+    nombre,
     slug,
     enMenu: fila.inMenu ?? base?.enMenu ?? false,
     posicion: fila.position ?? Number.MAX_SAFE_INTEGER,
@@ -65,29 +73,27 @@ function leerFila(fila: FilaCategoria): Categoria | null {
 
 // De las filas guardadas a la lista que usan la tienda y el panel, en orden: primero por posición
 // y, empatadas, por nombre. Las de siempre van aunque no tengan fila; una fila sin código, sin
-// plural o con un slug que ya usa otra no se puede enlazar y se salta.
+// nombre o con un slug que ya usa otra no se puede enlazar y se salta.
 export function armarCategorias(filas: FilaCategoria[]): Categoria[] {
   const leidas = filas.flatMap((fila) => leerFila(fila) ?? []);
   const lista = CATEGORIAS_BASE.map((base) => leidas.find((c) => c.codigo === base.codigo) ?? { ...base });
   for (const categoria of leidas) {
     if (!lista.some((c) => c.codigo === categoria.codigo || c.slug === categoria.slug)) lista.push(categoria);
   }
-  return lista.sort((a, b) => a.posicion - b.posicion || a.plural.localeCompare(b.plural, "es"));
+  return lista.sort((a, b) => a.posicion - b.posicion || a.nombre.localeCompare(b.nombre, "es"));
 }
-
-export const categoriaPrincipal = (categorias: Categoria[]) =>
-  categorias.find((c) => c.codigo === CATEGORIA_PRINCIPAL) ?? CATEGORIAS_BASE[0];
 
 // ── Ancho del menú de escritorio ──
 
-// El menú de escritorio se diseñó con Accesorios como única categoría y se muestra desde 998 px.
-// Más categorías piden más ancho de pantalla: por debajo, la tienda usa el menú de celular, así las
-// opciones nunca se montan sobre los íconos. Cada nombre se estima en 10 px por letra (en el menú
-// miden de 8 a 9.6) más los 21 px entre opciones. A 998 px, con un nombre de 14 letras en "Mi
-// cuenta", todavía sobran unos 128 px.
+// El menú de escritorio se diseñó con una sola categoría de 10 letras ("Accesorios") y se muestra
+// desde 998 px. Más categorías piden más ancho de pantalla: por debajo, la tienda usa el menú de
+// celular, así las opciones nunca se montan sobre los íconos. Cada nombre se estima en 10 px por
+// letra (en el menú miden de 8 a 9.6) más los 21 px entre opciones. A 998 px, con un nombre de 14
+// letras en "Mi cuenta", todavía sobran unos 128 px.
 const PX_POR_LETRA = 10;
 const PX_ENTRE_OPCIONES = 21;
 const HOLGURA = 110;
+const ANCHO_DISENADO = 10 * PX_POR_LETRA + PX_ENTRE_OPCIONES;
 // Desde 1100 px el staff ve "Panel" en texto y su nombre completo: la derecha crece unos 66 px
 const ANCHO_PANEL = 1100;
 const SALTO_PANEL = 70;
@@ -101,7 +107,7 @@ const anchoOpcion = (nombre: string) => nombre.trim().length * PX_POR_LETRA + PX
 // El escalón (índice de ANCHOS_MENU) que necesita el menú con estas categorías; -1 si no entran ni
 // en el último. Uno por debajo de 1100 px sirve solo si el menú también entra con el salto del staff.
 export function escalonMenu(nombres: string[]) {
-  const extra = nombres.reduce((total, nombre) => total + anchoOpcion(nombre), 0) - anchoOpcion("Accesorios");
+  const extra = nombres.reduce((total, nombre) => total + anchoOpcion(nombre), 0) - ANCHO_DISENADO;
   const necesario = ANCHOS_MENU[0] + Math.max(0, extra - HOLGURA);
   return ANCHOS_MENU.findIndex((ancho) =>
     ancho >= ANCHO_PANEL ? ancho >= necesario + SALTO_PANEL : ancho >= necesario && necesario + SALTO_PANEL <= ANCHO_PANEL,
@@ -110,28 +116,24 @@ export function escalonMenu(nombres: string[]) {
 
 // ── Validar: lo que el panel revisa antes de guardar ──
 
-// Una fila del formulario. `codigo` y `slug` de una nueva salen de su plural (los da el panel).
-export type CategoriaEditada = { id: string; codigo: string; slug: string; nueva: boolean; nombre: string; plural: string; enMenu: boolean };
+// Una fila del formulario. `codigo` y `slug` de una nueva salen de su nombre (los da el panel).
+export type CategoriaEditada = { id: string; codigo: string; slug: string; nueva: boolean; nombre: string; enMenu: boolean };
 
-// Clave = "<id>.nombre", "<id>.plural" o "menu"; van en el orden del formulario, así el panel puede
-// enfocar el primero
+// Clave = "<id>.nombre" o "menu"; van en el orden del formulario, así el panel puede enfocar el primero
 export function validarCategorias(lista: CategoriaEditada[]) {
   const errores: Record<string, string> = {};
   lista.forEach((c, i) => {
     const nombre = c.nombre.trim();
-    const plural = c.plural.trim();
     if (!nombre) errores[`${c.id}.nombre`] = "Escribe el nombre.";
-    else if (nombre.length > LARGO_CATEGORIA.nombre) errores[`${c.id}.nombre`] = `Usa como máximo ${LARGO_CATEGORIA.nombre} caracteres.`;
-    if (!plural) errores[`${c.id}.plural`] = "Escribe el nombre en plural.";
-    else if (plural.length > LARGO_CATEGORIA.plural) errores[`${c.id}.plural`] = `Usa como máximo ${LARGO_CATEGORIA.plural} caracteres.`;
-    else if (c.nueva && !slugValido(c.slug)) errores[`${c.id}.plural`] = "Usa al menos una letra o un número.";
+    else if (nombre.length > LARGO_CATEGORIA) errores[`${c.id}.nombre`] = `Usa como máximo ${LARGO_CATEGORIA} caracteres.`;
+    else if (c.nueva && !slugValido(c.slug)) errores[`${c.id}.nombre`] = "Usa al menos una letra o un número.";
     else if (c.nueva && lista.some((otra, j) => j !== i && (otra.slug === c.slug || otra.codigo === c.codigo))) {
-      errores[`${c.id}.plural`] = "Ya hay otra categoría con este nombre.";
+      errores[`${c.id}.nombre`] = "Ya hay otra categoría con este nombre.";
     }
   });
   const enMenu = lista.filter((c) => c.enMenu);
   if (enMenu.length > MAXIMO_EN_MENU) errores.menu = `Muestra como máximo ${MAXIMO_EN_MENU} en el menú.`;
-  else if (escalonMenu(enMenu.map((c) => c.plural)) === -1) {
+  else if (escalonMenu(enMenu.map((c) => c.nombre)) === -1) {
     errores.menu = "Los nombres de las categorías del menú son muy largos para entrar en una línea: acórtalos o muestra menos.";
   }
   return errores;

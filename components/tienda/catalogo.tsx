@@ -140,7 +140,7 @@ type Tarjeta = NonNullable<ReturnType<typeof resolverTarjeta<Foto>>> & {
 function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; limitarFoto: boolean; onColor: (productId: string, color: string) => void }) {
   const { producto, variantId, precioVenta, precioAlquiler, desde, portada, hover, colores, color } = tarjeta;
   // RF-10: abre el detalle con la combinación filtrada (y el color elegido) ya elegida
-  const href = `/catalogo/${producto.productId}?v=${variantId}`;
+  const href = `/vestidos/${producto.productId}?v=${variantId}`;
   return (
     <li className="group/tarjeta flex min-w-0 flex-col">
       {/* La foto lleva al mismo lugar que el nombre: para el lector de pantalla basta con uno.
@@ -210,20 +210,20 @@ function TarjetaCatalogo({ tarjeta, limitarFoto, onColor }: { tarjeta: Tarjeta; 
   );
 }
 
-// El catálogo de una categoría (/catalogo) o los productos de una colección (/coleccion/…).
-// Buscar, los filtros, los aplicados y el orden van en una sola barra arriba de los productos. Con
-// `categoria` (su nombre en plural) lleva su título; `encabezado` va entre la ruta y la barra (la
-// portada de la colección).
+// Los vestidos (/vestidos, todos o los de una categoría) o los productos de una colección
+// (/coleccion/…). Buscar, los filtros, los aplicados y el orden van en una sola barra arriba de los
+// productos. `titulo` es el de la página ("Vestidos de gala"), solo para el lector de pantalla;
+// `encabezado` va entre la ruta y la barra (la portada de la colección, que trae su propio título).
 export function Catalogo({
   productos,
   ruta,
-  categoria,
+  titulo,
   encabezado,
   filtrosIniciales = { variante: {}, texto: "", modo: "todo" },
 }: {
   productos: ProductoCatalogo[];
   ruta: { nombre: string; href?: string }[];
-  categoria?: string;
+  titulo?: string;
   encabezado?: ReactNode;
   filtrosIniciales?: FiltrosIniciales;
 }) {
@@ -351,7 +351,7 @@ export function Catalogo({
   const visibles = tarjetas.slice(0, limite);
   const productosTexto = (n: number) => (n === 1 ? "1 producto" : `${n} productos`);
 
-  // En /catalogo, en pantallas anchas (variante `una-fila` de tienda.css), la ruta y la modalidad van
+  // En /vestidos, en pantallas anchas (variante `una-fila` de tienda.css), la ruta y la modalidad van
   // dentro de la barra: arriba de los productos queda un solo rectángulo, y los filtros aplicados
   // pasan a una línea debajo. Más angosto no entran: la ruta va en su propia línea, como en las
   // colecciones, donde la portada va entre la ruta y la barra.
@@ -426,7 +426,7 @@ export function Catalogo({
   // ver el crema de la página entre el menú y la barra)
   return (
     <div className="flow-root bg-white font-cuerpo text-[15px] text-tinta">
-      {categoria && <h1 className="sr-only">Catálogo de {categoria.toLowerCase()}</h1>}
+      {titulo && <h1 className="sr-only">{titulo}</h1>}
       <RutaNavegacion pasos={ruta} className={fueraDeLaFila}>
         {modalidad("")}
       </RutaNavegacion>
@@ -598,7 +598,7 @@ export function Catalogo({
           </>
         ) : (
           <div className="flex flex-col items-center gap-3.5 px-6 py-24 text-center">
-            <h2 className="text-[22px] font-medium">{productos.length ? "No encontramos productos con estos filtros" : "Todavía no hay productos en esta categoría"}</h2>
+            <h2 className="text-[22px] font-medium">{productos.length ? "No encontramos productos con estos filtros" : "Todavía no hay vestidos aquí"}</h2>
             {productos.length > 0 && (
               <>
                 <p className="text-[15px] text-[#555555]">Prueba quitando algún filtro o cambiando la modalidad.</p>

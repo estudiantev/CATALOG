@@ -69,7 +69,11 @@ const schema = a.schema({
   Product: a
     .model({
       productId: a.id().required(),
-      category: a.string().required(), // el `code` de una Category: "DRESS", "JEWELRY", "ACCESSORY" o una nueva
+      // El tipo de producto: siempre "DRESS", porque el catálogo es solo de vestidos. Con él, el índice
+      // listProductByCategory lee todo el catálogo con un solo Query (nunca un Scan).
+      category: a.string().required(),
+      // Las categorías del vestido (los `code` de Category): puede estar en varias, como Cortos y Floreados
+      categories: a.string().array(),
       name: a.string().required(),
       description: a.string(),
       brand: a.string(),
@@ -102,7 +106,6 @@ const schema = a.schema({
     ]),
 
   // Tabla: cada combinación real de un producto, con su precio, su stock y sus fotos.
-  // Joyas y accesorios llevan una sola variante, sin talla.
   ProductVariant: a
     .model({
       productId: a.id().required(),
@@ -155,15 +158,15 @@ const schema = a.schema({
       allow.group('ADMIN'),
     ]),
 
-  // Tabla: las categorías del catálogo, como "Vestidos" o "Accesorios". Product.category guarda su
-  // `code`, así el catálogo de cada una sigue siendo un Query al índice listProductByCategory.
-  // Se crean y se eligen para el menú de la tienda en el panel de contenido (lib/categorias.ts).
+  // Tabla: las categorías de los vestidos, como "Floreados" o "De gala". Product.categories guarda
+  // sus `code` (un vestido puede estar en varias). Se crean y se eligen para el menú de la tienda en
+  // el panel, en Categorías (lib/categorias.ts).
   Category: a
     .model({
-      code: a.string().required(),   // el que guarda Product.category; nunca cambia
-      name: a.string().required(),   // en singular: "Vestido"
-      plural: a.string().required(), // "Vestidos": el menú y el título del catálogo
-      slug: a.string().required(),   // /catalogo?categoria=vestidos; nunca cambia
+      code: a.string().required(),   // el que guarda Product.categories; nunca cambia
+      name: a.string().required(),   // el mismo nombre que plural (antes era el singular, "Vestido")
+      plural: a.string().required(), // "Floreados": el menú y el título de su página
+      slug: a.string().required(),   // /vestidos?categoria=floreados; nunca cambia
       inMenu: a.boolean().default(false),
       position: a.integer(),         // orden en el menú
     })

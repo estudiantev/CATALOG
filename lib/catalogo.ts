@@ -6,8 +6,7 @@ import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
-import { CATEGORIA_PRINCIPAL } from "@/lib/categorias";
-import { leerCategorias } from "@/lib/categorias-servidor";
+import { TIPO_VESTIDO } from "@/lib/categorias";
 import { type OrdenColeccion, ordenarProductos } from "@/lib/colecciones";
 import {
   type FamiliaColor,
@@ -37,7 +36,7 @@ export type VarianteCatalogo = {
 export type ProductoCatalogo = {
   productId: string;
   nombre: string;
-  categoria: string;
+  categorias: string[]; // sus códigos (lib/categorias.ts)
   textoBusqueda: string;
   ocasion: string | null;
   marca: string | null;
@@ -72,7 +71,7 @@ export type VarianteDetalle = {
 export type ProductoDetalle = {
   productId: string;
   nombre: string;
-  categoria: string;
+  categorias: string[];
   descripcion: string | null;
   marca: string | null;
   disenador: string | null;
@@ -84,7 +83,7 @@ export type ProductoDetalle = {
 
 // Las URLs firmadas duran 1 hora y se generan en cada visita, así nunca llegan vencidas
 const VIGENCIA_URL = 60 * 60;
-// Los datos del catálogo se leen de DynamoDB como mucho una vez cada 10 minutos por categoría
+// Los datos del catálogo se leen de DynamoDB como mucho una vez cada 10 minutos
 const CACHE_CATALOGO = 10 * 60;
 
 function sinNulos<T>(xs?: (T | null)[] | null): T[] {
@@ -110,7 +109,7 @@ function firmador(contextSpec: AmplifyServer.ContextSpec) {
 const CAMPOS_CATALOGO = [
   "productId",
   "name",
-  "category",
+  "categories",
   "description",
   "brand",
   "designer",
@@ -129,11 +128,11 @@ const CAMPOS_CATALOGO = [
   "createdAt",
 ] as const;
 
-// AP-01: Query al índice por categoría (nunca un Scan), con el código que guarda Product.category.
-// Solo los datos van a la caché; las URLs se firman en cada visita. revalidateTag("catalogo") la
-// invalida desde el panel.
-const leerProductosDeCategoria = unstable_cache(
-  async (categoria: string) =>
+// AP-01: todos los vestidos con un Query al índice por tipo de producto (nunca un Scan). Las
+// categorías se filtran en memoria: un vestido puede estar en varias. Solo los datos van a la
+// caché; las URLs se firman en cada visita. revalidateTag("catalogo") la invalida desde el panel.
+const leerVestidos = unstable_cache(
+  async () =>
     runWithAmplifyServerContext({
       nextServerContext: null,
       operation: async (contextSpec) => {
@@ -142,7 +141,7 @@ const leerProductosDeCategoria = unstable_cache(
         do {
           const respuesta = await clienteDatosServidor.models.Product.listProductByCategory(
             contextSpec,
-            { category: categoria },
+            { category: TIPO_VESTIDO },
             { authMode: "identityPool", selectionSet: CAMPOS_CATALOGO, limit: 100, nextToken },
           );
           if (respuesta.errors?.length) {
@@ -157,50 +156,53 @@ const leerProductosDeCategoria = unstable_cache(
         return productos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       },
     }),
-  ["catalogo"],
+  ["vestidos"],
   { revalidate: CACHE_CATALOGO, tags: ["catalogo"] },
 );
 
-type ProductoGuardado = Awaited<ReturnType<typeof leerProductosDeCategoria>>[number];
+type ProductoGuardado = Awaited<ReturnType<typeof leerVestidos>>[number];
 
 const tieneStock = (producto: ProductoGuardado) =>
   leerJson<ResumenVariante[]>(producto.variantSummary, []).some((v) => v.inStock);
 
-// Lee el catálogo de una categoría (su código) como visitante: Product permite lectura a invitados
-// y las fotos de product-images/* también (allow.guest)
-export async function leerCatalogo(categoria: string): Promise<ProductoCatalogo[]> {
-  return aCatalogo(await leerProductosDeCategoria(categoria));
+const enCategoria = (producto: ProductoGuardado, codigo: string) => (producto.categories ?? []).includes(codigo);
+
+// Lee los vestidos como visitante (Product permite lectura a invitados y las fotos de
+// product-images/* también, allow.guest): todos, o los de una categoría (su código)
+export async function leerCatalogo(categoria?: string): Promise<ProductoCatalogo[]> {
+  const vestidos = await leerVestidos();
+  return aCatalogo(categoria ? vestidos.filter((p) => enCategoria(p, categoria)) : vestidos);
 }
 
 // "Nuestro catálogo" de la página de inicio: los productos elegidos en el panel de contenido,
 // en ese orden; si no se eligió ninguno, los vestidos más nuevos. Solo los que tienen stock.
 export async function leerDestacados(ids: string[], cantidad: number): Promise<ProductoCatalogo[]> {
-  const categorias = ids.length ? (await leerCategorias()).map((c) => c.codigo) : [CATEGORIA_PRINCIPAL];
-  const productos = (await Promise.all(categorias.map((c) => leerProductosDeCategoria(c)))).flat().filter(tieneStock);
+  const productos = (await leerVestidos()).filter(tieneStock);
   const elegidos = ids.length ? ids.flatMap((id) => productos.filter((p) => p.productId === id)) : productos;
   return aCatalogo(elegidos.slice(0, cantidad));
 }
 
-// Los productos con stock de una colección, que puede mezclar categorías, en su orden
+// Los productos con stock de una colección, en su orden
 export async function leerProductosColeccion(ids: string[], orden: OrdenColeccion): Promise<ProductoCatalogo[]> {
-  const categorias = await leerCategorias();
-  const productos = (await Promise.all(categorias.map((c) => leerProductosDeCategoria(c.codigo)))).flat().filter(tieneStock);
+  const productos = (await leerVestidos()).filter(tieneStock);
   return aCatalogo(ordenarProductos(productos, ids, orden));
 }
 
-// "También te puede gustar" del detalle: otros productos con stock de la misma categoría, los
-// más nuevos primero
-export async function leerRelacionados(productId: string, categoria: string, cantidad: number): Promise<ProductoCatalogo[]> {
-  if (!categoria) return [];
-  const productos = (await leerProductosDeCategoria(categoria)).filter((p) => p.productId !== productId && tieneStock(p));
+// "También te puede gustar" del detalle: otros vestidos con stock. Primero los que comparten más
+// categorías con este; empatados, los más nuevos (ya vienen en ese orden y sort es estable).
+export async function leerRelacionados(productId: string, categorias: string[], cantidad: number): Promise<ProductoCatalogo[]> {
+  const enComun = (p: ProductoGuardado) => categorias.filter((c) => enCategoria(p, c)).length;
+  const productos = (await leerVestidos())
+    .filter((p) => p.productId !== productId && tieneStock(p))
+    .sort((a, b) => enComun(b) - enComun(a));
   return aCatalogo(productos.slice(0, cantidad));
 }
 
 // Ocasiones y tallas del menú "Catálogo" del encabezado: las de los vestidos con stock, que es el
-// catálogo que abre /catalogo. Sale de la caché y no firma fotos, así no pesa en cada página.
+// catálogo que abre /vestidos. Sale de la caché y no firma fotos, así no pesa en cada página.
 export async function leerOpcionesMenu(): Promise<{ ocasiones: string[]; tallas: Talla[] }> {
   try {
-    const vestidos = (await leerProductosDeCategoria(CATEGORIA_PRINCIPAL)).filter(tieneStock);
+    const vestidos = (await leerVestidos()).filter(tieneStock);
     const ocasiones = Array.from(new Set(vestidos.flatMap((p) => (p.occasion?.trim() ? [p.occasion] : [])))).sort((a, b) => a.localeCompare(b, "es"));
     const tallas = TALLAS.map((t) => t.valor).filter((talla) => vestidos.some((p) => (p.availableSizes ?? []).includes(talla)));
     return { ocasiones, tallas };
@@ -229,7 +231,7 @@ async function aCatalogo(productos: ProductoGuardado[]): Promise<ProductoCatalog
           return {
             productId: producto.productId,
             nombre: producto.name || "Sin nombre",
-            categoria: producto.category,
+            categorias: sinNulos(producto.categories),
             textoBusqueda: [producto.occasion, producto.description, ...(producto.tags ?? []), ...(producto.availableSilhouettes ?? [])]
               .filter(Boolean)
               .join(" "),
@@ -293,7 +295,7 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
           { productId },
           {
             authMode: "identityPool",
-            selectionSet: ["productId", "name", "category", "description", "brand", "designer", "occasion", "material", "tags"],
+            selectionSet: ["productId", "name", "categories", "description", "brand", "designer", "occasion", "material", "tags"],
           },
         ),
         leerVariantes(),
@@ -307,7 +309,7 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
       return {
         productId: producto.productId,
         nombre: producto.name || "Sin nombre",
-        categoria: producto.category,
+        categorias: sinNulos(producto.categories),
         descripcion: producto.description ?? null,
         marca: producto.brand ?? null,
         disenador: producto.designer ?? null,

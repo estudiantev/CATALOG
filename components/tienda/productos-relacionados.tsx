@@ -31,7 +31,7 @@ export function ProductosRelacionados({ productos, verMas }: { productos: Produc
       <ul aria-label="Productos relacionados" className="grid grid-cols-[repeat(5,minmax(200px,1fr))] overflow-x-auto [scrollbar-width:thin]">
         {tarjetas.map(({ producto, variantId, precioVenta, precioAlquiler, desde, portada, hover }) => (
           <li key={producto.productId} className="min-w-0">
-            <Link href={`/catalogo/${producto.productId}?v=${variantId}`} className="group flex h-full flex-col">
+            <Link href={`/vestidos/${producto.productId}?v=${variantId}`} className="group flex h-full flex-col">
               <div className="relative aspect-[3/4] overflow-hidden bg-[#f3f3f3]">
                 <FotosProducto portada={portada} hover={hover} sizes="(min-width: 1000px) 20vw, 200px" />
                 {/* Decorativo: todavía no hay lista de favoritos, así que no es un botón */}

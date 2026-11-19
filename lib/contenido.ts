@@ -158,7 +158,7 @@ const INSTAGRAM_FARA = "https://www.instagram.com/fara_collection_tacna";
 export const POR_DEFECTO: DatosSeccion = {
   anuncios: {
     mensajes: [
-      { texto: "Alquila tu vestido de gala o de XV en Tacna —", boton: { texto: "ver catálogo", enlace: "/catalogo" } },
+      { texto: "Alquila tu vestido de gala o de XV en Tacna —", boton: { texto: "ver catálogo", enlace: "/vestidos" } },
       { texto: "Encuentra el vestido perfecto para tu próximo evento —", boton: { texto: "ver colecciones", enlace: "/#colecciones" } },
       { texto: "Reserva tu vestido en 3 pasos —", boton: { texto: "ver cómo", enlace: "/#pasos" } },
     ],
@@ -170,7 +170,7 @@ export const POR_DEFECTO: DatosSeccion = {
         antetitulo: "Vestidos de gala y de XV",
         titulo: "Tu vestido, tu noche",
         texto: "Compra o alquila vestidos de gala, de XV, cortos y floreados.",
-        botonPrincipal: { texto: "Comprar", enlace: "/catalogo" },
+        botonPrincipal: { texto: "Comprar", enlace: "/vestidos" },
         botonSecundario: { texto: "Alquilar", enlace: "#pasos" },
         imagen: null,
         imagenMovil: null,
@@ -224,7 +224,7 @@ export const POR_DEFECTO: DatosSeccion = {
   },
 };
 
-// Una página de la tienda (/catalogo), una sección de la portada (#pasos) o una dirección https://.
+// Una página de la tienda (/vestidos), una sección de la portada (#pasos) o una dirección https://.
 // Nada de "javascript:" ni de "//otro-sitio" (un enlace que parece interno y no lo es).
 export function enlaceValido(enlace: string) {
   return /^\/(?![/\\])[^\s\\]*$/.test(enlace) || /^#[A-Za-z][\w-]*$/.test(enlace) || /^https:\/\/[^\s/\\]+[^\s\\]*$/.test(enlace);
@@ -534,7 +534,7 @@ export function validarSeccion<S extends Seccion>(seccion: S, datos: DatosSeccio
       if (!limpio) {
         if (falta) errores[ruta] = falta;
       } else if (limpio.length > LARGO.enlace || !enlaceValido(limpio)) {
-        errores[ruta] = "Usa una página de la tienda (/catalogo), una sección (/#pasos) o una dirección que empiece con https://.";
+        errores[ruta] = "Usa una página de la tienda (/vestidos), una sección (/#pasos) o una dirección que empiece con https://.";
       }
     },
     minimo: (ruta, cantidad, minimo, falta) => {

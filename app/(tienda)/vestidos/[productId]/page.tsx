@@ -47,28 +47,29 @@ export default async function ProductoPage({ params, searchParams }: Props) {
   const [categorias, pasos, relacionados] = await Promise.all([
     leerCategorias(),
     leerPasosAlquiler().catch(() => []),
-    leerRelacionados(producto.productId, producto.categoria, RELACIONADOS).catch((error) => {
+    leerRelacionados(producto.productId, producto.categorias, RELACIONADOS).catch((error) => {
       console.error("No se pudieron leer los productos relacionados:", error);
       return [];
     }),
   ]);
-  const categoria = categorias.find((c) => c.codigo === producto.categoria);
-  const catalogoCategoria = categoria ? rutaCategoria(categoria.slug) : "/catalogo";
+  // La primera de sus categorías, en el orden de la lista: la ruta y "Ver más" llevan a ella
+  const categoria = categorias.find((c) => producto.categorias.includes(c.codigo));
+  const verMas = categoria ? rutaCategoria(categoria.slug) : "/vestidos";
 
   return (
     <article className="bg-white font-cuerpo text-[15px] text-tinta">
       <RutaNavegacion
         pasos={[
           { nombre: "Inicio", href: "/" },
-          { nombre: "Catálogo", href: "/catalogo" },
-          ...(categoria ? [{ nombre: categoria.plural, href: catalogoCategoria }] : []),
+          { nombre: "Vestidos", href: "/vestidos" },
+          ...(categoria ? [{ nombre: categoria.nombre, href: verMas }] : []),
           { nombre: producto.nombre },
         ]}
       />
 
-      <DetalleProducto producto={producto} categoria={categoria?.nombre} variantIdInicial={Array.isArray(v) ? v[0] : v} pasos={pasos} />
+      <DetalleProducto producto={producto} variantIdInicial={Array.isArray(v) ? v[0] : v} pasos={pasos} />
 
-      <ProductosRelacionados productos={relacionados} verMas={catalogoCategoria} />
+      <ProductosRelacionados productos={relacionados} verMas={verMas} />
     </article>
   );
 }

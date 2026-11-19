@@ -358,7 +358,7 @@ export function FormularioVariante({
             onElegir={usarCombinacionDe}
           />
           <div className="grid gap-4 sm:grid-cols-2">
-            {selector("size", "Talla", "size", TALLAS, "Sin talla (joyas y accesorios)")}
+            {selector("size", "Talla", "size", TALLAS, "Sin talla")}
             {selector("length", "Largo", "length", LARGOS, "Sin largo")}
             {selector("neckline", "Escote", "neckline", ESCOTES, "Sin escote")}
             {selector("sleeve", "Manga", "sleeve", MANGAS, "Sin manga")}
