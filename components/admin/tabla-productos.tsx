@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/admin/ui/table";
 import { cargarCategorias, cargarProductos, cargarVariantes, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import { type Categoria, nombresDeCategorias } from "@/lib/categorias";
+import { type Categoria, nombreDeCategoria } from "@/lib/categorias";
 import { type Producto, formatoSoles, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
 
@@ -67,8 +67,9 @@ export function TablaProductos({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([cargarCategorias(), cargarProductos()])
-      .then(async ([todas, cargados]) => {
+    cargarCategorias()
+      .then(async (todas) => {
+        const cargados = await cargarProductos(todas);
         setCategorias(todas);
         setProductos(cargados);
         return cargarMiniaturas(cargados).then(setMiniaturas);
@@ -110,7 +111,7 @@ export function TablaProductos({
             <TableRow>
               <TableHead className="w-16">Foto</TableHead>
               <TableHead>Nombre</TableHead>
-              <TableHead>Categorías</TableHead>
+              <TableHead>Categoría</TableHead>
               <TableHead className="text-right">Venta desde</TableHead>
               <TableHead className="text-right">Alquiler/día desde</TableHead>
               <TableHead>Variantes</TableHead>
@@ -146,7 +147,7 @@ export function TablaProductos({
                 </TableCell>
                 <TableCell className="font-medium">{producto.name}</TableCell>
                 <TableCell>
-                  {nombresDeCategorias(producto.categories, categorias).join(", ") || "—"}
+                  {nombreDeCategoria(producto.category, categorias) || <Badge variant="secondary">Sin categoría</Badge>}
                 </TableCell>
                 <TableCell className="text-right">{formatoSoles.format(producto.priceSale)}</TableCell>
                 <TableCell className="text-right">{formatoSoles.format(producto.priceRent)}</TableCell>

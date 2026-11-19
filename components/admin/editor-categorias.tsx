@@ -24,7 +24,7 @@ import {
 } from "@/lib/categorias";
 
 // Las categorías de los vestidos y cuáles van en el menú de la tienda. Cada una es una fila de la
-// tabla Category; Product.categories guarda sus códigos.
+// tabla Category; Product.category guarda su código.
 
 const FORMULARIO = "categorias";
 
@@ -140,7 +140,8 @@ function FormularioCategorias({ inicial }: { inicial: Categoria[] }) {
       return copia;
     });
 
-  // Una guardada se quita de la lista solo si ningún vestido la tiene; se elimina de la tabla al guardar
+  // Una guardada se quita de la lista solo si no tiene vestidos (sus vestidos dejarían de verse); se
+  // elimina de la tabla al guardar
   async function quitar(fila: Fila) {
     sinAviso(fila.id);
     if (fila.guardada) {
@@ -148,7 +149,7 @@ function FormularioCategorias({ inicial }: { inicial: Categoria[] }) {
       try {
         const nombres = await productosEnCategoria(fila.guardada);
         if (nombres.length) {
-          setAvisos((actuales) => ({ ...actuales, [fila.id]: `La tiene${nombres.length > 1 ? "n" : ""} ${listaNombres(nombres)}: quítasela en cada vestido antes de eliminarla.` }));
+          setAvisos((actuales) => ({ ...actuales, [fila.id]: `Tiene ${nombres.length > 1 ? "estos vestidos" : "este vestido"}: ${listaNombres(nombres)}. Cámbiales la categoría antes de eliminarla.` }));
           return;
         }
       } catch (error) {
@@ -183,7 +184,7 @@ function FormularioCategorias({ inicial }: { inicial: Categoria[] }) {
       // Las quitadas de la lista, si siguen sin vestidos
       for (const g of guardadas) {
         if (g.base || filas.some((f) => f.guardada === g.codigo)) continue;
-        if ((await productosEnCategoria(g.codigo)).length) throw new Error(`Algún vestido ya tiene «${g.nombre}» y no se puede eliminar. Recarga la página.`);
+        if ((await productosEnCategoria(g.codigo)).length) throw new Error(`«${g.nombre}» ya tiene vestidos y no se puede eliminar. Recarga la página.`);
         const { errors } = await tabla.delete({ code: g.codigo });
         if (errors?.length) throw new Error(mensajeErrorDatos(errors));
         hechas = hechas.filter((h) => h.codigo !== g.codigo);

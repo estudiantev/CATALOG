@@ -6,7 +6,8 @@ import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
 import { runWithAmplifyServerContext } from "@/lib/amplify-server";
-import { TIPO_VESTIDO } from "@/lib/categorias";
+import { SIN_CATEGORIA } from "@/lib/categorias";
+import { leerCategorias } from "@/lib/categorias-servidor";
 import { type OrdenColeccion, ordenarProductos } from "@/lib/colecciones";
 import {
   type FamiliaColor,
@@ -36,7 +37,7 @@ export type VarianteCatalogo = {
 export type ProductoCatalogo = {
   productId: string;
   nombre: string;
-  categorias: string[]; // sus códigos (lib/categorias.ts)
+  categoria: string; // su código (lib/categorias.ts)
   textoBusqueda: string;
   ocasion: string | null;
   marca: string | null;
@@ -71,7 +72,7 @@ export type VarianteDetalle = {
 export type ProductoDetalle = {
   productId: string;
   nombre: string;
-  categorias: string[];
+  categoria: string;
   descripcion: string | null;
   marca: string | null;
   disenador: string | null;
@@ -83,8 +84,11 @@ export type ProductoDetalle = {
 
 // Las URLs firmadas duran 1 hora y se generan en cada visita, así nunca llegan vencidas
 const VIGENCIA_URL = 60 * 60;
-// Los datos del catálogo se leen de DynamoDB como mucho una vez cada 10 minutos
+// Los datos del catálogo se leen de DynamoDB como mucho una vez cada 10 minutos por categoría
 const CACHE_CATALOGO = 10 * 60;
+
+// Los más nuevos primero
+const masNuevos = (a: { createdAt: string }, b: { createdAt: string }) => b.createdAt.localeCompare(a.createdAt);
 
 function sinNulos<T>(xs?: (T | null)[] | null): T[] {
   return (xs ?? []).filter((x): x is T => x !== null);
@@ -109,7 +113,7 @@ function firmador(contextSpec: AmplifyServer.ContextSpec) {
 const CAMPOS_CATALOGO = [
   "productId",
   "name",
-  "categories",
+  "category",
   "description",
   "brand",
   "designer",
@@ -128,11 +132,11 @@ const CAMPOS_CATALOGO = [
   "createdAt",
 ] as const;
 
-// AP-01: todos los vestidos con un Query al índice por tipo de producto (nunca un Scan). Las
-// categorías se filtran en memoria: un vestido puede estar en varias. Solo los datos van a la
+// AP-01: los vestidos de una categoría con un Query al índice listProductByCategory (nunca un
+// Scan): trae solo los suyos. Cada categoría tiene su entrada en la caché. Solo los datos van a la
 // caché; las URLs se firman en cada visita. revalidateTag("catalogo") la invalida desde el panel.
-const leerVestidos = unstable_cache(
-  async () =>
+const leerProductosDeCategoria = unstable_cache(
+  async (categoria: string) =>
     runWithAmplifyServerContext({
       nextServerContext: null,
       operation: async (contextSpec) => {
@@ -141,7 +145,7 @@ const leerVestidos = unstable_cache(
         do {
           const respuesta = await clienteDatosServidor.models.Product.listProductByCategory(
             contextSpec,
-            { category: TIPO_VESTIDO },
+            { category: categoria },
             { authMode: "identityPool", selectionSet: CAMPOS_CATALOGO, limit: 100, nextToken },
           );
           if (respuesta.errors?.length) {
@@ -152,26 +156,29 @@ const leerVestidos = unstable_cache(
           productos.push(...(respuesta.data ?? []).filter((p) => p !== null));
           nextToken = respuesta.nextToken;
         } while (nextToken);
-        // Los más nuevos primero
-        return productos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        return productos.sort(masNuevos);
       },
     }),
-  ["vestidos"],
+  ["vestidos-de-categoria"],
   { revalidate: CACHE_CATALOGO, tags: ["catalogo"] },
 );
 
-type ProductoGuardado = Awaited<ReturnType<typeof leerVestidos>>[number];
+type ProductoGuardado = Awaited<ReturnType<typeof leerProductosDeCategoria>>[number];
 
 const tieneStock = (producto: ProductoGuardado) =>
   leerJson<ResumenVariante[]>(producto.variantSummary, []).some((v) => v.inStock);
 
-const enCategoria = (producto: ProductoGuardado, codigo: string) => (producto.categories ?? []).includes(codigo);
+// Todos los vestidos: un Query por categoría, en paralelo, más el de los que todavía no tienen una
+async function leerVestidos() {
+  const codigos = [...(await leerCategorias()).map((c) => c.codigo), SIN_CATEGORIA];
+  const porCategoria = await Promise.all(codigos.map((codigo) => leerProductosDeCategoria(codigo)));
+  return porCategoria.flat().sort(masNuevos);
+}
 
 // Lee los vestidos como visitante (Product permite lectura a invitados y las fotos de
-// product-images/* también, allow.guest): todos, o los de una categoría (su código)
+// product-images/* también, allow.guest): los de una categoría (su código) o, sin ella, todos
 export async function leerCatalogo(categoria?: string): Promise<ProductoCatalogo[]> {
-  const vestidos = await leerVestidos();
-  return aCatalogo(categoria ? vestidos.filter((p) => enCategoria(p, categoria)) : vestidos);
+  return aCatalogo(categoria ? await leerProductosDeCategoria(categoria) : await leerVestidos());
 }
 
 // "Nuestro catálogo" de la página de inicio: los productos elegidos en el panel de contenido,
@@ -188,13 +195,11 @@ export async function leerProductosColeccion(ids: string[], orden: OrdenColeccio
   return aCatalogo(ordenarProductos(productos, ids, orden));
 }
 
-// "También te puede gustar" del detalle: otros vestidos con stock. Primero los que comparten más
-// categorías con este; empatados, los más nuevos (ya vienen en ese orden y sort es estable).
-export async function leerRelacionados(productId: string, categorias: string[], cantidad: number): Promise<ProductoCatalogo[]> {
-  const enComun = (p: ProductoGuardado) => categorias.filter((c) => enCategoria(p, c)).length;
-  const productos = (await leerVestidos())
-    .filter((p) => p.productId !== productId && tieneStock(p))
-    .sort((a, b) => enComun(b) - enComun(a));
+// "También te puede gustar" del detalle: otros vestidos con stock de su categoría, los más nuevos
+// primero
+export async function leerRelacionados(productId: string, categoria: string, cantidad: number): Promise<ProductoCatalogo[]> {
+  if (!categoria) return [];
+  const productos = (await leerProductosDeCategoria(categoria)).filter((p) => p.productId !== productId && tieneStock(p));
   return aCatalogo(productos.slice(0, cantidad));
 }
 
@@ -231,7 +236,7 @@ async function aCatalogo(productos: ProductoGuardado[]): Promise<ProductoCatalog
           return {
             productId: producto.productId,
             nombre: producto.name || "Sin nombre",
-            categorias: sinNulos(producto.categories),
+            categoria: producto.category,
             textoBusqueda: [producto.occasion, producto.description, ...(producto.tags ?? []), ...(producto.availableSilhouettes ?? [])]
               .filter(Boolean)
               .join(" "),
@@ -295,7 +300,7 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
           { productId },
           {
             authMode: "identityPool",
-            selectionSet: ["productId", "name", "categories", "description", "brand", "designer", "occasion", "material", "tags"],
+            selectionSet: ["productId", "name", "category", "description", "brand", "designer", "occasion", "material", "tags"],
           },
         ),
         leerVariantes(),
@@ -309,7 +314,7 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
       return {
         productId: producto.productId,
         nombre: producto.name || "Sin nombre",
-        categorias: sinNulos(producto.categories),
+        categoria: producto.category,
         descripcion: producto.description ?? null,
         marca: producto.brand ?? null,
         disenador: producto.designer ?? null,

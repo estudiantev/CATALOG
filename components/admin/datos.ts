@@ -1,6 +1,6 @@
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
-import { type Categoria, type FilaCategoria, TIPO_VESTIDO, armarCategorias, nombresDeCategorias } from "@/lib/categorias";
+import { type Categoria, type FilaCategoria, SIN_CATEGORIA, armarCategorias, nombreDeCategoria } from "@/lib/categorias";
 import { type Coleccion, ordenarColecciones } from "@/lib/colecciones";
 import { type Producto, type Variante, leerJson } from "@/lib/productos";
 import type { ResumenVariante } from "@/lib/variantes";
@@ -53,34 +53,51 @@ export async function cargarCategorias(exigirTabla = false): Promise<Categoria[]
   return armarCategorias(filas);
 }
 
-// Todos los productos con un Query al índice por tipo (nunca un Scan de la tabla): todos son vestidos
-export async function cargarProductos() {
+// Los productos de una categoría (su código) con un Query al índice listProductByCategory
+async function productosDeCategoria(codigo: string) {
   const productos: Producto[] = [];
   let nextToken: string | null | undefined;
   do {
-    const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: TIPO_VESTIDO }, { limit: 100, nextToken });
+    const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: codigo }, { limit: 100, nextToken });
     if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
     productos.push(...respuesta.data);
     nextToken = respuesta.nextToken;
   } while (nextToken);
+  return productos;
+}
+
+// Todos los productos: un Query por categoría, en paralelo (nunca un Scan de la tabla), más el de
+// los que todavía no tienen una
+export async function cargarProductos(categorias: Categoria[]) {
+  const codigos = [...categorias.map((c) => c.codigo), SIN_CATEGORIA];
+  const productos = (await Promise.all(codigos.map(productosDeCategoria))).flat();
   return productos.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Los nombres de los vestidos que llevan esa categoría: mientras tenga alguno, no se puede eliminar
+// Los nombres de los vestidos de esa categoría: mientras tenga alguno, no se puede eliminar
 export async function productosEnCategoria(codigo: string) {
-  return (await cargarProductos()).filter((p) => (p.categories ?? []).includes(codigo)).map((p) => p.name);
+  const nombres: string[] = [];
+  let nextToken: string | null | undefined;
+  do {
+    const respuesta = await clienteDatos.models.Product.listProductByCategory({ category: codigo }, { selectionSet: ["name"], limit: 100, nextToken });
+    if (respuesta.errors?.length) throw new Error(mensajeErrorDatos(respuesta.errors));
+    nombres.push(...respuesta.data.map((p) => p.name));
+    nextToken = respuesta.nextToken;
+  } while (nextToken);
+  return nombres.sort((a, b) => a.localeCompare(b, "es"));
 }
 
-// `categoria`: sus categorías en texto ("De gala, Cortos"), para reconocerlo en la lista
+// `categoria`: el nombre de su categoría, para reconocerlo en la lista
 export type OpcionProducto = { productId: string; nombre: string; categoria: string; conStock: boolean };
 
 // Para elegir productos en el CMS y en las colecciones
 export async function cargarOpcionesProducto(): Promise<OpcionProducto[]> {
-  const [categorias, productos] = await Promise.all([cargarCategorias(), cargarProductos()]);
+  const categorias = await cargarCategorias();
+  const productos = await cargarProductos(categorias);
   return productos.map((p) => ({
     productId: p.productId,
     nombre: p.name,
-    categoria: nombresDeCategorias(p.categories, categorias).join(", ") || "Sin categoría",
+    categoria: nombreDeCategoria(p.category, categorias) || "Sin categoría",
     conStock: leerJson<ResumenVariante[]>(p.variantSummary, []).some((v) => v.inStock),
   }));
 }

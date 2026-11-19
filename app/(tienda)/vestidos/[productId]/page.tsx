@@ -47,13 +47,13 @@ export default async function ProductoPage({ params, searchParams }: Props) {
   const [categorias, pasos, relacionados] = await Promise.all([
     leerCategorias(),
     leerPasosAlquiler().catch(() => []),
-    leerRelacionados(producto.productId, producto.categorias, RELACIONADOS).catch((error) => {
+    leerRelacionados(producto.productId, producto.categoria, RELACIONADOS).catch((error) => {
       console.error("No se pudieron leer los productos relacionados:", error);
       return [];
     }),
   ]);
-  // La primera de sus categorías, en el orden de la lista: la ruta y "Ver más" llevan a ella
-  const categoria = categorias.find((c) => producto.categorias.includes(c.codigo));
+  // La ruta y "Ver más" llevan a su categoría
+  const categoria = categorias.find((c) => c.codigo === producto.categoria);
   const verMas = categoria ? rutaCategoria(categoria.slug) : "/vestidos";
 
   return (

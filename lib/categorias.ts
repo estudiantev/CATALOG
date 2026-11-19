@@ -2,14 +2,14 @@ import type { Schema } from "@/amplify/data/resource";
 import { crearSlug, slugValido } from "@/lib/colecciones";
 
 // Categorías de los vestidos, como "Floreados" o "De gala". Cada una tiene su página en
-// /vestidos?categoria=<slug>, con los vestidos que la llevan. Un vestido puede estar en varias:
-// Product.categories guarda sus códigos. Se crean, y se eligen para el menú de la tienda, en el
-// panel (/admin/categorias). Lo comparten la tienda, que las lee, y el panel, que las edita.
+// /vestidos?categoria=<slug>, con sus vestidos. Cada vestido tiene una: Product.category guarda su
+// código, que es la clave del índice listProductByCategory. Se crean, y se eligen para el menú de la
+// tienda, en el panel (/admin/categorias). Lo comparten la tienda, que las lee, y el panel, que las edita.
 
 export type FilaCategoria = Pick<Schema["Category"]["type"], "code" | "name" | "plural" | "slug" | "inMenu" | "position">;
 
 export type Categoria = {
-  codigo: string; // el que guarda Product.categories ("DE_GALA"); nunca cambia
+  codigo: string; // el que guarda Product.category ("DE_GALA"); nunca cambia
   nombre: string; // "De gala": el menú, el título de su página y el formulario de productos
   slug: string; // el de /vestidos?categoria=de-gala; nunca cambia, para no romper los enlaces
   enMenu: boolean;
@@ -18,9 +18,10 @@ export type Categoria = {
   existe: boolean; // si ya tiene su fila (el panel decide entre crearla o actualizarla)
 };
 
-// El tipo que guarda Product.category en todos los productos: el catálogo es solo de vestidos. El
-// catálogo entero se lee con un Query al índice listProductByCategory con este valor.
-export const TIPO_VESTIDO = "DRESS";
+// El código que guardan los vestidos creados antes de las categorías. No es ninguna: salen en
+// /vestidos y en el panel como "Sin categoría" hasta que se les elige una en su formulario. Cuando
+// ya no quede ninguno, se puede borrar junto con sus usos (lib/catalogo.ts y components/admin/datos.ts).
+export const SIN_CATEGORIA = "DRESS";
 
 // Las cinco de siempre. Están aunque la tabla esté vacía o no responda; su fila, si la tienen,
 // cambia su nombre, el menú y el orden. Mientras no se guarden, van en el menú las tres primeras.
@@ -48,9 +49,8 @@ export const slugDeCategoria = (nombre: string) => crearSlug(nombre);
 // Y el código, del slug, al estilo de las de siempre: "de-coctel" → "DE_COCTEL"
 export const codigoDeSlug = (slug: string) => slug.toUpperCase().replace(/-/g, "_");
 
-// Los nombres de las categorías de un producto, en el orden de la lista (las que ya no existen no van)
-export const nombresDeCategorias = (codigos: readonly (string | null)[] | null | undefined, categorias: Categoria[]) =>
-  categorias.filter((c) => codigos?.includes(c.codigo)).map((c) => c.nombre);
+// El nombre de la categoría de un producto; "" si no tiene (o ya no existe)
+export const nombreDeCategoria = (codigo: string, categorias: Categoria[]) => categorias.find((c) => c.codigo === codigo)?.nombre ?? "";
 
 const texto = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, LARGO_CATEGORIA) : "");
 

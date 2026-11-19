@@ -7,20 +7,26 @@ import { invalidarCatalogo } from "@/app/(admin)/admin/(panel)/productos/accione
 import { Alert, AlertDescription } from "@/components/admin/ui/alert";
 import { Button } from "@/components/admin/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/admin/ui/card";
-import { Checkbox } from "@/components/admin/ui/checkbox";
 import { Input } from "@/components/admin/ui/input";
 import { Label } from "@/components/admin/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/admin/ui/select";
 import { Skeleton } from "@/components/admin/ui/skeleton";
 import { Textarea } from "@/components/admin/ui/textarea";
 import { cargarCategorias, clienteDatos, mensajeErrorDatos } from "@/components/admin/datos";
-import { type Categoria, TIPO_VESTIDO } from "@/lib/categorias";
+import type { Categoria } from "@/lib/categorias";
 import type { Producto } from "@/lib/productos";
 
 // Datos generales del producto. Precios, tallas, colores y fotos van en sus variantes,
 // y el resumen que usa el catálogo se recalcula desde ellas.
 type Formulario = {
   name: string;
-  categories: string[]; // los códigos de sus categorías (lib/categorias.ts); puede no tener ninguna
+  category: string; // el código de su categoría (lib/categorias.ts)
   description: string;
   brand: string;
   designer: string;
@@ -31,7 +37,7 @@ type Formulario = {
 
 const VACIO: Formulario = {
   name: "",
-  categories: [],
+  category: "",
   description: "",
   brand: "",
   designer: "",
@@ -42,7 +48,7 @@ const VACIO: Formulario = {
 
 const desdeProducto = (p: Producto): Formulario => ({
   name: p.name,
-  categories: (p.categories ?? []).filter((c): c is string => Boolean(c)),
+  category: p.category,
   description: p.description ?? "",
   brand: p.brand ?? "",
   designer: p.designer ?? "",
@@ -99,11 +105,11 @@ export function FormularioProducto({ productId }: { productId?: string }) {
     if (!form || !categorias) return;
     setError("");
     if (!form.name.trim()) return setError("Escribe el nombre del producto.");
+    if (!categorias.some((c) => c.codigo === form.category)) return setError("Elige una categoría.");
 
     const datos = {
       name: form.name.trim(),
-      // Solo las que existen, en el orden de la lista: una eliminada mientras tanto no queda guardada
-      categories: categorias.filter((c) => form.categories.includes(c.codigo)).map((c) => c.codigo),
+      category: form.category,
       description: textoONulo(form.description),
       brand: textoONulo(form.brand),
       designer: textoONulo(form.designer),
@@ -117,7 +123,7 @@ export function FormularioProducto({ productId }: { productId?: string }) {
     const { errors } = productId
       ? await clienteDatos.models.Product.update({ productId, ...datos })
       : // Sin variantes todavía: no aparece en el catálogo hasta que tenga al menos una con stock
-        await clienteDatos.models.Product.create({ productId: nuevoId, category: TIPO_VESTIDO, ...datos, priceSale: 0, priceRent: 0, variantSummary: "[]" });
+        await clienteDatos.models.Product.create({ productId: nuevoId, ...datos, priceSale: 0, priceRent: 0, variantSummary: "[]" });
     if (errors?.length) {
       setGuardando(false);
       return setError(mensajeErrorDatos(errors));
@@ -149,37 +155,23 @@ export function FormularioProducto({ productId }: { productId?: string }) {
             <Label htmlFor="name">Nombre</Label>
             <Input id="name" value={form.name} onChange={(e) => cambiar("name", e.target.value)} required />
           </div>
-          {/* Puede estar en varias, o en ninguna: igual sale en /vestidos */}
-          <fieldset className="space-y-3 sm:col-span-2">
-            <legend className="text-sm leading-none font-medium">Categorías</legend>
-            <p className="text-sm text-muted-foreground">Marca todas las que le quedan: sale en la página de cada una.</p>
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
-              {categorias.map((c) => {
-                const id = `categoria-${c.codigo}`;
-                return (
-                  <div key={c.codigo} className="flex items-center gap-2">
-                    <Checkbox
-                      id={id}
-                      checked={form.categories.includes(c.codigo)}
-                      onCheckedChange={(marcada) =>
-                        cambiar("categories", marcada === true ? [...form.categories, c.codigo] : form.categories.filter((codigo) => codigo !== c.codigo))
-                      }
-                    />
-                    <Label htmlFor={id} className="font-normal">
-                      {c.nombre}
-                    </Label>
-                  </div>
-                );
-              })}
-            </div>
-          </fieldset>
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoría</Label>
+            {/* Sin categoría, o con una que ya no existe, pide elegir una */}
+            <Select value={categorias.some((c) => c.codigo === form.category) ? form.category : ""} onValueChange={(valor) => cambiar("category", valor)}>
+              <SelectTrigger id="category" className="w-full">
+                <SelectValue placeholder="Elige una categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                {categorias.map((c) => (
+                  <SelectItem key={c.codigo} value={c.codigo}>{c.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="occasion">Ocasión</Label>
             <Input id="occasion" placeholder="Gala, XV, cóctel…" value={form.occasion} onChange={(e) => cambiar("occasion", e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="material">Material</Label>
-            <Input id="material" value={form.material} onChange={(e) => cambiar("material", e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="brand">Marca</Label>
@@ -193,7 +185,11 @@ export function FormularioProducto({ productId }: { productId?: string }) {
             <Label htmlFor="description">Descripción</Label>
             <Textarea id="description" value={form.description} onChange={(e) => cambiar("description", e.target.value)} />
           </div>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-2">
+            <Label htmlFor="material">Material</Label>
+            <Input id="material" value={form.material} onChange={(e) => cambiar("material", e.target.value)} />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="tags">Características</Label>
             <Input id="tags" placeholder="Separadas por comas: brillos, cola, pedrería" value={form.tags} onChange={(e) => cambiar("tags", e.target.value)} />
           </div>

@@ -69,11 +69,9 @@ const schema = a.schema({
   Product: a
     .model({
       productId: a.id().required(),
-      // El tipo de producto: siempre "DRESS", porque el catálogo es solo de vestidos. Con él, el índice
-      // listProductByCategory lee todo el catálogo con un solo Query (nunca un Scan).
+      // El `code` de su Category ("DE_GALA"). Es la clave del índice listProductByCategory: la página
+      // de una categoría lee solo sus vestidos con un Query (nunca un Scan de la tabla).
       category: a.string().required(),
-      // Las categorías del vestido (los `code` de Category): puede estar en varias, como Cortos y Floreados
-      categories: a.string().array(),
       name: a.string().required(),
       description: a.string(),
       brand: a.string(),
@@ -158,12 +156,12 @@ const schema = a.schema({
       allow.group('ADMIN'),
     ]),
 
-  // Tabla: las categorías de los vestidos, como "Floreados" o "De gala". Product.categories guarda
-  // sus `code` (un vestido puede estar en varias). Se crean y se eligen para el menú de la tienda en
-  // el panel, en Categorías (lib/categorias.ts).
+  // Tabla: las categorías de los vestidos, como "Floreados" o "De gala". Product.category guarda su
+  // `code`, así la página de cada una es un Query al índice listProductByCategory. Se crean y se
+  // eligen para el menú de la tienda en el panel, en Categorías (lib/categorias.ts).
   Category: a
     .model({
-      code: a.string().required(),   // el que guarda Product.categories; nunca cambia
+      code: a.string().required(),   // el que guarda Product.category; nunca cambia
       name: a.string().required(),   // el mismo nombre que plural (antes era el singular, "Vestido")
       plural: a.string().required(), // "Floreados": el menú y el título de su página
       slug: a.string().required(),   // /vestidos?categoria=floreados; nunca cambia

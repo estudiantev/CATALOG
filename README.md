@@ -30,8 +30,8 @@ app/
 │   ├── layout.tsx             ← layout raíz: <html>, fuentes, menú, pie, Amplify
 │   ├── tienda.css             ← Tailwind + paleta del rediseño (sin shadcn)
 │   ├── page.tsx               ← / (portada; sus textos, fotos y destacados salen del CMS)
-│   ├── catalogo/page.tsx      ← /catalogo (productos con fotos y filtros)
-│   ├── catalogo/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
+│   ├── vestidos/page.tsx      ← /vestidos (vestidos con fotos y filtros)
+│   ├── vestidos/[productId]/  ← detalle: fotos a la izquierda, atributos a la derecha
 │   ├── colecciones/page.tsx   ← /colecciones (todas: las cuatro fijas y las publicadas)
 │   ├── coleccion/[slug]/      ← /coleccion/novias-2027 (una colección, con los filtros del catálogo)
 │   ├── login/page.tsx         ← /login (si ya hay sesión, redirige)
@@ -134,14 +134,14 @@ Qué cambia con cada opción lo deciden los datos, no el código: si dos variant
 
 ### Catálogo (tienda)
 
-- `/catalogo?categoria=<slug>`, como `vestidos`, `joyas` o `accesorios` (vestidos si no se indica o si la categoría ya no existe). Los datos de DynamoDB se guardan en caché 10 minutos por categoría y el panel la invalida al guardar; las URLs de las fotos se firman en cada visita (duran una hora), así nunca llegan vencidas.
+- `/vestidos?categoria=<slug>`, como `floreados` o `de-gala`, con los vestidos de esa categoría (todos si no se indica o si la categoría ya no existe). Los datos de DynamoDB se guardan en caché 10 minutos por categoría y el panel la invalida al guardar; las URLs de las fotos se firman en cada visita (duran una hora), así nunca llegan vencidas.
 - **Filtros** en el navegador, sin volver a consultar la base: talla, largo, escote, manga, silueta y color (se pueden marcar varios valores), más ocasión, marca, diseñador, características y búsqueda de texto (sin importar tildes ni mayúsculas). Solo aparecen los valores que tienen stock.
-- Cada tarjeta muestra la variante con stock que cumple **todos** los filtros: su portada (y la contraportada al pasar el cursor), el menor precio de venta y de alquiler por día entre las que cumplen ("Desde" si quedan precios distintos) y un enlace a `/catalogo/<productId>?v=<variantId>` con esa combinación ya elegida. Si ninguna variante con stock cumple, el producto no se muestra.
+- Cada tarjeta muestra la variante con stock que cumple **todos** los filtros: su portada (y la contraportada al pasar el cursor), el menor precio de venta y de alquiler por día entre las que cumplen ("Desde" si quedan precios distintos) y un enlace a `/vestidos/<productId>?v=<variantId>` con esa combinación ya elegida. Si ninguna variante con stock cumple, el producto no se muestra.
 - Los enlaces del menú llegan como filtros iniciales: `?color=` marca la familia de color y `?coleccion=gala|xv|cortos|floreados` busca esa palabra en la ocasión, descripción, características y siluetas. Para que un vestido salga en "De Gala", escribe "Gala" en su ocasión o características.
 
 ## Detalle del producto
 
-- `/catalogo/<productId>?v=<variantId>` abre la combinación del enlace (o la primera con stock). Usa el estilo de la página de inicio (`components/tienda/estilos-inicio.ts`): arriba la categoría y el enlace al catálogo; a la izquierda las fotos de esa variante, sin recortar y fijas al bajar; a la derecha nombre, precio de venta y de alquiler por día, el selector de opciones, **Contactar por WhatsApp**, la descripción y los datos generales.
+- `/vestidos/<productId>?v=<variantId>` abre la combinación del enlace (o la primera con stock). Usa el estilo de la página de inicio (`components/tienda/estilos-inicio.ts`): arriba la categoría y el enlace al catálogo; a la izquierda las fotos de esa variante, sin recortar y fijas al bajar; a la derecha nombre, precio de venta y de alquiler por día, el selector de opciones, **Contactar por WhatsApp**, la descripción y los datos generales.
 - **Selector**: al tocar un valor se pasa a la variante con stock que lo tiene y que más opciones comparte con la actual, así nunca queda en una combinación que no existe. Los valores con borde punteado cambian también otras opciones; los agotados no se pueden elegir. La URL se actualiza (`?v=`) para poder compartir esa combinación.
 - **Contactar por WhatsApp** abre el chat con el producto y la combinación elegida (por ejemplo "Hola, quisiera consultar sobre Vestido Aurora (Talla: M, Largo: Midi, Color: Vino) en Fara Collection."). El usuario de WhatsApp de la empresa está en `WHATSAPP_FARA` (`components/tienda/datos.ts`): reemplaza `519XXXXXXXX` por el número real.
 
@@ -203,17 +203,17 @@ Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o 
 
 ## Categorías
 
-Cada categoría es su propio catálogo (`/catalogo?categoria=<slug>`) y es la que se elige en cada producto. ADMIN y MARKETING las crean, cambian de nombre, ordenan y eligen para el menú en **`/admin/contenido`**, en el bloque **Categorías** (después de Anuncios).
+El catálogo es solo de vestidos (`/vestidos`) y las categorías son tipos de vestido: Floreados, De gala, De novia, De 15, Cortos y las que se creen. Cada vestido tiene **una** y cada categoría tiene su página (`/vestidos?categoria=<slug>`). ADMIN y MARKETING las crean, cambian de nombre, ordenan y eligen para el menú en **`/admin/categorias`** (opción "Categorías" del menú del panel).
 
-- **Tabla `Category`** (`amplify/data/resource.ts`): `code` (la clave), `name` (singular, "Vestido"), `plural` ("Vestidos", el que sale en el menú y en el catálogo), `slug`, `inMenu` y `position`. La leen invitados y clientas; MARKETING y ADMIN pueden todo.
-- **Índice:** `Product.category` sigue siendo un texto con el `code` de la categoría, y el catálogo de cada una sigue siendo un Query al índice `listProductByCategory`. No hay relación de Amplify entre las dos tablas.
-- **Las de siempre:** Vestidos (`DRESS`), Joyas (`JEWELRY`) y Accesorios (`ACCESSORY`) están en `CATEGORIAS_BASE` (`lib/categorias.ts`) con los códigos que ya guardaban los productos. Existen aunque la tabla esté vacía o no responda; su fila, si la tienen, cambia su nombre, el menú y el orden. No se pueden eliminar. Vestidos es la de `/catalogo` sin categoría y la del menú desplegable Catálogo (`CATEGORIA_PRINCIPAL`).
-- **Nuevas:** el `slug` sale del plural al crearla (`Ropa de baño` → `ropa-de-bano`) y el `code` del slug (`ROPA_DE_BANO`); los dos ya no cambian, aunque cambie el nombre, para no romper los enlaces ni los productos. Se pueden eliminar solo si no tienen productos (el panel lo revisa con un Query al índice).
-- **Menú:** las marcadas, en el orden de la lista, van en el menú de la tienda después de Contacto (escritorio y celular), hasta `MAXIMO_EN_MENU` (3). Mientras no se guarde nada, el menú queda como antes: solo Accesorios.
+- **Tabla `Category`** (`amplify/data/resource.ts`): `code` (la clave), `plural` (el nombre, "De gala"; `name` guarda lo mismo), `slug`, `inMenu` y `position`. La leen invitados y clientas; MARKETING y ADMIN pueden todo.
+- **Índice:** `Product.category` guarda el `code` de su categoría y es la clave del índice `listProductByCategory`. La página de una categoría es un Query con ese código: trae solo sus vestidos, nunca un Scan de la tabla. `/vestidos` sin categoría, el inicio y las colecciones hacen un Query por categoría, en paralelo. Cada categoría tiene su entrada en la caché del catálogo (`lib/catalogo.ts`). No hay relación de Amplify entre las dos tablas.
+- **Las de siempre:** las cinco de `CATEGORIAS_BASE` (`lib/categorias.ts`). Existen aunque la tabla esté vacía o no responda; su fila, si la tienen, cambia su nombre, el menú y el orden. No se pueden eliminar.
+- **Nuevas:** el `slug` sale del nombre al crearla (`De cóctel` → `de-coctel`) y el `code` del slug (`DE_COCTEL`); los dos ya no cambian, aunque cambie el nombre, para no romper los enlaces ni los vestidos. Se pueden eliminar solo si no tienen vestidos (el panel lo revisa con un Query al índice).
+- **Sin categoría:** los vestidos creados antes de las categorías guardan `DRESS` (`SIN_CATEGORIA`). Salen en `/vestidos` y en el panel como "Sin categoría" hasta que se les elige una; cuando no quede ninguno, se puede borrar esa constante y sus usos.
+- **Menú:** las marcadas, en el orden de la lista, van en el menú de la tienda después de Contacto (escritorio y celular), hasta `MAXIMO_EN_MENU` (3). Mientras no se guarde nada, van Floreados, De gala y De novia.
 - **Ancho del menú:** el de escritorio se diseñó con una sola categoría y se muestra desde 998 px. Con más, `escalonMenu()` estima el ancho de los nombres (10 px por letra) y elige desde qué ancho se muestra: 998, 1080, 1160 o 1280 px; por debajo va el menú de celular, así las opciones nunca se montan sobre los íconos. Cuenta también el salto de 1100 px, donde el staff pasa a ver "Panel" en texto. El panel no deja guardar nombres que no entran ni en 1280 px y avisa desde qué ancho se ve el menú completo. Los escalones están en `ANCHOS_MENU` y en la variante `menu` de `app/(tienda)/tienda.css`: si cambias uno, cambia el otro.
 - **Lectura** (`lib/categorias-servidor.ts`): el menú, el catálogo y el detalle leen toda la tabla con `unstable_cache` y la etiqueta `"categorias"` (10 minutos); el panel la invalida al guardar. Es un Scan, como en `Collection`: son pocas filas y salen de la caché.
-
-Después de agregar la tabla hay que desplegar el backend (`npx ampx sandbox` o el pipeline de Amplify). Mientras no exista, la tienda y los productos siguen con las tres de siempre y el bloque Categorías avisa que falta desplegar.
+- **Enlaces viejos:** `/catalogo` y `/catalogo/<id>` redirigen a `/vestidos` (`next.config.js`).
 
 ## Contenido de la página de inicio (CMS)
 
@@ -230,7 +230,7 @@ ADMIN y MARKETING editan la página de inicio, la barra de anuncios y el pie en 
   - **Inspiración:** antetítulo opcional, texto, botón y una foto o un video opcional; sin ninguno se ven las ilustraciones. El video se reproduce solo, en silencio y en bucle mientras la sección se ve (`components/tienda/video-inspiracion.tsx`), con los controles del navegador para pausarlo y activar el sonido.
   - **Pie de página** (`pie`): la descripción de la tienda, el formulario de suscripción y los enlaces a redes; en todas las páginas. La tienda todavía no guarda una lista de correos: quien se suscribe abre WhatsApp con su correo ya escrito. Sin título, el formulario no se muestra; una red sin enlace, tampoco.
   - Los colores de la barra del catálogo siguen en el código: cada color está atado a un filtro del catálogo.
-- **Validación y normalización** (`lib/contenido.ts`): AppSync guarda el JSON sin revisarlo. El panel valida antes de guardar (campos obligatorios, largos máximos y enlaces) y la tienda normaliza al leer: lo que falte o no sirva se reemplaza por el contenido por defecto, que es el que la portada tenía en el código. Los enlaces solo pueden ser rutas de la tienda (`/catalogo`), secciones (`/#pasos`, que funciona desde cualquier página) o `https://`; nada de `javascript:` ni `//otro-sitio`.
+- **Validación y normalización** (`lib/contenido.ts`): AppSync guarda el JSON sin revisarlo. El panel valida antes de guardar (campos obligatorios, largos máximos y enlaces) y la tienda normaliza al leer: lo que falte o no sirva se reemplaza por el contenido por defecto, que es el que la portada tenía en el código. Los enlaces solo pueden ser rutas de la tienda (`/vestidos`), secciones (`/#pasos`, que funciona desde cualquier página) o `https://`; nada de `javascript:` ni `//otro-sitio`.
 - **Lectura** (`lib/contenido-servidor.ts`): en el servidor, como visitante, con `unstable_cache` y la etiqueta `"contenido"` (10 minutos). La página de inicio usa `leerContenidoInicio()` y el layout de la tienda `leerContenidoMarco()` (anuncios y pie), las dos de la misma caché. Al guardar, el panel llama a `invalidarContenido()` (`revalidateTag("contenido")`) y el cambio se ve enseguida. Si la tabla no responde, la tienda muestra el contenido por defecto en vez de caerse.
 - **Fotos** (`components/admin/contenido/foto.tsx`, compartido por las secciones con foto): se reducen a 2000 px (WebP) en el navegador y se suben a `content-images/inicio/`. Las URLs firmadas vencen, por eso la página de inicio es dinámica y las firma en cada visita, como el catálogo. Al guardar, las fotos que se cambiaron o quitaron se borran de S3. El video de Inspiración va a la misma carpeta, pero sin reducirse: se sube tal cual, en MP4 o WebM de hasta 50 MB. No llevan descripción: son fotos de ambiente, así que van con `alt=""` y lo importante lo dice el texto que las acompaña. En los productos, el `alt` es el nombre del producto.
 
