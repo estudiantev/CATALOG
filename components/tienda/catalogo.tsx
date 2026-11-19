@@ -48,8 +48,9 @@ type Elegidos = Partial<Record<IdGrupo, string[]>>;
 type TipoGrupo = "lista" | "botones" | "colores";
 type Grupo = { id: IdGrupo; nombre: string; tipo: TipoGrupo; opciones: { valor: string; nombre: string; cantidad: number }[] };
 
-// Los que van a la vista en la barra, en este orden; los demás se abren todos juntos con "Más filtros"
-const PRINCIPALES: IdGrupo[] = ["talla", "color", "ocasion", "material"];
+// Los que van a la vista en la barra, en este orden; los demás (también los materiales) se abren
+// todos juntos con "Más filtros", así los aplicados entran en la barra
+const PRINCIPALES: IdGrupo[] = ["talla", "color", "ocasion"];
 const MAS = "mas";
 
 // Minúsculas y sin tildes, para que "Floreado" encuentre "floreados"
@@ -381,11 +382,18 @@ export function Catalogo({
     </div>
   );
 
-  // `clase` es la del grupo; `claseLista`, la de los botones de los filtros
-  const aplicados = (clase: string, claseLista: string) =>
+  // Los aplicados: en la barra, después de "Más filtros". Si no entran, se deslizan de lado y
+  // "Limpiar todo" queda siempre a la vista. En el celular van en su propia fila, al final.
+  // En una sola fila miden lo que sus botones y buscar se achica para dejarles lugar.
+  const aplicados =
     chips.length > 0 && (
-      <div role="group" aria-label="Filtros aplicados" className={clase}>
-        <div className={claseLista}>
+      <div
+        role="group"
+        aria-label="Filtros aplicados"
+        className="order-4 flex min-w-0 basis-full items-center gap-1.5 px-3 pb-2 min-[1000px]:order-none min-[1000px]:flex-1 min-[1000px]:basis-auto min-[1000px]:pb-0 una-fila:flex-[0_1_auto]"
+      >
+        {/* El borde derecho se desvanece: si no entran todos, el último no queda cortado en seco */}
+        <div className="flex min-w-0 flex-wrap gap-1.5 min-[1000px]:flex-nowrap min-[1000px]:overflow-x-auto min-[1000px]:pr-4 min-[1000px]:[mask-image:linear-gradient(to_right,#000_calc(100%-16px),transparent)] min-[1000px]:[scrollbar-width:none] min-[1000px]:[&::-webkit-scrollbar]:hidden">
           {chips.map((chip) => (
             <button
               key={chip.clave}
@@ -414,8 +422,10 @@ export function Catalogo({
       </div>
     );
 
+  // flow-root: el margen de arriba de la barra queda dentro del fondo blanco (sin él se sale y deja
+  // ver el crema de la página entre el menú y la barra)
   return (
-    <div className="bg-white font-cuerpo text-[15px] text-tinta">
+    <div className="flow-root bg-white font-cuerpo text-[15px] text-tinta">
       {categoria && <h1 className="sr-only">Catálogo de {categoria.toLowerCase()}</h1>}
       <RutaNavegacion pasos={ruta} className={fueraDeLaFila}>
         {modalidad("")}
@@ -423,17 +433,20 @@ export function Catalogo({
       {encabezado}
 
       {/* La barra: un rectángulo del alto del menú del encabezado con buscar, los filtros principales,
-          "Más filtros", los aplicados y el orden (en una sola fila, también la ruta y la modalidad). En
-          el celular se reparte en filas: buscar y el orden arriba, los filtros (que se deslizan de
-          lado) y los aplicados debajo. */}
+          "Más filtros", los aplicados y el orden (en una sola fila, también la ruta y la modalidad).
+          Solo lleva el borde de afuera: adentro, las partes se separan por el espacio. En el celular
+          se reparte en filas: buscar y el orden arriba, los filtros (que se deslizan de lado) y los
+          aplicados debajo. */}
       <div ref={barra} className={`relative z-10 mx-[clamp(16px,3vw,32px)] mb-3 ${enLinea ? "una-fila:mt-3" : ""}`}>
         <div data-barra-catalogo className="flex flex-wrap border border-tinta bg-white min-[1000px]:h-[51px] min-[1000px]:flex-nowrap">
           {enLinea && (
-            <div className="hidden min-w-0 flex-[0_1_auto] items-center border-r border-tinta px-4 text-[13px] text-[#555555] una-fila:flex">
+            // No se achica cuando aparecen los aplicados; un nombre de categoría muy largo termina en "…"
+            <div className="hidden max-w-[280px] min-w-0 flex-none items-center px-4 text-[13px] text-[#555555] una-fila:flex">
               <Ruta pasos={ruta} unaLinea />
             </div>
           )}
-          <label className={`flex min-h-11 min-w-0 flex-1 cursor-text items-center gap-2.5 px-4 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:w-[clamp(170px,16vw,260px)] min-[1000px]:flex-none ${enLinea ? "una-fila:w-auto una-fila:min-w-[150px] una-fila:flex-[1_1_0%]" : ""}`}>
+          {/* Al escribir se marca con un gris claro, no con un recuadro: la barra no lleva bordes adentro */}
+          <label className={`flex min-h-11 min-w-0 flex-1 cursor-text items-center gap-2.5 px-4 transition-colors duration-150 focus-within:bg-[#f2f2f2] min-[1000px]:w-[clamp(170px,16vw,260px)] min-[1000px]:flex-none ${enLinea ? "una-fila:w-auto una-fila:min-w-[120px] una-fila:flex-[1_1_0%]" : ""}`}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="flex-none">
               <circle cx="11" cy="11" r="7" />
               <path d="M20 20l-3.5-3.5" />
@@ -454,7 +467,7 @@ export function Catalogo({
           <div
             role="group"
             aria-label="Filtros"
-            className="relative order-3 flex min-w-0 basis-full divide-x divide-tinta overflow-x-auto border-t border-tinta [scrollbar-width:none] min-[1000px]:order-none min-[1000px]:basis-auto min-[1000px]:flex-none min-[1000px]:overflow-visible min-[1000px]:border-t-0 min-[1000px]:border-l [&::-webkit-scrollbar]:hidden"
+            className="relative order-3 flex min-w-0 basis-full overflow-x-auto [scrollbar-width:none] min-[1000px]:order-none min-[1000px]:basis-auto min-[1000px]:flex-none min-[1000px]:overflow-visible [&::-webkit-scrollbar]:hidden"
           >
             {principales.map((g) => (
               <button
@@ -489,18 +502,13 @@ export function Catalogo({
             )}
           </div>
 
-          {/* Los aplicados: en la barra, entre los filtros y el orden. Si no entran, se deslizan de lado
-              y "Limpiar todo" queda siempre a la vista. En una sola fila van debajo de la barra. */}
-          {aplicados(
-            `order-4 flex min-w-0 basis-full items-center gap-1.5 border-t border-tinta px-3 py-2 min-[1000px]:order-none min-[1000px]:flex-1 min-[1000px]:basis-auto min-[1000px]:border-t-0 min-[1000px]:border-l min-[1000px]:py-0 ${fueraDeLaFila}`,
-            // El borde derecho se desvanece: si no entran todos, el último no queda cortado en seco
-            "flex min-w-0 flex-wrap gap-1.5 min-[1000px]:flex-nowrap min-[1000px]:overflow-x-auto min-[1000px]:pr-4 min-[1000px]:[mask-image:linear-gradient(to_right,#000_calc(100%-16px),transparent)] min-[1000px]:[scrollbar-width:none] min-[1000px]:[&::-webkit-scrollbar]:hidden",
-          )}
+          {aplicados}
 
           {/* Todo / Comprar / Alquilar, a la izquierda del orden */}
-          {enLinea && modalidad("hidden flex-none items-center border-l border-tinta px-2 una-fila:ml-auto una-fila:flex", "px-2.5")}
+          {enLinea && modalidad("hidden flex-none items-center px-2 una-fila:ml-auto una-fila:flex", "px-2.5")}
 
-          <label className={`relative order-2 ml-auto flex min-h-11 flex-none items-center gap-2 border-l border-tinta pl-4 text-[13px] tracking-[0.04em] uppercase focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-tinta min-[1000px]:order-none ${enLinea ? "una-fila:ml-0" : ""}`}>
+          {/* Como buscar: con el foco, fondo gris claro en vez de un recuadro */}
+          <label className={`relative order-2 ml-auto flex min-h-11 flex-none items-center gap-2 pl-4 text-[13px] tracking-[0.04em] uppercase transition-colors duration-150 focus-within:bg-[#f2f2f2] min-[1000px]:order-none ${enLinea ? "una-fila:ml-0" : ""}`}>
             <span className={`max-[1199px]:sr-only ${enLinea ? "una-fila:max-[1499px]:sr-only" : ""}`}>Ordenar</span>
             <select
               value={orden}
@@ -561,14 +569,10 @@ export function Catalogo({
         </div>
       </div>
 
-      {enLinea && aplicados("mx-[clamp(16px,3vw,32px)] mb-3 hidden items-center gap-1.5 una-fila:flex", "flex min-w-0 flex-wrap gap-1.5")}
-
-      {/* --resto-catalogo: lo que va arriba y debajo de la foto en la primera fila (la ruta, la barra,
-          los aplicados y las tres líneas de la tarjeta), para que entre entera en la pantalla */}
-      <section
-        aria-label="Productos"
-        className={`flex flex-col [--resto-catalogo:230px] ${enLinea ? (chips.length ? "una-fila:[--resto-catalogo:234px]" : "una-fila:[--resto-catalogo:192px]") : ""}`}
-      >
+      {/* --resto-catalogo: lo que va arriba y debajo de la foto en la primera fila (la ruta, la barra
+          y las tres líneas de la tarjeta), para que entre entera en la pantalla. Los aplicados van
+          dentro de la barra, así que no cambian el alto. */}
+      <section aria-label="Productos" className={`flex flex-col [--resto-catalogo:230px] ${enLinea ? "una-fila:[--resto-catalogo:192px]" : ""}`}>
         {visibles.length > 0 ? (
           <>
             <ul className="grid grid-cols-2 min-[900px]:grid-cols-3 min-[1200px]:grid-cols-4">
