@@ -186,37 +186,69 @@ export async function leerCatalogo(categoria?: string): Promise<ProductoCatalogo
   return aCatalogo(categoria ? await leerProductosDeCategoria(categoria) : await leerVestidos());
 }
 
-// De a cuántos se piden a la vez
-const LOTE_POR_ID = 25;
+type ContextSpec = AmplifyServer.ContextSpec;
 
-// Los vestidos elegidos a mano (los destacados del inicio, una colección): un GetItem por id, en
-// lotes en paralelo, así se leen solo esos y nunca el catálogo entero. Los que ya no existen se
-// saltan. Cada lista tiene su entrada en la caché, con la etiqueta del catálogo.
+// La consulta vestidosPorId lee hasta 100 por pedido (amplify/data/vestidos-por-id.js)
+const MAXIMO_POR_PEDIDO = 100;
+
+// La consulta devuelve el Product completo: se guardan solo los campos del catálogo, como en el
+// resto de las lecturas
+const soloCampos = (producto: object) =>
+  Object.fromEntries(CAMPOS_CATALOGO.map((campo) => [campo, (producto as Record<string, unknown>)[campo]])) as ProductoGuardado;
+
+// De a uno, con un GetItem cada uno: para los que DynamoDB dejó sin leer y mientras el backend
+// todavía no tenga vestidosPorId (o si esa consulta falla)
+async function leerDeAUno(contextSpec: ContextSpec, ids: string[]): Promise<ProductoGuardado[]> {
+  const leidos = await Promise.all(
+    ids.map(async (productId) => {
+      const { data, errors } = await clienteDatosServidor.models.Product.get(
+        contextSpec,
+        { productId },
+        { authMode: "identityPool", selectionSet: CAMPOS_CATALOGO },
+      );
+      if (errors?.length) {
+        if (!data) throw new Error(errors[0].message);
+        console.error("Producto con errores:", productId, errors);
+      }
+      return data;
+    }),
+  );
+  return leidos.filter((p) => p !== null);
+}
+
+// Hasta 100 en un solo pedido a AppSync
+async function leerLote(contextSpec: ContextSpec, ids: string[]): Promise<ProductoGuardado[]> {
+  const consulta = clienteDatosServidor.queries.vestidosPorId;
+  if (typeof consulta !== "function") return leerDeAUno(contextSpec, ids);
+  const { data, errors } = await consulta(contextSpec, { ids }, { authMode: "identityPool" });
+  if (errors?.length && !data) {
+    console.error("vestidosPorId falló; se leen de a uno:", errors);
+    return leerDeAUno(contextSpec, ids);
+  }
+  const leidos = (data ?? []).flatMap((p) => (p ? [soloCampos(p)] : []));
+  if (errors?.length) {
+    // DynamoDB pudo dejar algunos sin leer: esos se piden de a uno
+    console.error("vestidosPorId con errores:", errors);
+    const faltan = ids.filter((id) => !leidos.some((p) => p.productId === id));
+    leidos.push(...(await leerDeAUno(contextSpec, faltan)));
+  }
+  return leidos;
+}
+
+// Los vestidos elegidos a mano (los destacados del inicio, una colección): de a 100 por pedido,
+// así se leen solo esos y nunca el catálogo entero. Los que ya no existen se saltan. Vuelven en el
+// orden pedido. Cada lista tiene su entrada en la caché, con la etiqueta del catálogo.
 const leerProductosPorId = unstable_cache(
   async (ids: string[]) =>
     runWithAmplifyServerContext({
       nextServerContext: null,
       operation: async (contextSpec) => {
         await credencialesUnaVez(contextSpec);
-        const productos: ProductoGuardado[] = [];
-        for (let i = 0; i < ids.length; i += LOTE_POR_ID) {
-          const lote = await Promise.all(
-            ids.slice(i, i + LOTE_POR_ID).map(async (productId) => {
-              const { data, errors } = await clienteDatosServidor.models.Product.get(
-                contextSpec,
-                { productId },
-                { authMode: "identityPool", selectionSet: CAMPOS_CATALOGO },
-              );
-              if (errors?.length) {
-                if (!data) throw new Error(errors[0].message);
-                console.error("Producto con errores:", productId, errors);
-              }
-              return data;
-            }),
-          );
-          productos.push(...lote.filter((p) => p !== null));
-        }
-        return productos;
+        const lotes: string[][] = [];
+        for (let i = 0; i < ids.length; i += MAXIMO_POR_PEDIDO) lotes.push(ids.slice(i, i + MAXIMO_POR_PEDIDO));
+        const leidos = (await Promise.all(lotes.map((lote) => leerLote(contextSpec, lote)))).flat();
+        const porId = new Map(leidos.map((p) => [p.productId, p]));
+        return ids.flatMap((id) => porId.get(id) ?? []);
       },
     }),
   ["vestidos-por-id"],

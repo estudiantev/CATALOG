@@ -72,22 +72,46 @@ export async function leerColeccionesPublicadas() {
   );
 }
 
-// Query al índice bySlug, como visitante. Una colección que no se puede ver es como si no
-// existiera. cache() evita leerla dos veces en la misma petición (metadata y página).
+const CAMPOS_COLECCION = [
+  "title",
+  "slug",
+  "description",
+  "productIds",
+  "sortOrder",
+  "isPublished",
+  "startsAt",
+  "endsAt",
+  "imageKey",
+  "seoTitle",
+  "seoDescription",
+] as const;
+
+// Query al índice bySlug, como visitante. Va a la caché como la lista (10 minutos, y el panel la
+// invalida al guardar), así la página de una colección no la busca en cada visita.
+const leerColeccionPorSlug = unstable_cache(
+  async (slug: string) =>
+    runWithAmplifyServerContext({
+      nextServerContext: null,
+      operation: async (contextSpec) => {
+        const { data, errors } = await clienteDatosServidor.models.Collection.listCollectionBySlug(
+          contextSpec,
+          { slug },
+          { authMode: "identityPool", selectionSet: CAMPOS_COLECCION },
+        );
+        if (errors?.length) throw new Error(errors[0].message);
+        return data;
+      },
+    }),
+  ["coleccion-por-slug"],
+  { revalidate: CACHE_COLECCIONES, tags: ["colecciones"] },
+);
+
+// Una colección que no se puede ver es como si no existiera. La fecha se revisa fuera de la caché,
+// para que aparezca y desaparezca a su hora. cache() evita leerla dos veces en la misma petición
+// (metadata y página).
 export const obtenerColeccion = cache(async (slug: string) => {
   if (!slugValido(slug)) return null;
-  return runWithAmplifyServerContext({
-    nextServerContext: null,
-    operation: async (contextSpec) => {
-      const { data, errors } = await clienteDatosServidor.models.Collection.listCollectionBySlug(
-        contextSpec,
-        { slug },
-        { authMode: "identityPool" },
-      );
-      if (errors?.length) throw new Error(errors[0].message);
-      return data.find((c) => coleccionVisible(c)) ?? null;
-    },
-  });
+  return (await leerColeccionPorSlug(slug)).find((c) => coleccionVisible(c)) ?? null;
 });
 
 export async function leerPaginaColeccion(slug: string) {

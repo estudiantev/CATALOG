@@ -200,6 +200,16 @@ const schema = a.schema({
       allow.groups(['MARKETING', 'ADMIN']),
     ]),
 
+  // Varios vestidos por su id en un solo pedido (un BatchGetItem de hasta 100, en
+  // vestidos-por-id.js): los destacados del inicio y los de una colección. Sin esto serían un
+  // pedido a AppSync por vestido. Se lee como Product: invitados y clientas.
+  vestidosPorId: a
+    .query()
+    .arguments({ ids: a.id().required().array().required() })
+    .returns(a.ref('Product').array())
+    .authorization((allow) => [allow.guest(), allow.authenticated()])
+    .handler(a.handler.custom({ dataSource: a.ref('Product'), entry: './vestidos-por-id.js' })),
+
   // NUEVO: el ADMIN crea cuentas de INVENTORY o MARKETING
   agregarStaff: a
     .mutation()
