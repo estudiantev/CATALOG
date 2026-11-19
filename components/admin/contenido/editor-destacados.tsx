@@ -99,7 +99,7 @@ export function EditorDestacados({
                 </Select>
               )}
               <p id="destacados-agregar-ayuda" className="text-sm text-muted-foreground">
-                Hasta {MAXIMO_DESTACADOS}, en el orden de la lista. Si no eliges ninguno, se muestran los vestidos más recientes. Los productos sin stock no aparecen. La etiqueta es opcional y se ve sobre la foto, por ejemplo «Nuevo».
+                Hasta {MAXIMO_DESTACADOS}, en el orden de la lista. Si no eliges ninguno, la sección no se muestra. Los productos sin stock no aparecen. La etiqueta es opcional y se ve sobre la foto, por ejemplo «Nuevo».
               </p>
             </div>
 

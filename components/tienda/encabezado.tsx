@@ -6,19 +6,16 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { DatosSeccion } from "@/lib/contenido";
 import { esStaff } from "@/lib/permisos";
-import { nombreOpcion } from "@/lib/productos";
 import { enlaceCuenta } from "@/lib/redireccion";
 import { Anuncios } from "./anuncios";
 import { COLORES } from "./datos";
-import { cajaNav, opcionIcono, opcionNav } from "./estilos-inicio";
+import { opcionIcono, opcionNav } from "./estilos-inicio";
 import { useSesion } from "./use-sesion";
 
 const enlaceMega =
   "inline-flex items-center gap-2.5 min-h-8 text-[14px] leading-[20px] tracking-[0.08em] uppercase hover:underline hover:decoration-2 hover:underline-offset-[6px]";
 const tituloMega = "font-archivo text-[13px] leading-[18px] font-semibold tracking-[0.16em] uppercase";
 const tituloMovil = "pt-1 pb-1 pl-9 font-archivo text-[11px] leading-[16px] font-semibold tracking-[0.16em] text-[#666666] uppercase";
-// El catálogo de vestidos con esa ocasión ya elegida en los filtros
-const enlaceOcasion = (ocasion: string) => `/vestidos?ocasion=${encodeURIComponent(ocasion)}`;
 const filaMovil =
   "group flex w-full items-center active:bg-durazno focus-visible:outline-offset-[-6px]";
 const etiquetaMovil =
@@ -34,15 +31,13 @@ function Chevron({ arriba }: { arriba: boolean }) {
 
 export function Encabezado({
   anuncios,
-  ocasiones,
-  tallas,
+  categoriasCatalogo,
   categorias,
   escalonMenu,
 }: {
   anuncios: DatosSeccion["anuncios"] | null;
-  // Las de los vestidos con stock (lib/catalogo.ts): el menú solo ofrece lo que hay
-  ocasiones: string[];
-  tallas: string[];
+  // Todas las categorías, en su orden: las del menú desplegable de Catálogo
+  categoriasCatalogo: { nombre: string; href: string }[];
   // Las elegidas para el menú en el panel, en Categorías (lib/categorias.ts), en su orden
   categorias: { nombre: string; href: string }[];
   // Desde qué ancho entra el menú de escritorio con esas categorías (lib/categorias.ts y la
@@ -207,39 +202,23 @@ export function Encabezado({
         </div>
       </header>
 
-      {/* Menú desplegable de Catálogo (escritorio): ocasiones, tallas y colores */}
+      {/* Menú desplegable de Catálogo (escritorio): categorías y colores */}
       {catalogoAbierto && (
         <div id="menu-catalogo" className="absolute inset-x-0 top-full hidden bg-white px-[clamp(16px,3.6vw,54px)] pt-12 pb-14 menu:block">
           <div className="flex flex-wrap items-start gap-x-[clamp(56px,8vw,120px)] gap-y-10">
-            {ocasiones.length > 0 && (
-              <section aria-labelledby="col-ocasiones" className="flex flex-none flex-col gap-5">
-                <h2 id="col-ocasiones" className={tituloMega}>Ocasiones</h2>
-                <ul className="flex flex-col gap-0.5">
-                  {ocasiones.map((ocasion) => (
-                    <li key={ocasion}>
-                      <Link href={enlaceOcasion(ocasion)} onClick={cerrarMenus} className={enlaceMega}>{ocasion}</Link>
-                    </li>
-                  ))}
-                  <li>
-                    <Link href="/vestidos" onClick={cerrarMenus} className={enlaceMega}>Ver todo el catálogo</Link>
+            <section aria-labelledby="col-categorias" className="flex flex-none flex-col gap-5">
+              <h2 id="col-categorias" className={tituloMega}>Categorías</h2>
+              <ul className="flex flex-col gap-0.5">
+                {categoriasCatalogo.map((categoria) => (
+                  <li key={categoria.href}>
+                    <Link href={categoria.href} onClick={cerrarMenus} className={enlaceMega}>{categoria.nombre}</Link>
                   </li>
-                </ul>
-              </section>
-            )}
-            {tallas.length > 0 && (
-              <section aria-labelledby="col-tallas" className="flex flex-none flex-col gap-5">
-                <h2 id="col-tallas" className={tituloMega}>Tallas</h2>
-                <ul className="flex max-w-[15rem] flex-wrap gap-1.5">
-                  {tallas.map((talla) => (
-                    <li key={talla}>
-                      <Link href={`/vestidos?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
-                        {nombreOpcion("talla", talla)}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+                ))}
+                <li>
+                  <Link href="/vestidos" onClick={cerrarMenus} className={enlaceMega}>Ver todo el catálogo</Link>
+                </li>
+              </ul>
+            </section>
             <section aria-labelledby="col-color" className="flex flex-none flex-col gap-5">
               <h2 id="col-color" className={tituloMega}>Colores</h2>
               <ul className="grid grid-flow-col grid-rows-[repeat(5,auto)] auto-cols-max gap-x-12 gap-y-0.5">
@@ -277,34 +256,18 @@ export function Encabezado({
               </button>
               {submenuMovilAbierto && (
                 <div id="sub-catalogo" className="flex flex-col gap-4 pb-3">
-                  {ocasiones.length > 0 && (
-                    <section aria-labelledby="movil-ocasiones">
-                      <h2 id="movil-ocasiones" className={tituloMovil}>Ocasiones</h2>
-                      <ul>
-                        {ocasiones.map((ocasion) => (
-                          <li key={ocasion}>
-                            <Link href={enlaceOcasion(ocasion)} onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] tracking-[0.08em] uppercase`}>
-                              <span className={`${etiquetaMovil} py-1`}>{ocasion}</span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-                  {tallas.length > 0 && (
-                    <section aria-labelledby="movil-tallas">
-                      <h2 id="movil-tallas" className={tituloMovil}>Tallas</h2>
-                      <ul className="flex flex-wrap gap-1.5 pt-1.5 pr-5 pl-9">
-                        {tallas.map((talla) => (
-                          <li key={talla}>
-                            <Link href={`/vestidos?talla=${talla}`} onClick={cerrarMenus} className={`${cajaNav} min-w-11 justify-center`}>
-                              {nombreOpcion("talla", talla)}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
+                  <section aria-labelledby="movil-categorias">
+                    <h2 id="movil-categorias" className={tituloMovil}>Categorías</h2>
+                    <ul>
+                      {categoriasCatalogo.map((categoria) => (
+                        <li key={categoria.href}>
+                          <Link href={categoria.href} onClick={cerrarMenus} className={`${filaMovil} min-h-11 pr-5 pl-9 text-[14px] leading-[20px] tracking-[0.08em] uppercase`}>
+                            <span className={`${etiquetaMovil} py-1`}>{categoria.nombre}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
                   <section aria-labelledby="movil-colores">
                     <h2 id="movil-colores" className={tituloMovil}>Colores</h2>
                     <ul>

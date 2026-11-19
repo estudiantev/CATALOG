@@ -4,7 +4,6 @@ import { ConfigurarAmplify } from "@/components/compartido/configurar-amplify";
 import { Encabezado } from "@/components/tienda/encabezado";
 import { Pie } from "@/components/tienda/pie";
 import { RetornoGoogle } from "@/components/tienda/retorno-google";
-import { leerOpcionesMenu } from "@/lib/catalogo";
 import { ANCHOS_MENU, escalonMenu, rutaCategoria } from "@/lib/categorias";
 import { leerCategorias } from "@/lib/categorias-servidor";
 import { leerContenidoMarco } from "@/lib/contenido-servidor";
@@ -63,8 +62,10 @@ export default async function TiendaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [{ anuncios, pie }, { ocasiones, tallas }, categorias] = await Promise.all([leerContenidoMarco(), leerOpcionesMenu(), leerCategorias()]);
-  const categoriasMenu = categorias.filter((c) => c.enMenu).map((c) => ({ nombre: c.nombre, href: rutaCategoria(c.slug) }));
+  // Ninguno de los dos lee los vestidos: el menú se arma con las categorías
+  const [{ anuncios, pie }, categorias] = await Promise.all([leerContenidoMarco(), leerCategorias()]);
+  const enlaces = categorias.map((c) => ({ nombre: c.nombre, href: rutaCategoria(c.slug), enMenu: c.enMenu }));
+  const categoriasMenu = enlaces.filter((c) => c.enMenu);
   // El panel no deja guardar nombres que no entran ni en el último escalón; si llegan igual, va el último
   const escalon = escalonMenu(categoriasMenu.map((c) => c.nombre));
 
@@ -79,8 +80,7 @@ export default async function TiendaLayout({
         <RetornoGoogle />
         <Encabezado
           anuncios={anuncios}
-          ocasiones={ocasiones}
-          tallas={tallas}
+          categoriasCatalogo={enlaces}
           categorias={categoriasMenu}
           escalonMenu={escalon === -1 ? ANCHOS_MENU.length - 1 : escalon}
         />

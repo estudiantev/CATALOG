@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { generateServerClientUsingReqRes } from "@aws-amplify/adapter-nextjs/data";
 import type { AmplifyServer } from "aws-amplify/adapter-core";
+import { fetchAuthSession } from "aws-amplify/auth/server";
 import { getUrl } from "aws-amplify/storage/server";
 import type { Schema } from "@/amplify/data/resource";
 import outputs from "@/amplify_outputs.json";
@@ -12,7 +13,6 @@ import { type OrdenColeccion, ordenarProductos } from "@/lib/colecciones";
 import {
   type FamiliaColor,
   type Opciones,
-  TALLAS,
   type Talla,
   leerJson,
   opcionesDeVariante,
@@ -89,6 +89,11 @@ const CACHE_CATALOGO = 10 * 60;
 
 // Los más nuevos primero
 const masNuevos = (a: { createdAt: string }, b: { createdAt: string }) => b.createdAt.localeCompare(a.createdAt);
+
+// Cada contexto de servidor guarda las credenciales de invitado recién cuando llegan: si varios
+// pedidos salen a la vez sin ellas, cada uno las pide a Cognito, que corta con "Rate exceeded".
+// Pedirlas antes una vez deja que los pedidos en paralelo usen las mismas.
+const credencialesUnaVez = (contextSpec: AmplifyServer.ContextSpec) => fetchAuthSession(contextSpec);
 
 function sinNulos<T>(xs?: (T | null)[] | null): T[] {
   return (xs ?? []).filter((x): x is T => x !== null);
@@ -181,18 +186,57 @@ export async function leerCatalogo(categoria?: string): Promise<ProductoCatalogo
   return aCatalogo(categoria ? await leerProductosDeCategoria(categoria) : await leerVestidos());
 }
 
-// "Nuestro catálogo" de la página de inicio: los productos elegidos en el panel de contenido,
-// en ese orden; si no se eligió ninguno, los vestidos más nuevos. Solo los que tienen stock.
+// De a cuántos se piden a la vez
+const LOTE_POR_ID = 25;
+
+// Los vestidos elegidos a mano (los destacados del inicio, una colección): un GetItem por id, en
+// lotes en paralelo, así se leen solo esos y nunca el catálogo entero. Los que ya no existen se
+// saltan. Cada lista tiene su entrada en la caché, con la etiqueta del catálogo.
+const leerProductosPorId = unstable_cache(
+  async (ids: string[]) =>
+    runWithAmplifyServerContext({
+      nextServerContext: null,
+      operation: async (contextSpec) => {
+        await credencialesUnaVez(contextSpec);
+        const productos: ProductoGuardado[] = [];
+        for (let i = 0; i < ids.length; i += LOTE_POR_ID) {
+          const lote = await Promise.all(
+            ids.slice(i, i + LOTE_POR_ID).map(async (productId) => {
+              const { data, errors } = await clienteDatosServidor.models.Product.get(
+                contextSpec,
+                { productId },
+                { authMode: "identityPool", selectionSet: CAMPOS_CATALOGO },
+              );
+              if (errors?.length) {
+                if (!data) throw new Error(errors[0].message);
+                console.error("Producto con errores:", productId, errors);
+              }
+              return data;
+            }),
+          );
+          productos.push(...lote.filter((p) => p !== null));
+        }
+        return productos;
+      },
+    }),
+  ["vestidos-por-id"],
+  { revalidate: CACHE_CATALOGO, tags: ["catalogo"] },
+);
+
+// "Nuestro catálogo" de la página de inicio: los vestidos elegidos en el panel de contenido, en ese
+// orden, solo los que tienen stock. Sin elegidos, la sección no se muestra.
 export async function leerDestacados(ids: string[], cantidad: number): Promise<ProductoCatalogo[]> {
-  const productos = (await leerVestidos()).filter(tieneStock);
-  const elegidos = ids.length ? ids.flatMap((id) => productos.filter((p) => p.productId === id)) : productos;
-  return aCatalogo(elegidos.slice(0, cantidad));
+  const elegidos = Array.from(new Set(ids)).slice(0, cantidad);
+  if (!elegidos.length) return [];
+  return aCatalogo((await leerProductosPorId(elegidos)).filter(tieneStock));
 }
 
-// Los productos con stock de una colección, en su orden
+// Los vestidos con stock de una colección, en su orden: se leen solo los suyos
 export async function leerProductosColeccion(ids: string[], orden: OrdenColeccion): Promise<ProductoCatalogo[]> {
-  const productos = (await leerVestidos()).filter(tieneStock);
-  return aCatalogo(ordenarProductos(productos, ids, orden));
+  const elegidos = Array.from(new Set(ids));
+  if (!elegidos.length) return [];
+  const productos = (await leerProductosPorId(elegidos)).filter(tieneStock);
+  return aCatalogo(ordenarProductos(productos, elegidos, orden));
 }
 
 // "También te puede gustar" del detalle: otros vestidos con stock de su categoría, los más nuevos
@@ -201,20 +245,6 @@ export async function leerRelacionados(productId: string, categoria: string, can
   if (!categoria) return [];
   const productos = (await leerProductosDeCategoria(categoria)).filter((p) => p.productId !== productId && tieneStock(p));
   return aCatalogo(productos.slice(0, cantidad));
-}
-
-// Ocasiones y tallas del menú "Catálogo" del encabezado: las de los vestidos con stock, que es el
-// catálogo que abre /vestidos. Sale de la caché y no firma fotos, así no pesa en cada página.
-export async function leerOpcionesMenu(): Promise<{ ocasiones: string[]; tallas: Talla[] }> {
-  try {
-    const vestidos = (await leerVestidos()).filter(tieneStock);
-    const ocasiones = Array.from(new Set(vestidos.flatMap((p) => (p.occasion?.trim() ? [p.occasion] : [])))).sort((a, b) => a.localeCompare(b, "es"));
-    const tallas = TALLAS.map((t) => t.valor).filter((talla) => vestidos.some((p) => (p.availableSizes ?? []).includes(talla)));
-    return { ocasiones, tallas };
-  } catch (error) {
-    console.error("No se pudieron leer las opciones del menú:", error);
-    return { ocasiones: [], tallas: [] };
-  }
 }
 
 // Firma las fotos y arma las tarjetas del catálogo
@@ -294,6 +324,7 @@ export const obtenerProducto = cache(async (productId: string): Promise<Producto
         } while (nextToken);
         return variantes;
       };
+      await credencialesUnaVez(contextSpec);
       const [{ data: producto, errors }, todas] = await Promise.all([
         clienteDatosServidor.models.Product.get(
           contextSpec,
